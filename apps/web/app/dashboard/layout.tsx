@@ -7,10 +7,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700" />
-            <span className="text-xl font-semibold">Aly SaaS</span>
+            <span className="text-xl font-semibold text-neutral-900">Aly SaaS</span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm text-neutral-600">demo@plural-estudio.co</div>
+            <div className="text-sm text-neutral-700">demo@plural-estudio.co</div>
           </div>
         </div>
       </header>
