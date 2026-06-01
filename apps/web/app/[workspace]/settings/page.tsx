@@ -78,7 +78,7 @@ export default function SettingsPage({
               }
               placeholder="Mi Empresa"
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Este nombre se muestra en el dashboard y notificaciones
             </p>
           </div>
@@ -96,7 +96,7 @@ export default function SettingsPage({
               }
               placeholder="mi-empresa"
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               URL: app.aly.com/{workspace.slug}
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function SettingsPage({
               }
               placeholder="Aly"
             />
-            <p className="text-xs text-neutral-500">
+            <p className="text-xs text-neutral-600">
               Este nombre aparece en las respuestas del bot y en el chat
             </p>
           </div>
@@ -190,7 +190,7 @@ export default function SettingsPage({
       <Separator className="my-8" />
 
       {/* Info adicional */}
-      <div className="text-sm text-neutral-500">
+      <div className="text-sm text-neutral-600">
         <p>Workspace ID: {workspace.id}</p>
         <p>Creado el: {new Date(workspace.created_at).toLocaleDateString("es-AR")}</p>
       </div>
