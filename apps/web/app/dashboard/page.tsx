@@ -79,8 +79,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Mis Asistentes</h1>
-          <p className="text-neutral-600 mt-1">
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+            Mis Asistentes
+          </h1>
+          <p className="text-neutral-700 mt-1">
             Seleccioná un workspace para gestionar tu asistente de IA
           </p>
         </div>
@@ -154,7 +156,7 @@ export default function DashboardPage() {
         {workspaces.map((workspace) => (
           <Card
             key={workspace.id}
-            className="cursor-pointer transition-all hover:shadow-lg hover:border-blue-300"
+            className="cursor-pointer transition-all hover:shadow-lg hover:border-blue-400"
             onClick={() => handleOpenWorkspace(workspace.slug)}
           >
             <CardHeader>
@@ -164,8 +166,10 @@ export default function DashboardPage() {
                     <BotIcon className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">{workspace.name}</CardTitle>
-                    <CardDescription className="text-sm">
+                    <CardTitle className="text-lg text-neutral-900">
+                      {workspace.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm text-neutral-600">
                       {workspace.assistant_name}
                     </CardDescription>
                   </div>
@@ -190,19 +194,25 @@ export default function DashboardPage() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4 text-sm">
                 <div className="flex flex-col items-center gap-1">
-                  <FileTextIcon className="h-4 w-4 text-neutral-400" />
-                  <span className="font-semibold">{workspace.stats.documents}</span>
-                  <span className="text-xs text-neutral-500">Docs</span>
+                  <FileTextIcon className="h-4 w-4 text-neutral-600" />
+                  <span className="font-semibold text-neutral-900">
+                    {workspace.stats.documents}
+                  </span>
+                  <span className="text-xs text-neutral-600">Docs</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <UsersIcon className="h-4 w-4 text-neutral-400" />
-                  <span className="font-semibold">{workspace.stats.users}</span>
-                  <span className="text-xs text-neutral-500">Usuarios</span>
+                  <UsersIcon className="h-4 w-4 text-neutral-600" />
+                  <span className="font-semibold text-neutral-900">
+                    {workspace.stats.users}
+                  </span>
+                  <span className="text-xs text-neutral-600">Usuarios</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
-                  <BotIcon className="h-4 w-4 text-neutral-400" />
-                  <span className="font-semibold">{workspace.stats.conversations}</span>
-                  <span className="text-xs text-neutral-500">Chats</span>
+                  <BotIcon className="h-4 w-4 text-neutral-600" />
+                  <span className="font-semibold text-neutral-900">
+                    {workspace.stats.conversations}
+                  </span>
+                  <span className="text-xs text-neutral-600">Chats</span>
                 </div>
               </div>
             </CardContent>
@@ -214,7 +224,9 @@ export default function DashboardPage() {
       {workspaces.length === 0 && (
         <div className="text-center py-12">
           <BotIcon className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No tenés asistentes todavía</h3>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+            No tenés asistentes todavía
+          </h3>
           <p className="text-neutral-600 mb-4">
             Creá tu primer asistente de IA para empezar
           </p>
