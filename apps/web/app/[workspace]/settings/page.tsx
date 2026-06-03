@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,186 +13,244 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { SaveIcon, TrashIcon } from "lucide-react";
-
-// Mock data - después se reemplaza con query real a Supabase
-const MOCK_WORKSPACE = {
-  id: "1",
-  slug: "demo",
-  name: "Demo Workspace",
-  assistant_name: "Aly",
-  subscription_status: "trial",
-  created_at: "2026-06-01",
-};
+import { toast } from "sonner";
+import { getWorkspaceBySlug, slugify } from "@/lib/workspaces";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export default function SettingsPage({
   params,
 }: {
-  params: { workspace: string };
+  params: Promise<{ workspace: string }>;
 }) {
-  const [workspace, setWorkspace] = useState(MOCK_WORKSPACE);
+  const { workspace: workspaceSlug } = use(params);
+  const [workspace, setWorkspace] = useState(() =>
+    getWorkspaceBySlug(workspaceSlug)
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
     setIsSaving(true);
     // TODO: Implementar guardado real con Supabase
-    console.log("Saving workspace:", workspace);
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Simular delay
     setIsSaving(false);
+    toast.success("Cambios guardados");
   };
 
   const handleDelete = () => {
-    // TODO: Implementar borrado con confirmación
-    if (confirm("¿Estás seguro de eliminar este workspace? Esta acción no se puede deshacer.")) {
-      console.log("Deleting workspace:", params.workspace);
-    }
+    // TODO: Implementar borrado real con Supabase
+    toast.success(`Workspace "${workspace.name}" eliminado`);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-          Configuración General
-        </h1>
-        <p className="text-neutral-700 mt-1">
-          Gestioná los datos básicos de tu asistente
-        </p>
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 pb-32">
+      <div className="mx-auto max-w-5xl px-8 py-10">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold tracking-tight text-neutral-900">
+            Configuración General
+          </h1>
+          <p className="text-neutral-600 mt-2 text-lg">
+            Gestioná los datos básicos de tu asistente
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {/* Información del Workspace */}
+          <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-xl">Información del Workspace</CardTitle>
+              <CardDescription className="text-base">
+                El nombre y slug identifican tu workspace en la plataforma
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="name" className="text-sm font-medium text-neutral-900">
+                  Nombre del Workspace
+                </Label>
+                <Input
+                  id="name"
+                  value={workspace.name}
+                  onChange={(e) => {
+                    const newName = e.target.value;
+                    setWorkspace({
+                      ...workspace,
+                      name: newName,
+                      slug: slugify(newName),
+                    });
+                  }}
+                  placeholder="Mi Empresa"
+                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <p className="text-xs text-neutral-500">
+                  Este nombre se muestra en el dashboard y notificaciones
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4">
+                <p className="text-xs font-medium text-neutral-600 mb-1">URL de tu workspace</p>
+                <p className="text-sm font-mono text-neutral-900">
+                  app.aly.com/<span className="font-semibold text-blue-600">{workspace.slug}</span>
+                </p>
+                <p className="text-xs text-neutral-500 mt-2">
+                  Se genera automáticamente desde el nombre
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Configuración del Asistente */}
+          <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-xl">Configuración del Asistente</CardTitle>
+              <CardDescription className="text-base">
+                Personalizá cómo se presenta tu asistente de IA
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <Label htmlFor="assistant_name" className="text-sm font-medium text-neutral-900">
+                  Nombre del Asistente
+                </Label>
+                <Input
+                  id="assistant_name"
+                  value={workspace.assistant_name}
+                  onChange={(e) =>
+                    setWorkspace({ ...workspace, assistant_name: e.target.value })
+                  }
+                  placeholder="Aly"
+                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <p className="text-xs text-neutral-500">
+                  Este nombre aparece en las respuestas del bot y en el chat
+                </p>
+              </div>
+
+              {/* Preview Card with Gradient Border */}
+              <div className="relative p-[2px] rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500">
+                <div className="bg-white rounded-xl p-6">
+                  <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">
+                    Vista Previa
+                  </p>
+                  <div className="space-y-4">
+                    {/* User Message */}
+                    <div className="flex justify-end">
+                      <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-5 py-3 max-w-[80%] shadow-md">
+                        <p className="text-white text-sm">
+                          Hola
+                        </p>
+                      </div>
+                    </div>
+                    {/* Assistant Response */}
+                    <div className="flex gap-3">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center flex-shrink-0 shadow-md">
+                        <span className="text-white font-semibold text-sm">
+                          {workspace.assistant_name.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-xs font-medium text-neutral-500 mb-2">
+                          {workspace.assistant_name}
+                        </div>
+                        <div className="rounded-2xl bg-neutral-100 px-5 py-3 max-w-[90%]">
+                          <p className="text-neutral-900 text-sm">
+                            ¡Hola! Soy {workspace.assistant_name}, tu asistente de IA. ¿En qué puedo ayudarte hoy?
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Suscripción */}
+          <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-xl">Suscripción</CardTitle>
+              <CardDescription className="text-base">Información sobre tu plan actual</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-medium text-neutral-900">Plan Actual</div>
+                    {workspace.subscription_status === "trial" && (
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-sm">
+                        Trial
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-neutral-600">
+                    {workspace.subscription_status === "trial"
+                      ? "14 días restantes"
+                      : workspace.subscription_status === "active"
+                      ? "Pro - $49/mes"
+                      : "Free"}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  className="h-11 px-6 border-neutral-300 hover:bg-neutral-50 transition-colors"
+                >
+                  Mejorar Plan
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-red-200 shadow-sm">
+            <CardHeader className="space-y-1 pb-6">
+              <CardTitle className="text-xl text-red-600">Zona de Peligro</CardTitle>
+              <CardDescription className="text-base">
+                Acciones irreversibles para tu workspace
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ConfirmDialog
+                title="¿Eliminar workspace?"
+                description={`Vas a eliminar "${workspace.name}". Esta acción no se puede deshacer.`}
+                confirmLabel="Eliminar"
+                onConfirm={handleDelete}
+              >
+                <Button
+                  variant="outline"
+                  className="h-11 px-6 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-colors"
+                >
+                  <TrashIcon className="mr-2 h-4 w-4" />
+                  Eliminar Workspace
+                </Button>
+              </ConfirmDialog>
+            </CardContent>
+          </Card>
+
+          <Separator className="my-6" />
+
+          {/* Info adicional */}
+          <div className="text-sm text-neutral-500 space-y-1">
+            <p>Workspace ID: {workspace.id}</p>
+            <p>Creado el: {new Date(workspace.created_at).toLocaleDateString("es-AR")}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Información del Workspace */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Información del Workspace</CardTitle>
-          <CardDescription>
-            El nombre y slug identifican tu workspace en la plataforma
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Nombre del Workspace</Label>
-            <Input
-              id="name"
-              value={workspace.name}
-              onChange={(e) =>
-                setWorkspace({ ...workspace, name: e.target.value })
-              }
-              placeholder="Mi Empresa"
-            />
-            <p className="text-xs text-neutral-600">
-              Este nombre se muestra en el dashboard y notificaciones
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="slug">Slug (URL)</Label>
-            <Input
-              id="slug"
-              value={workspace.slug}
-              onChange={(e) =>
-                setWorkspace({
-                  ...workspace,
-                  slug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                })
-              }
-              placeholder="mi-empresa"
-            />
-            <p className="text-xs text-neutral-600">
-              URL: app.aly.com/{workspace.slug}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Configuración del Asistente */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuración del Asistente</CardTitle>
-          <CardDescription>
-            Personalizá cómo se presenta tu asistente de IA
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="assistant_name">Nombre del Asistente</Label>
-            <Input
-              id="assistant_name"
-              value={workspace.assistant_name}
-              onChange={(e) =>
-                setWorkspace({ ...workspace, assistant_name: e.target.value })
-              }
-              placeholder="Aly"
-            />
-            <p className="text-xs text-neutral-600">
-              Este nombre aparece en las respuestas del bot y en el chat
-            </p>
-          </div>
-
-          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
-            <div className="flex gap-3">
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-semibold text-sm">
-                  {workspace.assistant_name.charAt(0)}
-                </span>
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-neutral-900 mb-1">
-                  {workspace.assistant_name}
-                </div>
-                <div className="text-sm text-neutral-700">
-                  ¡Hola! Soy {workspace.assistant_name}, tu asistente de IA. ¿En qué
-                  puedo ayudarte hoy?
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Suscripción */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Suscripción</CardTitle>
-          <CardDescription>Información sobre tu plan actual</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm font-medium text-neutral-900">Plan Actual</div>
-              <div className="text-sm text-neutral-600 mt-1">
-                {workspace.subscription_status === "trial"
-                  ? "Trial (14 días restantes)"
-                  : workspace.subscription_status === "active"
-                  ? "Pro - $49/mes"
-                  : "Free"}
-              </div>
-            </div>
-            <Button variant="outline">Mejorar Plan</Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Acciones */}
-      <div className="flex items-center justify-between pt-4">
-        <Button
-          variant="outline"
-          onClick={handleDelete}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-        >
-          <TrashIcon className="mr-2 h-4 w-4" />
-          Eliminar Workspace
-        </Button>
-        <Button onClick={handleSave} disabled={isSaving}>
-          <SaveIcon className="mr-2 h-4 w-4" />
-          {isSaving ? "Guardando..." : "Guardar Cambios"}
-        </Button>
-      </div>
-
-      <Separator className="my-8" />
-
-      {/* Info adicional */}
-      <div className="text-sm text-neutral-600">
-        <p>Workspace ID: {workspace.id}</p>
-        <p>Creado el: {new Date(workspace.created_at).toLocaleDateString("es-AR")}</p>
+      {/* Fixed Save Button */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200 bg-white/80 backdrop-blur-md shadow-2xl">
+        <div className="mx-auto max-w-5xl px-8 py-4 flex items-center justify-between">
+          <p className="text-sm text-neutral-600">
+            {isSaving ? "Guardando cambios..." : "Todos los cambios están guardados"}
+          </p>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="h-11 px-8 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+          >
+            <SaveIcon className="mr-2 h-4 w-4" />
+            {isSaving ? "Guardando..." : "Guardar Cambios"}
+          </Button>
+        </div>
       </div>
     </div>
   );

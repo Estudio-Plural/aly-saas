@@ -1,6 +1,6 @@
 # MVP Status - Aly SaaS
 
-**Última actualización:** 2026-06-01 12:00 PM
+**Última actualización:** 2026-06-01 14:30 PM
 
 ## ✅ Completado Hoy
 
@@ -16,7 +16,7 @@
   - `workspaces` (core)
   - `workspace_users` (equipos)
   - `workspace_configs` (prompts/categories/models customizables)
-  - `onboarding_flows` (React Flow graphs)
+  - `onboarding_flows` (flujos de onboarding, JSONB)
   - `onboarding_sessions` (runtime state)
   - `users_data` (usuarios finales WhatsApp)
   - `users_interactions` (historial conversaciones)
@@ -32,17 +32,46 @@
   - Mock data de 2 workspaces: Demo y Apapáchar
   
 - ✅ **Settings Page** (`/[workspace]/settings`)
-  - Layout con sidebar de navegación (General, Conocimiento, Onboarding, Chat)
+  - Layout con sidebar de navegación (5 secciones)
   - Form editable: nombre workspace, slug, nombre asistente
   - Preview en tiempo real del chat con el asistente
   - Sección de suscripción (Trial/Pro)
   - Botones Guardar/Eliminar
+
+- ✅ **Knowledge Base** (`/[workspace]/knowledge`)
+  - Área drag & drop para upload de documentos
+  - Tabla con docs mock (PDF, TXT, MD)
+  - Botones descargar/eliminar por documento
+  - Info card explicando RAG
+
+- ✅ **Onboarding Builder** (`/[workspace]/onboarding`) ⭐
+  - Editor secuencial de pasos (2 columnas: editor + preview en vivo)
+  - 3 tipos de paso: Pregunta (azul), Mensaje (verde), Fin (morado)
+  - Drag & drop para reordenar pasos (@dnd-kit)
+  - Edición inline + variables ({name}, {email})
+  - Guardar a localStorage
+  - Flujo inicial pre-cargado (3 pasos)
+
+- ✅ **Chat Preview** (`/[workspace]/chat`)
+  - UI estilo chat (azul + blanco)
+  - Input funcional + respuestas mock
+  - Botón "Simular Conversación" automático
+  - Typing indicator animado
+  - Auto-scroll
+
+- ✅ **WhatsApp Connection** (`/[workspace]/whatsapp`)
+  - 4 estados: disconnected, connecting, connected, error
+  - Mock QR code scan flow
+  - Display de número conectado
+  - Stats de mensajes (cuando conectado)
+  - Info de Kapso integration
 
 - ✅ **UI/UX Pulida**
   - Contraste mejorado en todos los textos
   - Cards con hover states
   - Headers con breadcrumbs
   - Badges de estado (Trial/Activo)
+  - Sidebar con active state highlighting
 
 ### 4. Configuración
 - ✅ Supabase credentials en `.env.local`
@@ -63,40 +92,67 @@ bun run dev
 # → http://localhost:8080
 ```
 
-## 📊 Demo Flow Actual
+## 📊 Demo Flow Completo
 
-1. Ir a `http://localhost:3000`
-2. Redirige a `/dashboard`
-3. Ver 2 workspaces: Demo y Apapáchar
-4. Click en cualquier card → `/demo/settings` o `/apapachar/settings`
-5. Editar nombre del asistente → ver preview actualizado en tiempo real
-6. Click "Guardar" → simula guardado (log en consola)
+1. **Dashboard** (`http://localhost:3000/dashboard`)
+   - Ver 2 workspaces: Demo y Apapáchar
+   - Click en "Demo" para entrar
 
-## 🚀 Próximos Pasos (Orden Sugerido)
+2. **Settings** (`/demo/settings`)
+   - Editar nombre del asistente → preview actualiza en vivo
+   - Mostrar sección de billing (Trial activo)
 
-### Para el MVP Demo a CEOs
+3. **Knowledge Base** (`/demo/knowledge`)
+   - Ver tabla con 4 docs mock
+   - Drag & drop area para upload
+   - Explicar RAG con info card
 
-1. **Knowledge Base UI** (1-2 horas)
-   - Página `/[workspace]/knowledge`
-   - Upload de documentos (.md, .txt, .pdf)
-   - Tabla con docs subidos
-   - Botón eliminar documento
-   - Mock: mostrar lista de docs, simular upload
+4. **Onboarding Builder** (`/demo/onboarding`) ⭐ WOW FACTOR
+   - Mostrar flujo inicial (3 pasos) + preview en vivo
+   - Click en "Editar" para cambiar texto/variable
+   - Agregar paso (Pregunta/Mensaje/Fin)
+   - Arrastrar ⋮⋮ para reordenar
+   - Guardar
 
-2. **Onboarding Builder Visual** (2-3 horas)
-   - Página `/[workspace]/onboarding`
-   - React Flow canvas con drag & drop
-   - Node palette: Input, Conditional, Action, Complete
-   - Save/Load flow (mock en localStorage)
-   - **Este es el "wow factor" para el pitch**
+5. **Chat Preview** (`/demo/chat`)
+   - Escribir mensaje manual
+   - Click "Simular Conversación"
+   - Ver typing indicators + respuestas
 
-3. **Chat Preview** (1 hora)
-   - Página `/[workspace]/chat`
-   - UI de chat simple con mensajes mock
-   - Mostrar cómo se ve el asistente con su nombre customizado
-   - Opcional: simular respuestas con delay
+6. **WhatsApp** (`/demo/whatsapp`)
+   - Click "Conectar WhatsApp Business"
+   - Ver QR mock + instrucciones
+   - Estado cambia a "Conectado" después de 5s
+   - Ver stats de mensajes
 
-### Para Producción (Post-Funding)
+## 🎯 MVP Demo — COMPLETADO ✅
+
+Todas las páginas necesarias para el pitch a CEOs están listas:
+- ✅ Dashboard con selector de workspaces
+- ✅ Settings con preview en tiempo real
+- ✅ Knowledge Base con upload UI
+- ✅ Onboarding Builder (wow factor) ⭐
+- ✅ Chat Preview estilo WhatsApp
+- ✅ WhatsApp Connection con Kapso flow
+
+**Demo flow completo:** Dashboard → Settings → Knowledge → Onboarding → Chat → WhatsApp
+
+## 📄 Documentación de Pitch
+
+- ✅ **PITCH_SCRIPT.md** — Guión completo 15-20 min con:
+  - Opening hook + problema/solución
+  - Walkthrough de las 5 páginas
+  - Pricing & business model (94% margen)
+  - Manejo de 6 objeciones comunes
+  - Tips de presentación
+
+- ✅ **KAPSO_INTEGRATION.md** — Arquitectura técnica:
+  - Cómo integrar Kapso (Platform API)
+  - Código de webhooks + chat service
+  - Schema de Supabase (migración 002)
+  - Modelo de negocio ($0.047 margen/mensaje)
+
+## 🚀 Próximos Pasos (Post-Funding)
 
 4. **Backend Multi-Tenant Real**
    - Adaptar `Aly/` existente o construir `apps/api/`

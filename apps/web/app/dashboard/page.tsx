@@ -21,39 +21,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusIcon, BotIcon, UsersIcon, FileTextIcon } from "lucide-react";
-
-// Mock data - después se reemplaza con query real a Supabase
-const MOCK_WORKSPACES = [
-  {
-    id: "1",
-    slug: "demo",
-    name: "Demo Workspace",
-    assistant_name: "Aly",
-    subscription_status: "trial",
-    created_at: "2026-06-01",
-    stats: {
-      documents: 5,
-      conversations: 120,
-      users: 8,
-    },
-  },
-  {
-    id: "2",
-    slug: "apapachar",
-    name: "Apapáchar",
-    assistant_name: "Aly",
-    subscription_status: "active",
-    created_at: "2026-03-15",
-    stats: {
-      documents: 12,
-      conversations: 450,
-      users: 35,
-    },
-  },
-];
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  MOCK_WORKSPACES,
+  slugify,
+  type MockWorkspace,
+} from "@/lib/workspaces";
 
 export default function DashboardPage() {
-  const [workspaces] = useState(MOCK_WORKSPACES);
+  const router = useRouter();
+  const [workspaces, setWorkspaces] = useState<MockWorkspace[]>(MOCK_WORKSPACES);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newWorkspace, setNewWorkspace] = useState({
     name: "",
@@ -62,16 +40,28 @@ export default function DashboardPage() {
   });
 
   const handleCreateWorkspace = () => {
+    if (!newWorkspace.name.trim()) {
+      toast.error("Poné un nombre para tu asistente");
+      return;
+    }
     // TODO: Implementar creación real con Supabase
-    console.log("Creating workspace:", newWorkspace);
+    const created: MockWorkspace = {
+      id: newWorkspace.slug || slugify(newWorkspace.name),
+      slug: newWorkspace.slug || slugify(newWorkspace.name),
+      name: newWorkspace.name.trim(),
+      assistant_name: newWorkspace.assistant_name.trim() || "Aly",
+      subscription_status: "trial",
+      created_at: "2026-06-02",
+      stats: { documents: 0, conversations: 0, users: 0 },
+    };
+    setWorkspaces((prev) => [...prev, created]);
     setIsCreateOpen(false);
     setNewWorkspace({ name: "", slug: "", assistant_name: "Aly" });
+    toast.success(`Asistente "${created.name}" creado`);
   };
 
   const handleOpenWorkspace = (slug: string) => {
-    // TODO: Navegar a /[workspace]/settings
-    console.log("Opening workspace:", slug);
-    window.location.href = `/${slug}/settings`;
+    router.push(`/${slug}/settings`);
   };
 
   return (
@@ -79,18 +69,21 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Mis Asistentes
+          <h1 className="text-4xl font-semibold tracking-tight text-neutral-900">
+            Tus Asistentes
           </h1>
-          <p className="text-neutral-700 mt-1">
+          <p className="text-neutral-600 mt-2 text-lg">
             Seleccioná un workspace para gestionar tu asistente de IA
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button size="lg">
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Nuevo Asistente
+            <Button
+              size="lg"
+              className="h-12 px-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:scale-105"
+            >
+              <PlusIcon className="mr-2 h-5 w-5" />
+              Crear Asistente
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -107,28 +100,24 @@ export default function DashboardPage() {
                   id="name"
                   placeholder="Mi Empresa"
                   value={newWorkspace.name}
-                  onChange={(e) =>
-                    setNewWorkspace({ ...newWorkspace, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="slug">Slug (URL)</Label>
-                <Input
-                  id="slug"
-                  placeholder="mi-empresa"
-                  value={newWorkspace.slug}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const newName = e.target.value;
                     setNewWorkspace({
                       ...newWorkspace,
-                      slug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                    })
-                  }
+                      name: newName,
+                      slug: slugify(newName),
+                    });
+                  }}
                 />
-                <p className="text-xs text-neutral-500">
-                  URL: app.aly.com/{newWorkspace.slug || "tu-workspace"}
+              </div>
+
+              <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-3">
+                <p className="text-xs font-medium text-neutral-600 mb-1">URL del workspace</p>
+                <p className="text-sm font-mono text-neutral-900">
+                  app.aly.com/<span className="font-semibold text-blue-600">{newWorkspace.slug || "tu-workspace"}</span>
                 </p>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="assistant_name">Nombre del Asistente</Label>
                 <Input
@@ -139,6 +128,9 @@ export default function DashboardPage() {
                     setNewWorkspace({ ...newWorkspace, assistant_name: e.target.value })
                   }
                 />
+                <p className="text-xs text-neutral-500">
+                  Cómo se presenta el bot en las conversaciones
+                </p>
               </div>
             </div>
             <DialogFooter>
@@ -152,30 +144,30 @@ export default function DashboardPage() {
       </div>
 
       {/* Workspaces Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {workspaces.map((workspace) => (
           <Card
             key={workspace.id}
-            className="cursor-pointer transition-all hover:shadow-lg hover:border-blue-400"
+            className="cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:border-blue-400/50 p-8 group relative overflow-hidden"
             onClick={() => handleOpenWorkspace(workspace.slug)}
           >
-            <CardHeader>
+            <CardHeader className="p-0 mb-6">
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center">
-                    <BotIcon className="h-6 w-6 text-white" />
+                <div className="flex items-center gap-4">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
+                    <BotIcon className="h-8 w-8 text-white" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg text-neutral-900">
+                    <CardTitle className="text-xl font-semibold text-neutral-900 mb-1">
                       {workspace.name}
                     </CardTitle>
-                    <CardDescription className="text-sm text-neutral-600">
+                    <CardDescription className="text-base text-neutral-600">
                       {workspace.assistant_name}
                     </CardDescription>
                   </div>
                 </div>
                 <div
-                  className={`rounded-full px-2 py-1 text-xs font-medium ${
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                     workspace.subscription_status === "active"
                       ? "bg-green-100 text-green-700"
                       : workspace.subscription_status === "trial"
@@ -191,28 +183,34 @@ export default function DashboardPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div className="flex flex-col items-center gap-1">
-                  <FileTextIcon className="h-4 w-4 text-neutral-600" />
-                  <span className="font-semibold text-neutral-900">
+            <CardContent className="p-0">
+              <div className="grid grid-cols-3 gap-6">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center">
+                    <FileTextIcon className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-neutral-900">
                     {workspace.stats.documents}
                   </span>
-                  <span className="text-xs text-neutral-600">Docs</span>
+                  <span className="text-sm text-neutral-600">Docs</span>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <UsersIcon className="h-4 w-4 text-neutral-600" />
-                  <span className="font-semibold text-neutral-900">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-violet-50 flex items-center justify-center">
+                    <UsersIcon className="h-5 w-5 text-violet-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-neutral-900">
                     {workspace.stats.users}
                   </span>
-                  <span className="text-xs text-neutral-600">Usuarios</span>
+                  <span className="text-sm text-neutral-600">Usuarios</span>
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                  <BotIcon className="h-4 w-4 text-neutral-600" />
-                  <span className="font-semibold text-neutral-900">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center">
+                    <BotIcon className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-neutral-900">
                     {workspace.stats.conversations}
                   </span>
-                  <span className="text-xs text-neutral-600">Chats</span>
+                  <span className="text-sm text-neutral-600">Chats</span>
                 </div>
               </div>
             </CardContent>
@@ -222,16 +220,22 @@ export default function DashboardPage() {
 
       {/* Empty State */}
       {workspaces.length === 0 && (
-        <div className="text-center py-12">
-          <BotIcon className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+        <div className="text-center py-16">
+          <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <BotIcon className="h-10 w-10 text-white" />
+          </div>
+          <h3 className="text-2xl font-semibold text-neutral-900 mb-3">
             No tenés asistentes todavía
           </h3>
-          <p className="text-neutral-600 mb-4">
+          <p className="text-neutral-600 mb-6 text-lg">
             Creá tu primer asistente de IA para empezar
           </p>
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <PlusIcon className="mr-2 h-4 w-4" />
+          <Button
+            onClick={() => setIsCreateOpen(true)}
+            size="lg"
+            className="h-12 px-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40 transition-all hover:scale-105"
+          >
+            <PlusIcon className="mr-2 h-5 w-5" />
             Crear Mi Primer Asistente
           </Button>
         </div>

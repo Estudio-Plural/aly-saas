@@ -12,7 +12,7 @@ This monorepo contains:
 
 ## Stack
 
-- **Frontend:** Next.js 15+ (App Router), shadcn/ui, Tailwind CSS, React Flow
+- **Frontend:** Next.js 16 (App Router), shadcn/ui, Tailwind CSS, @dnd-kit
 - **Backend:** Bun, Elysia, LangGraph, Supabase (PostgreSQL + pgvector)
 - **Auth:** Clerk
 - **Billing:** Stripe
@@ -94,7 +94,7 @@ The RAG pipeline uses LangGraph with 12 nodes:
 
 ### Onboarding Builder
 
-Visual flow builder using React Flow. Flows are stored as JSONB (`{nodes, edges}`) and executed by the `OnboardingFlowService` at runtime.
+Sequential step editor (Question / Message / End) with drag-to-reorder via @dnd-kit and a live chat preview. Steps are serialized to JSON. A visual node-based flow builder with conditional branching is on the Pro roadmap.
 
 ## Deployment
 

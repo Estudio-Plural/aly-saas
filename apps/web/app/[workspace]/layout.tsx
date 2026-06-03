@@ -1,20 +1,17 @@
-import { ReactNode } from "react";
+import { ReactNode, use } from "react";
 import Link from "next/link";
-import { SettingsIcon, FileTextIcon, WorkflowIcon, BotIcon } from "lucide-react";
+import { WorkspaceSidebar } from "./workspace-sidebar";
+import { getWorkspaceBySlug } from "@/lib/workspaces";
 
 export default function WorkspaceLayout({
   children,
   params,
 }: {
   children: ReactNode;
-  params: { workspace: string };
+  params: Promise<{ workspace: string }>;
 }) {
-  const navigation = [
-    { name: "General", href: `/${params.workspace}/settings`, icon: SettingsIcon },
-    { name: "Conocimiento", href: `/${params.workspace}/knowledge`, icon: FileTextIcon },
-    { name: "Onboarding", href: `/${params.workspace}/onboarding`, icon: WorkflowIcon },
-    { name: "Chat", href: `/${params.workspace}/chat`, icon: BotIcon },
-  ];
+  const { workspace: workspaceSlug } = use(params);
+  const workspace = getWorkspaceBySlug(workspaceSlug);
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -27,8 +24,8 @@ export default function WorkspaceLayout({
               <span className="text-xl font-semibold text-neutral-900">Aly SaaS</span>
             </Link>
             <span className="text-neutral-400">/</span>
-            <span className="text-neutral-700 font-medium capitalize">
-              {params.workspace}
+            <span className="text-neutral-700 font-medium">
+              {workspace.name}
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -40,25 +37,7 @@ export default function WorkspaceLayout({
       {/* Layout con sidebar */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-8">
-          {/* Sidebar */}
-          <aside className="w-64 flex-shrink-0">
-            <nav className="space-y-1">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 transition-colors"
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.name}
-                  </Link>
-                );
-              })}
-            </nav>
-          </aside>
-
+          <WorkspaceSidebar workspace={workspaceSlug} />
           {/* Main content */}
           <main className="flex-1 max-w-4xl">{children}</main>
         </div>
