@@ -1,6 +1,13 @@
 # MVP Status - Aly SaaS
 
-**Última actualización:** 2026-06-01 14:30 PM
+**Última actualización:** 2026-06-11
+
+> ⚠️ **ACTUALIZACIÓN 2026-06-11 — la app ahora es funcional en local.**
+> Persistencia real en Postgres local (`aly_saas`), chat con LLM real (OpenRouter),
+> uploads de documentos a disco, onboarding persistido que corre en el chat.
+> El estado vigente está en **SESSION_RESUME.md**; lo que sigue abajo es el
+> snapshot histórico del 2026-06-01 (cuando todo era mock).
+> Nota: el proyecto Supabase `lroiqesjdmocmawtazhd` mencionado abajo **ya no existe**.
 
 ## ✅ Completado Hoy
 

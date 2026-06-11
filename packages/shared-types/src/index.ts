@@ -1,8 +1,11 @@
 // Shared TypeScript types between frontend and backend
+// (alineados con supabase/migrations — ver 001 y 003)
 
 export type WorkspaceRole = "owner" | "admin" | "member";
 
 export type SubscriptionStatus = "trial" | "active" | "canceled" | "past_due";
+
+export type KapsoConnectionStatus = "pending" | "connected" | "error";
 
 export interface Workspace {
   id: string;
@@ -11,6 +14,8 @@ export interface Workspace {
   assistant_name: string;
   owner_user_id: string;
   subscription_status: SubscriptionStatus;
+  whatsapp_phone_number: string | null;
+  kapso_connection_status: KapsoConnectionStatus;
   created_at: string;
   updated_at: string;
 }
@@ -31,41 +36,38 @@ export interface WorkspaceConfig {
   updated_at: string;
 }
 
+export interface Document {
+  id: string;
+  workspace_id: string;
+  name: string;
+  type: string;
+  size: number;
+  storage_path: string;
+  text_content: string | null;
+  created_at: string;
+}
+
+// Flujo de onboarding: pasos secuenciales (builder de la UI)
+export type OnboardingStepType = "question" | "message" | "end";
+
+export interface OnboardingStep {
+  id: string;
+  type: OnboardingStepType;
+  content: string;
+  /** Solo para type "question": variable donde se guarda la respuesta */
+  variable?: string;
+}
+
 export interface OnboardingFlow {
   id: string;
   workspace_id: string;
   name: string;
-  graph_definition: {
-    nodes: OnboardingNode[];
-    edges: OnboardingEdge[];
+  definition: {
+    steps: OnboardingStep[];
   };
   is_active: boolean;
   created_at: string;
   updated_at: string;
-}
-
-export type OnboardingNodeType =
-  | "input_text"
-  | "input_email"
-  | "input_phone"
-  | "input_select"
-  | "conditional"
-  | "action"
-  | "complete";
-
-export interface OnboardingNode {
-  id: string;
-  type: OnboardingNodeType;
-  data: Record<string, any>;
-  position: { x: number; y: number };
-}
-
-export interface OnboardingEdge {
-  id: string;
-  source: string;
-  target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
 }
 
 export interface OnboardingSession {
@@ -73,8 +75,8 @@ export interface OnboardingSession {
   flow_id: string;
   user_number: string;
   state: {
-    current_node: string;
-    answers: Record<string, any>;
+    current_step: string;
+    answers: Record<string, string>;
   };
   completed_at: string | null;
   created_at: string;

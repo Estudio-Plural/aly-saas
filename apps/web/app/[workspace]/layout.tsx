@@ -1,17 +1,22 @@
-import { ReactNode, use } from "react";
+import { ReactNode } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { WorkspaceSidebar } from "./workspace-sidebar";
-import { getWorkspaceBySlug } from "@/lib/workspaces";
+import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { DEMO_USER_EMAIL } from "@/lib/constants";
 
-export default function WorkspaceLayout({
+export const dynamic = "force-dynamic";
+
+export default async function WorkspaceLayout({
   children,
   params,
 }: {
   children: ReactNode;
   params: Promise<{ workspace: string }>;
 }) {
-  const { workspace: workspaceSlug } = use(params);
-  const workspace = getWorkspaceBySlug(workspaceSlug);
+  const { workspace: workspaceSlug } = await params;
+  const workspace = await getWorkspaceBySlug(workspaceSlug);
+  if (!workspace) redirect("/dashboard");
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -29,7 +34,7 @@ export default function WorkspaceLayout({
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm text-neutral-700">demo@plural-estudio.co</div>
+            <div className="text-sm text-neutral-700">{DEMO_USER_EMAIL}</div>
           </div>
         </div>
       </header>

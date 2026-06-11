@@ -11,7 +11,7 @@ ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS whatsapp_phone_number TEXT UNIQU
 ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS whatsapp_display_name TEXT;
 ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS kapso_connection_status TEXT DEFAULT 'pending'; -- pending | connected | error
 
-CREATE INDEX idx_workspaces_whatsapp_phone ON workspaces(whatsapp_phone_number);
+CREATE INDEX IF NOT EXISTS idx_workspaces_whatsapp_phone ON workspaces(whatsapp_phone_number);
 
 COMMENT ON COLUMN workspaces.kapso_api_key IS 'API key del proyecto Kapso para este workspace';
 COMMENT ON COLUMN workspaces.kapso_webhook_secret IS 'Secret para verificar webhooks de Kapso';
@@ -23,7 +23,7 @@ COMMENT ON COLUMN workspaces.kapso_connection_status IS 'pending (no conectado) 
 -- ============================================================================
 
 ALTER TABLE users_data ADD COLUMN IF NOT EXISTS whatsapp_id TEXT;
-CREATE INDEX idx_users_data_whatsapp_id ON users_data(whatsapp_id, workspace_id);
+CREATE INDEX IF NOT EXISTS idx_users_data_whatsapp_id ON users_data(whatsapp_id, workspace_id);
 
 COMMENT ON COLUMN users_data.whatsapp_id IS 'ID del usuario en WhatsApp (phone number o BSUID)';
 
@@ -45,9 +45,9 @@ CREATE TABLE IF NOT EXISTS whatsapp_messages (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_whatsapp_messages_workspace ON whatsapp_messages(workspace_id, created_at DESC);
-CREATE INDEX idx_whatsapp_messages_user ON whatsapp_messages(user_id, created_at DESC);
-CREATE INDEX idx_whatsapp_messages_kapso_id ON whatsapp_messages(kapso_message_id);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_workspace ON whatsapp_messages(workspace_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_user ON whatsapp_messages(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_whatsapp_messages_kapso_id ON whatsapp_messages(kapso_message_id);
 
 COMMENT ON TABLE whatsapp_messages IS 'Log de todos los mensajes de WhatsApp con tracking de estado';
 COMMENT ON COLUMN whatsapp_messages.status IS 'Estado del mensaje según webhooks de Kapso';
