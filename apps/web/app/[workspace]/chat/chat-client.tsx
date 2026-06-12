@@ -268,15 +268,15 @@ export function ChatClient({
       <div className="max-w-3xl mx-auto">
         <Card className="h-[700px] flex flex-col overflow-hidden shadow-lg border border-neutral-200">
           {/* Chat Header */}
-          <div className="bg-blue-600 text-white px-6 py-4 flex items-center gap-3">
+          <div className="bg-neutral-900 text-white px-6 py-4 flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-              <span className="text-blue-600 font-bold text-xl">
+              <span className="text-neutral-900 font-bold text-xl">
                 {assistantName.charAt(0)}
               </span>
             </div>
             <div>
               <div className="font-bold text-lg">{assistantName}</div>
-              <div className="text-sm text-blue-100">Asistente virtual</div>
+              <div className="text-sm text-neutral-400">Asistente virtual</div>
             </div>
           </div>
 
@@ -301,7 +301,7 @@ export function ChatClient({
                 >
                   {/* Avatar for assistant */}
                   {message.sender === "assistant" && (
-                    <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-bold text-sm">
                         {assistantName.charAt(0)}
                       </span>
@@ -313,7 +313,7 @@ export function ChatClient({
                     <div
                       className={`rounded-2xl px-5 py-3.5 ${
                         message.sender === "user"
-                          ? "bg-blue-600 text-white shadow-sm"
+                          ? "bg-neutral-900 text-white shadow-sm"
                           : "bg-white text-neutral-900 border border-neutral-200 shadow-sm"
                       }`}
                     >
@@ -348,20 +348,20 @@ export function ChatClient({
             {isTyping && (
               <div className="flex justify-start">
                 <div className="flex gap-3 max-w-[80%]">
-                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                  <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-lg">
                     <span className="text-white font-bold text-sm">
                       {assistantName.charAt(0)}
                     </span>
                   </div>
                   <div className="bg-white border border-neutral-200 rounded-2xl px-5 py-4 shadow-md">
                     <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full animate-bounce" />
+                      <div className="w-2.5 h-2.5 bg-neutral-300 rounded-full animate-bounce" />
                       <div
-                        className="w-2.5 h-2.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full animate-bounce"
+                        className="w-2.5 h-2.5 bg-neutral-300 rounded-full animate-bounce"
                         style={{ animationDelay: "0.2s" }}
                       />
                       <div
-                        className="w-2.5 h-2.5 bg-gradient-to-br from-pink-500 to-blue-500 rounded-full animate-bounce"
+                        className="w-2.5 h-2.5 bg-neutral-300 rounded-full animate-bounce"
                         style={{ animationDelay: "0.4s" }}
                       />
                     </div>
@@ -382,13 +382,13 @@ export function ChatClient({
                 onKeyDown={handleKeyPress}
                 placeholder="Escribí un mensaje..."
                 disabled={isBusy}
-                className="flex-1 h-12 px-5 border-2 border-neutral-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base"
+                className="flex-1 h-12 px-5 border-2 border-neutral-300 rounded-xl focus:border-neutral-400 focus:ring-2 focus:ring-neutral-900/10 text-base"
               />
               <Button
                 onClick={handleSendMessage}
                 disabled={!inputValue.trim() || isBusy}
                 aria-label="Enviar mensaje"
-                className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg rounded-xl"
+                className="h-12 px-6 bg-neutral-900 hover:bg-neutral-800 rounded-xl"
               >
                 <SendIcon className="h-5 w-5" />
               </Button>
@@ -403,9 +403,9 @@ export function ChatClient({
       </div>
 
       {/* Info Card */}
-      <Card className="bg-blue-50 border-blue-200 p-4">
+      <Card className="bg-neutral-50 border-neutral-200 p-4">
         <div className="flex gap-3">
-          <div className="text-blue-600">
+          <div className="text-neutral-700">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"

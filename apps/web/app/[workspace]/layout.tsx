@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { WorkspaceSidebar } from "./workspace-sidebar";
 import { getWorkspaceBySlug } from "@/lib/data/workspaces";
-import { DEMO_USER_EMAIL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -21,20 +20,24 @@ export default async function WorkspaceLayout({
   return (
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
-      <header className="border-b bg-white">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700" />
-              <span className="text-xl font-semibold text-neutral-900">Aly SaaS</span>
+      <header className="border-b border-neutral-200 bg-white">
+        <div className="container mx-auto flex h-14 items-center px-4">
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard" className="flex items-center gap-2.5">
+              <div className="h-7 w-7 rounded-lg bg-neutral-900 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">P</span>
+              </div>
+              <span className="text-[15px] font-semibold text-neutral-900">
+                Plural{" "}
+                <span className="text-neutral-500 font-normal">
+                  Conversational System
+                </span>
+              </span>
             </Link>
-            <span className="text-neutral-400">/</span>
-            <span className="text-neutral-700 font-medium">
+            <span className="text-neutral-300">/</span>
+            <span className="text-sm text-neutral-700 font-medium">
               {workspace.name}
             </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-neutral-700">{DEMO_USER_EMAIL}</div>
           </div>
         </div>
       </header>

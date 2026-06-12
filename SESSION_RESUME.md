@@ -34,6 +34,10 @@
   summary/keywords/flags en `conversations_data` → el inbox ya no depende
   del seed para las conversaciones del preview. Verificado e2e: un reclamo
   de cobro doble generó `HIGH-...` + `MEDIUM-...` correctos.
+- **Rebrand + restyle:** el producto ahora se llama **Plural Conversational
+  System** (header nuevo con logo "P", se quitó el email demo). UI estilo
+  Chatbase: primary negro, sin gradientes, bordes y fondos neutros; el color
+  queda solo donde significa algo (estados, severidades, tipos de paso, links).
 - **Builder de onboarding renovado (no-code):** edición directa sin modo
   "Editar" (el texto siempre es un textarea), **preview interactiva** que corre
   el flujo de verdad (typing, respuestas de prueba, variables interpoladas,

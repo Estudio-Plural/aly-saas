@@ -153,7 +153,7 @@ export function ConversationsClient({
                     key={conv.conversationId}
                     onClick={() => openConversation(conv.conversationId)}
                     className={`w-full text-left rounded-lg px-3 py-3 transition-colors ${
-                      isActive ? "bg-blue-50" : "hover:bg-neutral-50"
+                      isActive ? "bg-neutral-100" : "hover:bg-neutral-50"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-1">
@@ -275,7 +275,7 @@ export function ConversationsClient({
                           <div
                             className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
                               message.sender === "assistant"
-                                ? "bg-blue-600 text-white"
+                                ? "bg-neutral-900 text-white"
                                 : "bg-white text-neutral-900 border border-neutral-200"
                             }`}
                           >
@@ -285,7 +285,7 @@ export function ConversationsClient({
                             <p
                               className={`text-[11px] mt-1 ${
                                 message.sender === "assistant"
-                                  ? "text-blue-200"
+                                  ? "text-neutral-400"
                                   : "text-neutral-400"
                               }`}
                             >

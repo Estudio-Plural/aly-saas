@@ -124,7 +124,7 @@ export function WhatsAppClient({
             </Badge>
           )}
           {status === 'connecting' && (
-            <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+            <Badge className="bg-neutral-100 text-neutral-700 border-neutral-200">
               Conectando...
             </Badge>
           )}
@@ -135,16 +135,16 @@ export function WhatsAppClient({
       </div>
 
       {/* Info Card */}
-      <Card className="p-4 bg-blue-50 border border-blue-200">
+      <Card className="p-4 bg-neutral-50 border border-neutral-200">
         <div className="flex gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0">
             <Info className="w-5 h-5 text-white" />
           </div>
           <div className="space-y-1 text-sm">
-            <p className="text-blue-900 font-semibold">
+            <p className="text-neutral-900 font-semibold">
               ¿Cómo funciona la integración?
             </p>
-            <p className="text-blue-800">
+            <p className="text-neutral-700">
               Usamos Kapso para conectar tu número de WhatsApp. Es seguro, rápido, y no requiere acceso a la API de Meta.
               Podés desconectar en cualquier momento. (En este entorno local la conexión es simulada.)
             </p>
@@ -192,8 +192,8 @@ export function WhatsAppClient({
         {/* CONNECTING STATE */}
         {status === 'connecting' && (
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-blue-100">
-              <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-neutral-100">
+              <Loader2 className="w-12 h-12 text-neutral-900 animate-spin" />
             </div>
 
             <div className="space-y-2">
@@ -206,14 +206,14 @@ export function WhatsAppClient({
             </div>
 
             {/* Mock QR Code */}
-            <div className="inline-flex items-center justify-center w-64 h-64 rounded-2xl bg-white border-4 border-blue-600">
+            <div className="inline-flex items-center justify-center w-64 h-64 rounded-2xl bg-white border-4 border-neutral-900">
               <QrCode className="w-40 h-40 text-gray-300" />
             </div>
 
             <div className="space-y-3">
               <div className="bg-gray-50 rounded-xl p-6 text-left max-w-md mx-auto border border-gray-200">
                 <p className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">ℹ</span>
+                  <span className="w-6 h-6 rounded-full bg-neutral-900 text-white text-xs flex items-center justify-center">ℹ</span>
                   Pasos para conectar:
                 </p>
                 <div className="space-y-3">
@@ -224,7 +224,7 @@ export function WhatsAppClient({
                     'Escaneá este código QR'
                   ].map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-sm font-semibold flex items-center justify-center flex-shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-neutral-900 text-white text-sm font-semibold flex items-center justify-center flex-shrink-0">
                         {i + 1}
                       </div>
                       <p className="text-sm text-gray-700 pt-0.5">{step}</p>
@@ -370,7 +370,7 @@ export function WhatsAppClient({
             <Card className="p-6 border border-gray-200 shadow-sm">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg bg-neutral-900 flex items-center justify-center">
                     <MessageCircle className="w-5 h-5 text-white" />
                   </div>
                 </div>

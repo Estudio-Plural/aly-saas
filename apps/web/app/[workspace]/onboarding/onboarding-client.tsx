@@ -195,7 +195,7 @@ function SortableStepCard({
               <button
                 key={variable}
                 onClick={() => onChange({ content: `${step.content}{${variable}}` })}
-                className="text-xs font-mono px-2 py-0.5 rounded-full bg-white border border-neutral-300 text-neutral-700 hover:border-blue-400 hover:text-blue-700 transition-colors"
+                className="text-xs font-mono px-2 py-0.5 rounded-full bg-white border border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:text-neutral-900 transition-colors"
               >
                 {`{${variable}}`}
               </button>
@@ -327,21 +327,21 @@ function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: s
   return (
     <Card className="h-full flex flex-col overflow-hidden border border-neutral-200">
       {/* Header estilo chat */}
-      <div className="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
+      <div className="bg-neutral-900 text-white px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="h-9 w-9 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-            <span className="text-blue-600 font-bold">{assistantName.charAt(0)}</span>
+            <span className="text-neutral-900 font-bold">{assistantName.charAt(0)}</span>
           </div>
           <div>
             <div className="font-semibold text-sm">{assistantName}</div>
-            <div className="text-xs text-blue-100">Probá tu flujo acá</div>
+            <div className="text-xs text-neutral-400">Probá tu flujo acá</div>
           </div>
         </div>
         <Button
           onClick={restart}
           size="sm"
           variant="ghost"
-          className="text-white hover:bg-blue-700 hover:text-white h-8"
+          className="text-white hover:bg-neutral-800 hover:text-white h-8"
         >
           <RotateCcwIcon className="h-4 w-4 mr-1.5" />
           Reiniciar
@@ -369,7 +369,7 @@ function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: s
             <div
               className={`max-w-[85%] rounded-2xl px-4 py-2.5 ${
                 message.sender === "user"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-neutral-900 text-white"
                   : "bg-white text-neutral-900 border border-neutral-200 shadow-sm"
               }`}
             >
@@ -384,13 +384,13 @@ function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: s
           <div className="flex justify-start">
             <div className="bg-white border border-neutral-200 rounded-2xl px-4 py-3 shadow-sm">
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" />
                 <div
-                  className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce"
                   style={{ animationDelay: "0.15s" }}
                 />
                 <div
-                  className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"
+                  className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce"
                   style={{ animationDelay: "0.3s" }}
                 />
               </div>
@@ -434,7 +434,7 @@ function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: s
             onClick={handleSend}
             disabled={!inputValue.trim() || isTyping || isDone}
             aria-label="Enviar respuesta"
-            className="h-10 px-4 bg-blue-600 hover:bg-blue-700"
+            className="h-10 px-4 bg-neutral-900 hover:bg-neutral-800"
           >
             <SendIcon className="h-4 w-4" />
           </Button>
@@ -558,7 +558,7 @@ export function OnboardingClient({
           <Button
             onClick={saveFlow}
             disabled={!isDirty || hasEmptySteps || isSaving}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
+            className="bg-neutral-900 hover:bg-neutral-800 text-white"
           >
             <Save className="h-4 w-4 mr-2" />
             {isSaving ? "Guardando..." : isDirty ? "Guardar" : "Guardado ✓"}
@@ -623,7 +623,7 @@ export function OnboardingClient({
                         content: `${prev.content}{${variable}}`,
                       }))
                     }
-                    className="text-xs font-mono px-2 py-0.5 rounded-full bg-white border border-neutral-300 text-neutral-700 hover:border-purple-400 hover:text-purple-700 transition-colors"
+                    className="text-xs font-mono px-2 py-0.5 rounded-full bg-white border border-neutral-300 text-neutral-700 hover:border-neutral-400 hover:text-neutral-900 transition-colors"
                   >
                     {`{${variable}}`}
                   </button>
@@ -641,7 +641,7 @@ export function OnboardingClient({
             <Button
               onClick={() => addStep("question")}
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white h-9"
+              variant="outline" className="h-9"
             >
               <PlusIcon className="h-3.5 w-3.5 mr-1.5" />
               Pregunta
@@ -649,7 +649,7 @@ export function OnboardingClient({
             <Button
               onClick={() => addStep("message")}
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white h-9"
+              variant="outline" className="h-9"
             >
               <PlusIcon className="h-3.5 w-3.5 mr-1.5" />
               Mensaje
@@ -657,14 +657,14 @@ export function OnboardingClient({
           </div>
 
           {/* Info Card */}
-          <Card className="p-4 bg-blue-50 border-blue-200">
+          <Card className="p-4 bg-neutral-50 border-neutral-200">
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0">
                 <MessageSquare className="h-4 w-4 text-white" />
               </div>
               <div className="text-sm">
-                <p className="font-semibold text-blue-900 mb-1">¿Cómo funciona?</p>
-                <ul className="text-blue-800 space-y-1 text-xs">
+                <p className="font-semibold text-neutral-900 mb-1">¿Cómo funciona?</p>
+                <ul className="text-neutral-700 space-y-1 text-xs">
                   <li>
                     • <strong>Pregunta:</strong> el asistente pregunta y guarda la
                     respuesta con el nombre que elijas

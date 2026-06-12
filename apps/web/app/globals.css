@@ -7,27 +7,27 @@
   --background: #ffffff;
   --foreground: #0f172a;
 
-  /* Primary - Blue/Violet gradient system */
-  --primary: #6366f1;
+  /* Primary - Negro estilo Chatbase (CTAs sólidos, sin gradientes) */
+  --primary: #18181b;
   --primary-foreground: #ffffff;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
+  --primary-light: #3f3f46;
+  --primary-dark: #09090b;
 
-  /* Accent - Lighter blues */
+  /* Accent - Un solo azul de apoyo, usado con moderación */
   --accent: #3b82f6;
   --accent-foreground: #ffffff;
   --accent-light: #60a5fa;
 
-  /* Secondary - Violet */
-  --secondary: #8b5cf6;
-  --secondary-foreground: #ffffff;
+  /* Secondary - Gris claro (botones secundarios) */
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
 
   /* Neutrals - Modern grays */
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #6366f1;
+  --muted: #fafafa;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #18181b;
 
   /* Card */
   --card: #ffffff;
@@ -50,7 +50,7 @@
   --warning-foreground: #ffffff;
 
   /* Radius */
-  --radius: 0.5rem;
+  --radius: 0.625rem;
 }
 
 /* (Dark mode deshabilitado a propósito: la app es light-only para la demo.) */

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aly — Asistentes de IA para WhatsApp",
+  title: "Plural Conversational System",
   description:
     "Creá asistentes de WhatsApp con IA personalizados para tu negocio. Multi-tenant, sin código.",
 };

@@ -88,7 +88,7 @@ export function SettingsClient({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-neutral-50 pb-32">
+    <div className="min-h-screen bg-neutral-50 pb-32">
       <div className="mx-auto max-w-5xl px-8 py-10">
         {/* Header */}
         <div className="mb-8">
@@ -122,7 +122,7 @@ export function SettingsClient({
                     updateField({ name: newName, slug: slugify(newName) });
                   }}
                   placeholder="Mi Empresa"
-                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
                 <p className="text-xs text-neutral-500">
                   Este nombre se muestra en el dashboard y notificaciones
@@ -132,7 +132,7 @@ export function SettingsClient({
               <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4">
                 <p className="text-xs font-medium text-neutral-600 mb-1">URL de tu workspace</p>
                 <p className="text-sm font-mono text-neutral-900">
-                  app.aly.com/<span className="font-semibold text-blue-600">{workspace.slug}</span>
+                  app.plural.com/<span className="font-semibold text-neutral-900">{workspace.slug}</span>
                 </p>
                 <p className="text-xs text-neutral-500 mt-2">
                   Se genera automáticamente desde el nombre
@@ -159,7 +159,7 @@ export function SettingsClient({
                   value={workspace.assistant_name}
                   onChange={(e) => updateField({ assistant_name: e.target.value })}
                   placeholder="Aly"
-                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
                 <p className="text-xs text-neutral-500">
                   Este nombre aparece en las respuestas del bot y en el chat
@@ -167,7 +167,7 @@ export function SettingsClient({
               </div>
 
               {/* Preview Card with Gradient Border */}
-              <div className="relative p-[2px] rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500">
+              <div className="relative p-px rounded-xl bg-neutral-200">
                 <div className="bg-white rounded-xl p-6">
                   <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">
                     Vista Previa
@@ -175,7 +175,7 @@ export function SettingsClient({
                   <div className="space-y-4">
                     {/* User Message */}
                     <div className="flex justify-end">
-                      <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 px-5 py-3 max-w-[80%] shadow-md">
+                      <div className="rounded-2xl bg-neutral-900 px-5 py-3 max-w-[80%] shadow-md">
                         <p className="text-white text-sm">
                           Hola
                         </p>
@@ -183,7 +183,7 @@ export function SettingsClient({
                     </div>
                     {/* Assistant Response */}
                     <div className="flex gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center flex-shrink-0 shadow-md">
+                      <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-md">
                         <span className="text-white font-semibold text-sm">
                           {workspace.assistant_name.charAt(0)}
                         </span>
@@ -217,7 +217,7 @@ export function SettingsClient({
                   <div className="flex items-center gap-3">
                     <div className="text-sm font-medium text-neutral-900">Plan Actual</div>
                     {workspace.subscription_status === "trial" && (
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-sm">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-neutral-900 text-white shadow-sm">
                         Trial
                       </span>
                     )}
@@ -289,7 +289,7 @@ export function SettingsClient({
           <Button
             onClick={handleSave}
             disabled={isSaving || !isDirty}
-            className="h-11 px-8 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+            className="h-11 px-8 bg-neutral-900 hover:bg-neutral-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
           >
             <SaveIcon className="mr-2 h-4 w-4" />
             {isSaving ? "Guardando..." : "Guardar Cambios"}

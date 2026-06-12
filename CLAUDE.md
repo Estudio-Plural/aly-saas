@@ -1,7 +1,9 @@
 # CLAUDE.md — Aly SaaS
 
-MVP de Aly: plataforma multi-tenant de asistentes de IA para WhatsApp (pitch a
-CEOs/inversores). Repo: `Estudio-Plural/aly-saas`, branch de trabajo `main`.
+MVP de **Plural Conversational System** (nombre de producto en la UI desde
+2026-06-12; "Aly" queda como nombre interno/repo): plataforma multi-tenant de
+asistentes de IA para WhatsApp (pitch a CEOs/inversores).
+Repo: `Estudio-Plural/aly-saas`, branch de trabajo `main`.
 
 **Visión de producto (definida por Daniel):** el usuario es **no-code** — entra,
 crea su propio Aly y todo lo técnico es automático (metadatos de documentos,
@@ -91,6 +93,11 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 - UI en español rioplatense (vos/tenés). Toasts con `sonner`; confirmaciones con
   `ConfirmDialog` (nunca `alert`/`confirm`).
+- **Estética estilo Chatbase** (pedido de Daniel): light, neutral, primary negro
+  (`--primary: #18181b` en globals.css), **sin gradientes**. Color solo con
+  significado: verde/azul en badges de estado, severidades de alertas
+  (rojo/ámbar), tipos de paso del onboarding (azul/verde/morado) y links.
+  No mostrar el email del usuario demo en los headers.
 - Commits estilo `feat:`/`fix:`/`chore:` con resumen en español.
 - Docs de pitch: `PITCH_SCRIPT.md`, `DEMO_CHECKLIST.md`. `KAPSO_INTEGRATION.md`
   es pseudocódigo aspiracional (menciona Prisma que no existe) — no tomarlo

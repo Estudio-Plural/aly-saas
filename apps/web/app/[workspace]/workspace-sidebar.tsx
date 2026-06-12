@@ -35,11 +35,11 @@ export function WorkspaceSidebar({ workspace }: { workspace: string }) {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
                 isActive
-                  ? "bg-blue-50 text-blue-700 hover:bg-blue-100"
-                  : "text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900"
+                  ? "bg-neutral-100 text-neutral-900"
+                  : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
               {item.name}
             </Link>
           );

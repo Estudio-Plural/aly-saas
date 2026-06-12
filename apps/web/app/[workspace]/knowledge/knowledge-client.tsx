@@ -177,14 +177,14 @@ export function KnowledgeClient({
               min-h-64 border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer
               ${
                 isDragging
-                  ? "border-blue-600 bg-gradient-to-br from-blue-50 to-blue-100/50 scale-[1.02]"
-                  : "border-transparent bg-gradient-to-br from-neutral-100 to-neutral-200/50 hover:from-blue-50 hover:to-blue-100/30 hover:scale-[1.01] [background-clip:padding-box] relative before:absolute before:inset-0 before:rounded-lg before:p-[2px] before:bg-gradient-to-br before:from-blue-400 before:to-blue-600 before:-z-10 before:content-['']"
+                  ? "border-neutral-900 bg-neutral-100"
+                  : "border-neutral-300 bg-neutral-50 hover:bg-neutral-100 hover:border-neutral-400"
               }
             `}
             onClick={handleSelectFiles}
           >
             <div className="flex flex-col items-center justify-center gap-4 h-full">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+              <div className="h-16 w-16 rounded-full bg-neutral-900 flex items-center justify-center shadow-lg">
                 <UploadIcon className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -240,11 +240,11 @@ export function KnowledgeClient({
                   {documents.map((doc) => (
                     <TableRow
                       key={doc.id}
-                      className="border-0 hover:bg-blue-50/50 transition-colors"
+                      className="border-0 hover:bg-neutral-50 transition-colors"
                     >
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                          <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center shadow-sm flex-shrink-0">
                             <FileTextIcon className="h-5 w-5 text-white" />
                           </div>
                           <div className="min-w-0">
@@ -322,9 +322,9 @@ export function KnowledgeClient({
       </Card>
 
       {/* Info adicional */}
-      <div className="rounded-lg bg-gradient-to-br from-blue-50 to-blue-100/30 p-6 relative overflow-hidden before:absolute before:inset-0 before:rounded-lg before:p-[1px] before:bg-gradient-to-br before:from-blue-300 before:to-blue-500 before:-z-10 before:content-['']">
-        <div className="flex gap-4 relative z-10">
-          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg flex-shrink-0">
+      <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-6">
+        <div className="flex gap-4">
+          <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center shadow-lg flex-shrink-0">
             <FileTextIcon className="h-5 w-5 text-white" />
           </div>
           <div className="flex-1">

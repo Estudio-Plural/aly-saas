@@ -69,7 +69,7 @@ async function openRouterFetch(body: Record<string, unknown>): Promise<Response>
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "Aly SaaS (local)",
+      "X-Title": "Plural Conversational System (local)",
     },
     body: JSON.stringify(body),
   });
