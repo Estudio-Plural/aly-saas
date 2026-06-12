@@ -43,16 +43,33 @@ export async function removeWorkspaceUploads(workspaceId: string): Promise<void>
   await fs.rm(path.join(UPLOADS_ROOT, workspaceId), { recursive: true, force: true });
 }
 
-/** Texto plano para inyectar al chat (solo formatos de texto, capado). */
-export function extractTextContent(
+/** Texto plano para inyectar al chat (TXT/MD/CSV y PDF, capado). */
+export async function extractTextContent(
   fileName: string,
   mimeType: string,
   data: Buffer,
   maxChars = 20000
-): string | null {
+): Promise<string | null> {
   const ext = path.extname(fileName).toLowerCase();
+
   const isText =
     mimeType.startsWith("text/") || [".txt", ".md", ".markdown", ".csv"].includes(ext);
-  if (!isText) return null;
-  return data.toString("utf8").slice(0, maxChars);
+  if (isText) {
+    return data.toString("utf8").slice(0, maxChars);
+  }
+
+  if (ext === ".pdf" || mimeType === "application/pdf") {
+    try {
+      const { extractText } = await import("unpdf");
+      const { text } = await extractText(new Uint8Array(data), { mergePages: true });
+      const cleaned = text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+      return cleaned ? cleaned.slice(0, maxChars) : null;
+    } catch (error) {
+      // PDF escaneado/corrupto: se guarda igual, solo sin texto para el chat
+      console.error(`[uploads] No se pudo extraer texto de ${fileName}:`, error);
+      return null;
+    }
+  }
+
+  return null;
 }

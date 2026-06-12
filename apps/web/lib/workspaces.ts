@@ -48,6 +48,24 @@ export type ChatMessage = {
   timestamp: string;
 };
 
+/** Fila del inbox de conversaciones (lista agregada por conversación). */
+export type ConversationSummary = {
+  conversationId: string;
+  clientNumber: string;
+  userName: string | null;
+  isWebPreview: boolean;
+  lastMessage: string;
+  lastMessageRole: "user" | "assistant";
+  messagesCount: number;
+  isOpen: boolean;
+  startedAt: string;
+  lastAt: string;
+  summary: string | null;
+  keywords: string[];
+  flags: string | null;
+  flagSeverity: string | null;
+};
+
 /** Convierte un nombre en un slug URL-safe (sin acentos ni símbolos). */
 export function slugify(name: string): string {
   return (

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -47,7 +49,9 @@ export function ChatClient({
   );
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const isBusy = isTyping || isStreaming;
 
   // Estado del flujo de onboarding (solo cliente; el transcript se persiste)
   const flowIndexRef = useRef(0);
@@ -132,25 +136,67 @@ export function ChatClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "message", message: text }),
       });
-      const data = await res.json();
+
       if (!res.ok) {
-        toast.error(data.error ?? "No se pudo obtener respuesta del asistente");
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "No se pudo obtener respuesta del asistente");
         return;
       }
-      const reply = data.messages?.find(
-        (msg: ChatMessage) => msg.sender === "assistant"
-      );
-      if (reply) setMessages((prev) => [...prev, reply]);
+
+      // Sin API key configurada el endpoint responde JSON; con LLM, streamea texto.
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        const reply = data.messages?.find(
+          (msg: ChatMessage) => msg.sender === "assistant"
+        );
+        if (reply) setMessages((prev) => [...prev, reply]);
+        return;
+      }
+
+      if (!res.body) {
+        toast.error("El asistente no devolvió respuesta");
+        return;
+      }
+
+      setIsStreaming(true);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      const messageId = crypto.randomUUID();
+      let accumulated = "";
+      let started = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        const snapshot = accumulated;
+        if (!started) {
+          started = true;
+          setIsTyping(false);
+          setMessages((prev) => [
+            ...prev,
+            { ...localMessage(snapshot, "assistant"), id: messageId },
+          ]);
+        } else {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId ? { ...msg, text: snapshot } : msg
+            )
+          );
+        }
+      }
     } catch {
       toast.error("Error de conexión con el asistente");
     } finally {
       setIsTyping(false);
+      setIsStreaming(false);
     }
   };
 
   const handleSendMessage = async () => {
     const text = inputValue.trim();
-    if (!text || isTyping) return;
+    if (!text || isBusy) return;
     setInputValue("");
     setMessages((prev) => [...prev, localMessage(text, "user")]);
 
@@ -209,7 +255,7 @@ export function ChatClient({
         </div>
         <Button
           onClick={handleReset}
-          disabled={isResetting || isTyping}
+          disabled={isResetting || isBusy}
           variant="outline"
           className="px-6 py-3 h-auto text-base font-semibold"
         >
@@ -271,9 +317,17 @@ export function ChatClient({
                           : "bg-white text-neutral-900 border border-neutral-200 shadow-sm"
                       }`}
                     >
-                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                        {message.text}
-                      </p>
+                      {message.sender === "assistant" ? (
+                        <div className="text-sm leading-relaxed space-y-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1 [&_strong]:font-semibold [&_a]:text-blue-600 [&_a]:underline [&_code]:rounded [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:text-[0.85em]">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {message.text}
+                          </ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {message.text}
+                        </p>
+                      )}
                     </div>
                     <span
                       className={`text-xs text-neutral-500 mt-1.5 px-2 ${
@@ -327,12 +381,12 @@ export function ChatClient({
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
                 placeholder="Escribí un mensaje..."
-                disabled={isTyping}
+                disabled={isBusy}
                 className="flex-1 h-12 px-5 border-2 border-neutral-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 text-base"
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isTyping}
+                disabled={!inputValue.trim() || isBusy}
                 aria-label="Enviar mensaje"
                 className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg rounded-xl"
               >

@@ -47,12 +47,16 @@ cd apps/web && npx next dev    # http://localhost:3000
 
 - `lib/db.ts` — cliente postgres.js. **Solo importar desde código de servidor.**
 - `lib/data/*.ts` — queries por entidad (workspaces, documents, onboarding,
-  chat, whatsapp). Las fechas se devuelven como ISO strings.
+  chat, conversations, whatsapp). Las fechas se devuelven como ISO strings.
 - `lib/llm.ts` — chat vía OpenRouter; system prompt = identidad del workspace +
-  override en `workspace_configs.prompts.system` + texto de documentos TXT/MD.
+  override en `workspace_configs.prompts.system` + texto de documentos.
   Modelo: `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`), override por
-  workspace en `workspace_configs.model_preferences.chat`.
+  workspace en `workspace_configs.model_preferences.chat`. La ruta de chat
+  **streamea** la respuesta (`streamChatCompletion`, SSE de OpenRouter →
+  `text/plain` chunked al cliente; fallback JSON si no hay API key).
 - `lib/uploads.ts` — archivos en `apps/web/.uploads/` (gitignoreado).
+  `extractTextContent` es async: TXT/MD/CSV directo y **PDF vía `unpdf`**;
+  ese texto entra al system prompt del chat.
 - Patrón de páginas: `page.tsx` = server component que hace fetch a la DB y
   redirige a `/dashboard` si el workspace no existe; la UI vive en
   `*-client.tsx` (`"use client"`). Mantener este patrón al agregar páginas.
@@ -69,7 +73,7 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 | Real | Simulado / pendiente |
 |---|---|
-| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, onboarding persistido, chat con LLM + historial, stats del dashboard | Conexión WhatsApp/Kapso (teatro persistido en DB), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, RAG con embeddings (PDFs solo se almacenan) |
+| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`, con seed de la migración 004), stats del dashboard | Conexión WhatsApp/Kapso (teatro persistido en DB), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, RAG con embeddings (el conocimiento se inyecta como texto plano al prompt), análisis automático de conversaciones (summary/flags vienen del seed) |
 
 ## Convenciones
 

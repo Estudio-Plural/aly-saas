@@ -314,9 +314,10 @@ export function KnowledgeClient({
               ¿Cómo funciona la base de conocimiento?
             </p>
             <p className="text-sm text-neutral-700 leading-relaxed">
-              Los documentos de texto (TXT, MD, CSV) se inyectan directamente al contexto
-              del asistente: probalo en la Vista Previa del Chat. Los PDF y DOC se guardan
-              y quedan listos para el procesamiento con embeddings (RAG) en producción.
+              El texto de tus documentos (PDF, TXT, MD, CSV) se extrae y se suma al
+              contexto del asistente: probalo en la Vista Previa del Chat. Los DOC se
+              guardan y quedan listos para el procesamiento con embeddings (RAG) en
+              producción.
             </p>
           </div>
         </div>

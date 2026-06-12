@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: Params) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const docId = randomUUID();
     const storagePath = await saveUpload(workspace.id, docId, file.name, buffer);
-    const textContent = extractTextContent(file.name, file.type, buffer);
+    const textContent = await extractTextContent(file.name, file.type, buffer);
 
     const doc = await createDocument({
       workspaceId: workspace.id,

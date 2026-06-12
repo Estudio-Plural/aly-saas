@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { SettingsIcon, FileTextIcon, WorkflowIcon, BotIcon, PhoneIcon } from "lucide-react";
+import {
+  SettingsIcon,
+  FileTextIcon,
+  WorkflowIcon,
+  BotIcon,
+  PhoneIcon,
+  MessagesSquareIcon,
+} from "lucide-react";
 
 export function WorkspaceSidebar({ workspace }: { workspace: string }) {
   const pathname = usePathname();
@@ -12,6 +19,7 @@ export function WorkspaceSidebar({ workspace }: { workspace: string }) {
     { name: "Conocimiento", href: `/${workspace}/knowledge`, icon: FileTextIcon },
     { name: "Onboarding", href: `/${workspace}/onboarding`, icon: WorkflowIcon },
     { name: "Chat", href: `/${workspace}/chat`, icon: BotIcon },
+    { name: "Conversaciones", href: `/${workspace}/conversations`, icon: MessagesSquareIcon },
     { name: "WhatsApp", href: `/${workspace}/whatsapp`, icon: PhoneIcon },
   ];
 

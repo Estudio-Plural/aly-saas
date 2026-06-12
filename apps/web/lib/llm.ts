@@ -57,10 +57,7 @@ export async function getChatModel(workspaceId: string): Promise<string> {
   return rows[0]?.model_preferences?.chat ?? DEFAULT_MODEL;
 }
 
-export async function chatCompletion(
-  messages: LlmMessage[],
-  model: string
-): Promise<string> {
+async function openRouterFetch(body: Record<string, unknown>): Promise<Response> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY no configurada");
@@ -74,18 +71,62 @@ export async function chatCompletion(
       "HTTP-Referer": "http://localhost:3000",
       "X-Title": "Aly SaaS (local)",
     },
-    body: JSON.stringify({ model, messages, max_tokens: 600 }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`OpenRouter ${res.status}: ${body.slice(0, 300)}`);
+    const text = await res.text();
+    throw new Error(`OpenRouter ${res.status}: ${text.slice(0, 300)}`);
   }
+  return res;
+}
 
+export async function chatCompletion(
+  messages: LlmMessage[],
+  model: string
+): Promise<string> {
+  const res = await openRouterFetch({ model, messages, max_tokens: 600 });
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content;
   if (typeof content !== "string" || !content.trim()) {
     throw new Error("OpenRouter devolvió una respuesta vacía");
   }
   return content.trim();
+}
+
+/** Tokens de la respuesta a medida que llegan (SSE de OpenRouter). */
+export async function* streamChatCompletion(
+  messages: LlmMessage[],
+  model: string
+): AsyncGenerator<string> {
+  const res = await openRouterFetch({ model, messages, max_tokens: 600, stream: true });
+  if (!res.body) {
+    throw new Error("OpenRouter no devolvió stream");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // OpenRouter intercala comentarios (": OPENROUTER PROCESSING") — ignorarlos
+      if (!trimmed.startsWith("data:")) continue;
+      const payload = trimmed.slice(5).trim();
+      if (payload === "[DONE]") return;
+      try {
+        const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
+        if (typeof delta === "string" && delta) yield delta;
+      } catch {
+        // línea parcial o keep-alive: se completa con el próximo chunk
+      }
+    }
+  }
 }

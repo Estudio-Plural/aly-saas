@@ -10,9 +10,9 @@ import {
 } from "@/lib/data/chat";
 import {
   buildSystemPrompt,
-  chatCompletion,
   getChatModel,
   isLlmConfigured,
+  streamChatCompletion,
   type LlmMessage,
 } from "@/lib/llm";
 
@@ -104,12 +104,46 @@ export async function POST(request: Request, { params }: Params) {
     ];
 
     const model = await getChatModel(workspace.id);
-    const replyText = await chatCompletion(llmMessages, model);
+    const tokens = streamChatCompletion(llmMessages, model);
 
-    const [reply] = await appendMessages(workspace.id, conversationId, [
-      { role: "assistant", text: replyText },
-    ]);
-    return NextResponse.json({ conversationId, messages: [userMessage, reply] });
+    // Esperar el primer token antes de responder: si OpenRouter falla acá,
+    // todavía podemos devolver un error JSON limpio en vez de un stream roto.
+    const first = await tokens.next();
+    if (first.done) {
+      throw new Error("OpenRouter devolvió una respuesta vacía");
+    }
+
+    const workspaceId = workspace.id;
+    const encoder = new TextEncoder();
+    const body = new ReadableStream({
+      async start(controller) {
+        let full = first.value;
+        controller.enqueue(encoder.encode(first.value));
+        try {
+          for await (const token of tokens) {
+            full += token;
+            controller.enqueue(encoder.encode(token));
+          }
+        } catch (error) {
+          // Stream cortado a mitad: persistimos lo recibido igual
+          console.error("[chat] Stream del LLM interrumpido:", error);
+        }
+        if (full.trim()) {
+          await appendMessages(workspaceId, conversationId, [
+            { role: "assistant", text: full.trim() },
+          ]);
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(body, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Conversation-Id": conversationId,
+      },
+    });
   } catch (error) {
     console.error("[chat] Error llamando al LLM:", error);
     return NextResponse.json(

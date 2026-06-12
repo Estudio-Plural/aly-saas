@@ -1,11 +1,31 @@
 # 🔄 Resumen de Sesión - Aly SaaS
 
-**Fecha:** 2026-06-11
+**Fecha:** 2026-06-12
 **Status:** ✅ La app es FUNCIONAL en local — persistencia real + chat con LLM
 
 ---
 
-## 🎉 Lo que cambió hoy (2026-06-11)
+## ✨ Lo que cambió el 2026-06-12
+
+- **Chat en streaming:** la respuesta del LLM aparece token a token (SSE de
+  OpenRouter → stream `text/plain` al cliente). Si falla antes del primer
+  token, error JSON limpio como antes.
+- **Markdown en el chat:** los mensajes del asistente renderizan negritas,
+  listas y links (`react-markdown` + `remark-gfm`).
+- **PDFs ahora se leen:** `extractTextContent` extrae el texto con `unpdf` al
+  subir; entra al contexto del chat igual que TXT/MD/CSV (verificado e2e:
+  el bot respondió con datos de un PDF subido).
+- **Página nueva: Conversaciones** (`/[workspace]/conversations`) — inbox con
+  lista de conversaciones (WhatsApp seed + vista previa web), transcript,
+  resumen, keywords y flags por severidad. Datos de `users_interactions` +
+  `conversations_data` + `users_data`.
+- **Migración 004:** seed de conversaciones para el inbox (demo: reclamo con
+  flag HIGH; apapachar: 2 usuarios, una conversación abierta y una cerrada
+  con análisis).
+
+---
+
+## 🎉 Lo que cambió el 2026-06-11
 
 El MVP dejó de ser 100% mock: **todas las páginas leen y escriben en una base
 Postgres local**, el chat responde con un **LLM real** (OpenRouter) usando la
@@ -32,9 +52,10 @@ apps/web (Next.js 16)
 |---|---|
 | Dashboard | Lista/crea workspaces en DB, stats reales (docs/usuarios/chats) |
 | Settings | Guarda/borra en DB. **El rename del asistente SÍ se propaga al chat** (era el caveat P1) |
-| Knowledge | Upload real (drag&drop y picker), descarga, borrado. TXT/MD/CSV se inyectan al contexto del chat |
+| Knowledge | Upload real (drag&drop y picker), descarga, borrado. PDF/TXT/MD/CSV se inyectan al contexto del chat (PDF vía `unpdf`) |
 | Onboarding | El flujo se guarda en `onboarding_flows` (ya no localStorage) |
-| Chat | Conversación nueva → corre el flujo de onboarding → después LLM real con la knowledge base. Historial persistido en `users_interactions` |
+| Chat | Conversación nueva → corre el flujo de onboarding → después LLM real **en streaming** con markdown. Historial persistido en `users_interactions` |
+| Conversaciones | Inbox real sobre `users_interactions`/`conversations_data`: transcript, resumen, keywords, flags (los análisis vienen del seed hasta tener el ConversationCloser) |
 | WhatsApp | Conexión simulada pero **persistida** en DB (sobrevive reloads). Stats honestas (0 hasta integrar Kapso) |
 
 ### Base de datos
@@ -97,7 +118,7 @@ cd apps/web && npx next dev
 
 ### Post-funding (el plan no cambió)
 - 🔵 RAG real con pgvector (en local: `brew install pgvector` o Supabase) —
-  hoy los TXT/MD se inyectan directo al prompt, PDFs solo se almacenan
+  hoy el texto (PDF/TXT/MD/CSV) se inyecta directo al prompt, sin embeddings
 - 🔵 Clerk auth (hoy: usuario demo fijo `demo_user_001` / hola@plural-estudio.co)
 - 🔵 Kapso webhook real (la conexión WhatsApp es teatro persistido)
 - 🔵 Stripe billing
