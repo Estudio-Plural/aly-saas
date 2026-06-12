@@ -3,15 +3,38 @@
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   MessagesSquareIcon,
   PhoneIcon,
   MonitorIcon,
   AlertTriangleIcon,
   Loader2Icon,
+  PlusIcon,
+  TrashIcon,
+  BellIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { ChatMessage, ConversationSummary } from "@/lib/workspaces";
+import type {
+  ChatMessage,
+  ConversationSummary,
+  FlagRule,
+  FlagSeverity,
+} from "@/lib/workspaces";
+
+const SEVERITY_LABELS: Record<FlagSeverity, string> = {
+  high: "Alta",
+  medium: "Media",
+  low: "Baja",
+};
 
 function formatWhen(iso: string): string {
   const date = new Date(iso);
@@ -44,10 +67,12 @@ export function ConversationsClient({
   workspaceSlug,
   assistantName,
   conversations,
+  initialFlagRules,
 }: {
   workspaceSlug: string;
   assistantName: string;
   conversations: ConversationSummary[];
+  initialFlagRules: FlagRule[];
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(
     conversations[0]?.conversationId ?? null
@@ -98,6 +123,12 @@ export function ConversationsClient({
           Todo lo que {assistantName} habló con tus usuarios, con resumen y alertas
         </p>
       </div>
+
+      <FlagRulesCard
+        workspaceSlug={workspaceSlug}
+        assistantName={assistantName}
+        initialRules={initialFlagRules}
+      />
 
       {conversations.length === 0 ? (
         <Card className="p-12 text-center">
@@ -276,5 +307,150 @@ export function ConversationsClient({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Editor del sistema de alertas: el dueño define en sus palabras qué marcar.
+ * Las reglas se evalúan con el LLM al cerrar cada conversación.
+ */
+function FlagRulesCard({
+  workspaceSlug,
+  assistantName,
+  initialRules,
+}: {
+  workspaceSlug: string;
+  assistantName: string;
+  initialRules: FlagRule[];
+}) {
+  const [rules, setRules] = useState<FlagRule[]>(initialRules);
+  const [savedRules, setSavedRules] = useState<FlagRule[]>(initialRules);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const isDirty = JSON.stringify(rules) !== JSON.stringify(savedRules);
+  const hasInvalidRule = rules.some((rule) => rule.description.trim().length < 3);
+
+  const updateRule = (id: string, patch: Partial<FlagRule>) => {
+    setRules((prev) =>
+      prev.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule))
+    );
+  };
+
+  const addRule = () => {
+    if (rules.length >= 10) {
+      toast.error("Máximo 10 reglas de alerta");
+      return;
+    }
+    setRules((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), description: "", severity: "medium" },
+    ]);
+  };
+
+  const removeRule = (id: string) => {
+    setRules((prev) => prev.filter((rule) => rule.id !== id));
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const cleaned = rules.map((rule) => ({
+        ...rule,
+        description: rule.description.trim(),
+      }));
+      const res = await fetch(`/api/workspaces/${workspaceSlug}/flags`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rules: cleaned }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "No se pudieron guardar las reglas");
+        return;
+      }
+      setRules(cleaned);
+      setSavedRules(cleaned);
+      toast.success("Reglas de alerta guardadas");
+    } catch {
+      toast.error("Error de conexión al guardar las reglas");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+          <BellIcon className="h-5 w-5 text-amber-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-neutral-900">Sistema de alertas</p>
+          <p className="text-sm text-neutral-600">
+            Contale a {assistantName} en tus palabras qué conversaciones querés que te
+            marque. Se evalúan automáticamente cuando una conversación se cierra.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        {rules.length === 0 && (
+          <p className="text-sm text-neutral-500 py-2">
+            No hay reglas: las conversaciones se van a resumir igual, pero sin alertas.
+          </p>
+        )}
+        {rules.map((rule) => (
+          <div key={rule.id} className="flex items-center gap-2">
+            <Input
+              value={rule.description}
+              onChange={(e) => updateRule(rule.id, { description: e.target.value })}
+              placeholder='Ej: "El usuario quiere cancelar su suscripción"'
+              maxLength={300}
+              className="flex-1"
+            />
+            <Select
+              value={rule.severity}
+              onValueChange={(value) =>
+                updateRule(rule.id, { severity: value as FlagSeverity })
+              }
+            >
+              <SelectTrigger className="w-28 flex-shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SEVERITY_LABELS) as FlagSeverity[]).map((severity) => (
+                  <SelectItem key={severity} value={severity}>
+                    {SEVERITY_LABELS[severity]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => removeRule(rule.id)}
+              aria-label="Eliminar regla"
+              className="h-9 w-9 p-0 text-neutral-500 hover:text-red-600"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </Button>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between mt-4">
+        <Button variant="outline" size="sm" onClick={addRule}>
+          <PlusIcon className="mr-1.5 h-4 w-4" />
+          Agregar regla
+        </Button>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={!isDirty || hasInvalidRule || isSaving}
+        >
+          {isSaving ? "Guardando..." : "Guardar reglas"}
+        </Button>
+      </div>
+    </Card>
   );
 }

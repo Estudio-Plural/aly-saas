@@ -22,6 +22,18 @@
 - **Migración 004:** seed de conversaciones para el inbox (demo: reclamo con
   flag HIGH; apapachar: 2 usuarios, una conversación abierta y una cerrada
   con análisis).
+- **Enriquecimiento automático de documentos:** al subir, un LLM genera
+  summary + keywords + tema (columnas nuevas en `documents`, migración 005);
+  se ven en la tabla de Conocimiento. El usuario no-code no completa nada.
+- **Flagging system definido por el usuario:** card "Sistema de alertas" en
+  Conversaciones — reglas en lenguaje natural + severidad (Alta/Media/Baja),
+  guardadas en `workspace_configs.flag_rules`. Workspaces nuevos arrancan con
+  3 reglas default.
+- **Análisis real de conversaciones:** al cerrar el chat preview ("Reiniciar
+  Conversación"), el LLM analiza el transcript contra las reglas y escribe
+  summary/keywords/flags en `conversations_data` → el inbox ya no depende
+  del seed para las conversaciones del preview. Verificado e2e: un reclamo
+  de cobro doble generó `HIGH-...` + `MEDIUM-...` correctos.
 
 ---
 

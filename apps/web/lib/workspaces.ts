@@ -30,6 +30,19 @@ export type DocumentRow = {
   type: string;
   size: number;
   created_at: string;
+  /** Metadatos generados por LLM al subir (null si no había API key o falló) */
+  summary: string | null;
+  keywords: string[];
+  theme_category: string | null;
+};
+
+export type FlagSeverity = "high" | "medium" | "low";
+
+/** Regla del flagging system, definida por el dueño del workspace en lenguaje natural. */
+export type FlagRule = {
+  id: string;
+  description: string;
+  severity: FlagSeverity;
 };
 
 export type OnboardingStepType = "question" | "message" | "end";

@@ -7,7 +7,11 @@ import {
   newConversationId,
   appendMessages,
   closeOpenConversation,
+  WEB_PREVIEW_NUMBER,
 } from "@/lib/data/chat";
+import { getFlagRules } from "@/lib/data/flags";
+import { upsertConversationAnalysis } from "@/lib/data/conversations";
+import { analyzeConversation } from "@/lib/enrichment";
 import {
   buildSystemPrompt,
   getChatModel,
@@ -157,13 +161,41 @@ export async function POST(request: Request, { params }: Params) {
   }
 }
 
-/** Reinicia la conversación del preview (cierra la actual). */
+/**
+ * Reinicia la conversación del preview: la cierra y la analiza contra las
+ * reglas de alerta del workspace (summary/keywords/flags van al inbox).
+ */
 export async function DELETE(_request: Request, { params }: Params) {
   const { slug } = await params;
   const workspace = await getWorkspaceBySlug(slug);
   if (!workspace) {
     return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
   }
+
+  const conversationId = await getOpenConversationId(workspace.id);
+  const messages = conversationId
+    ? await getConversationMessages(workspace.id, conversationId)
+    : [];
   await closeOpenConversation(workspace.id);
+
+  if (conversationId && messages.length >= 2) {
+    try {
+      const rules = await getFlagRules(workspace.id);
+      const analysis = await analyzeConversation(workspace.id, messages, rules);
+      if (analysis) {
+        await upsertConversationAnalysis(
+          workspace.id,
+          conversationId,
+          WEB_PREVIEW_NUMBER,
+          analysis,
+          messages.length
+        );
+      }
+    } catch (error) {
+      // El cierre no debe fallar por el análisis
+      console.error("[chat] No se pudo analizar la conversación cerrada:", error);
+    }
+  }
+
   return NextResponse.json({ ok: true });
 }

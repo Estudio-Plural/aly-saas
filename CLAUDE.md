@@ -3,6 +3,12 @@
 MVP de Aly: plataforma multi-tenant de asistentes de IA para WhatsApp (pitch a
 CEOs/inversores). Repo: `Estudio-Plural/aly-saas`, branch de trabajo `main`.
 
+**Visión de producto (definida por Daniel):** el usuario es **no-code** — entra,
+crea su propio Aly y todo lo técnico es automático (metadatos de documentos,
+análisis de conversaciones). Las únicas dos superficies de "diseño" que toca:
+el **builder de onboarding** y **definir sus reglas de alerta** en lenguaje
+natural. No agregar configuración técnica visible al usuario.
+
 **Desde 2026-06-11 la app es funcional en local** (antes era 100% mock).
 El estado de sesión vivo está en `SESSION_RESUME.md` — leerlo al retomar.
 
@@ -57,6 +63,12 @@ cd apps/web && npx next dev    # http://localhost:3000
 - `lib/uploads.ts` — archivos en `apps/web/.uploads/` (gitignoreado).
   `extractTextContent` es async: TXT/MD/CSV directo y **PDF vía `unpdf`**;
   ese texto entra al system prompt del chat.
+- `lib/enrichment.ts` — enriquecimiento automático con LLM: `enrichDocument`
+  (summary/keywords/tema al subir, columnas en `documents`) y
+  `analyzeConversation` (al cerrar el chat preview: summary/keywords/flags
+  contra las `workspace_configs.flag_rules` → upsert en `conversations_data`;
+  la severidad sale de la regla configurada, no del LLM). Ambos fallan en
+  silencio (log + null): subir/cerrar nunca debe romperse por el LLM.
 - Patrón de páginas: `page.tsx` = server component que hace fetch a la DB y
   redirige a `/dashboard` si el workspace no existe; la UI vive en
   `*-client.tsx` (`"use client"`). Mantener este patrón al agregar páginas.
@@ -73,7 +85,7 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 | Real | Simulado / pendiente |
 |---|---|
-| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`, con seed de la migración 004), stats del dashboard | Conexión WhatsApp/Kapso (teatro persistido en DB), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, RAG con embeddings (el conocimiento se inyecta como texto plano al prompt), análisis automático de conversaciones (summary/flags vienen del seed) |
+| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview** | Conexión WhatsApp/Kapso (teatro persistido en DB), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, RAG con embeddings (el conocimiento se inyecta como texto plano al prompt), análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
 
 ## Convenciones
 

@@ -4,6 +4,7 @@
 import { sql } from "@/lib/db";
 import { WEB_PREVIEW_NUMBER } from "@/lib/data/chat";
 import type { ConversationSummary } from "@/lib/workspaces";
+import type { ConversationAnalysis } from "@/lib/enrichment";
 
 type ConversationRow = {
   conversation_id: string;
@@ -68,4 +69,27 @@ export async function listConversations(
     flags: row.flags,
     flagSeverity: row.flag_severity,
   }));
+}
+
+/** Guarda (o pisa) el análisis LLM de una conversación cerrada. */
+export async function upsertConversationAnalysis(
+  workspaceId: string,
+  conversationId: string,
+  userNumber: string,
+  analysis: ConversationAnalysis,
+  messagesCount: number
+): Promise<void> {
+  await sql`
+    INSERT INTO conversations_data
+      (workspace_id, conversation_id, user_number, conversation_date, summary, keywords, flags, flag_severity, messages_count)
+    VALUES
+      (${workspaceId}, ${conversationId}, ${userNumber}, CURRENT_DATE, ${analysis.summary}, ${analysis.keywords}::text[], ${analysis.flags}, ${analysis.flagSeverity}, ${messagesCount})
+    ON CONFLICT (workspace_id, conversation_id) DO UPDATE SET
+      summary = EXCLUDED.summary,
+      keywords = EXCLUDED.keywords,
+      flags = EXCLUDED.flags,
+      flag_severity = EXCLUDED.flag_severity,
+      messages_count = EXCLUDED.messages_count,
+      conversation_date = EXCLUDED.conversation_date
+  `;
 }

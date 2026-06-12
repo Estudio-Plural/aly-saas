@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { getWorkspaceBySlug } from "@/lib/data/workspaces";
 import { listDocuments, createDocument } from "@/lib/data/documents";
 import { saveUpload, extractTextContent } from "@/lib/uploads";
+import { enrichDocument } from "@/lib/enrichment";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -53,6 +54,11 @@ export async function POST(request: Request, { params }: Params) {
     const storagePath = await saveUpload(workspace.id, docId, file.name, buffer);
     const textContent = await extractTextContent(file.name, file.type, buffer);
 
+    // Metadatos automáticos (el usuario no-code no completa nada a mano)
+    const metadata = textContent
+      ? await enrichDocument(workspace.id, file.name, textContent)
+      : null;
+
     const doc = await createDocument({
       workspaceId: workspace.id,
       name: file.name,
@@ -60,6 +66,9 @@ export async function POST(request: Request, { params }: Params) {
       size: file.size,
       storagePath,
       textContent,
+      summary: metadata?.summary ?? null,
+      keywords: metadata?.keywords ?? [],
+      themeCategory: metadata?.theme ?? null,
     });
     created.push(doc);
   }

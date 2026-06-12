@@ -25,6 +25,7 @@ import {
   FileIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { DocumentRow } from "@/lib/workspaces";
 
@@ -246,9 +247,26 @@ export function KnowledgeClient({
                           <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm flex-shrink-0">
                             <FileTextIcon className="h-5 w-5 text-white" />
                           </div>
-                          <span className="font-medium text-neutral-900">
-                            {doc.name}
-                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-neutral-900">
+                                {doc.name}
+                              </span>
+                              {doc.theme_category && (
+                                <Badge variant="outline" className="text-neutral-600">
+                                  {doc.theme_category}
+                                </Badge>
+                              )}
+                            </div>
+                            {doc.summary && (
+                              <p
+                                className="text-xs text-neutral-500 truncate max-w-md mt-0.5"
+                                title={doc.summary}
+                              >
+                                {doc.summary}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="py-4">

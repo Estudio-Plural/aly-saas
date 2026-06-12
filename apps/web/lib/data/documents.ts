@@ -8,6 +8,9 @@ type DbDocument = {
   type: string;
   size: string | number; // BIGINT llega como string
   created_at: Date;
+  summary: string | null;
+  keywords: string[] | null;
+  theme_category: string | null;
 };
 
 function toDocument(row: DbDocument): DocumentRow {
@@ -17,12 +20,15 @@ function toDocument(row: DbDocument): DocumentRow {
     type: row.type,
     size: Number(row.size),
     created_at: row.created_at.toISOString(),
+    summary: row.summary,
+    keywords: row.keywords ?? [],
+    theme_category: row.theme_category,
   };
 }
 
 export async function listDocuments(workspaceId: string): Promise<DocumentRow[]> {
   const rows = await sql<DbDocument[]>`
-    SELECT id, name, type, size, created_at
+    SELECT id, name, type, size, created_at, summary, keywords, theme_category
     FROM documents
     WHERE workspace_id = ${workspaceId}
     ORDER BY created_at DESC
@@ -37,11 +43,14 @@ export async function createDocument(input: {
   size: number;
   storagePath: string;
   textContent: string | null;
+  summary: string | null;
+  keywords: string[];
+  themeCategory: string | null;
 }): Promise<DocumentRow> {
   const [row] = await sql<DbDocument[]>`
-    INSERT INTO documents (workspace_id, name, type, size, storage_path, text_content)
-    VALUES (${input.workspaceId}, ${input.name}, ${input.type}, ${input.size}, ${input.storagePath}, ${input.textContent})
-    RETURNING id, name, type, size, created_at
+    INSERT INTO documents (workspace_id, name, type, size, storage_path, text_content, summary, keywords, theme_category)
+    VALUES (${input.workspaceId}, ${input.name}, ${input.type}, ${input.size}, ${input.storagePath}, ${input.textContent}, ${input.summary}, ${input.keywords}::text[], ${input.themeCategory})
+    RETURNING id, name, type, size, created_at, summary, keywords, theme_category
   `;
   return toDocument(row);
 }

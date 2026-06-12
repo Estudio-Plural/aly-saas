@@ -73,6 +73,25 @@ const DEFAULT_ONBOARDING = {
   ],
 };
 
+// Reglas de alerta iniciales (el dueño las edita después en Conversaciones)
+const DEFAULT_FLAG_RULES = [
+  {
+    id: "1",
+    description: "El usuario tiene un problema con un pago o pide un reembolso",
+    severity: "high",
+  },
+  {
+    id: "2",
+    description: "El usuario pide hablar con una persona del equipo",
+    severity: "medium",
+  },
+  {
+    id: "3",
+    description: "El usuario quedó disconforme con la respuesta del asistente",
+    severity: "medium",
+  },
+];
+
 export async function createWorkspace(input: {
   name: string;
   slug: string;
@@ -87,7 +106,10 @@ export async function createWorkspace(input: {
       VALUES (${input.slug}, ${input.name}, ${input.assistant_name}, ${DEMO_USER_ID}, 'trial')
       RETURNING id
     `;
-    await tx`INSERT INTO workspace_configs (workspace_id) VALUES (${ws.id})`;
+    await tx`
+      INSERT INTO workspace_configs (workspace_id, flag_rules)
+      VALUES (${ws.id}, ${sql.json(DEFAULT_FLAG_RULES)})
+    `;
     await tx`
       INSERT INTO onboarding_flows (workspace_id, name, definition, is_active)
       VALUES (${ws.id}, 'Onboarding inicial', ${sql.json(DEFAULT_ONBOARDING)}, true)
