@@ -34,6 +34,14 @@
   summary/keywords/flags en `conversations_data` → el inbox ya no depende
   del seed para las conversaciones del preview. Verificado e2e: un reclamo
   de cobro doble generó `HIGH-...` + `MEDIUM-...` correctos.
+- **Builder de onboarding renovado (no-code):** edición directa sin modo
+  "Editar" (el texto siempre es un textarea), **preview interactiva** que corre
+  el flujo de verdad (typing, respuestas de prueba, variables interpoladas,
+  aviso si el flujo cambió a mitad de prueba), variables sin jerga ("Guardar
+  la respuesta como..." + chips para insertar `{var}` + warning si una
+  variable no viene de ninguna pregunta anterior), y guardrails: el paso Fin
+  es fijo al final (ni se borra ni se arrastra), pasos nuevos arrancan vacíos
+  y no se puede guardar con pasos incompletos (botón con estado dirty).
 
 ---
 

@@ -15,5 +15,11 @@ export default async function OnboardingPage({
   if (!workspace) redirect("/dashboard");
 
   const steps = await getActiveFlowSteps(workspace.id);
-  return <OnboardingClient workspaceSlug={workspace.slug} initialSteps={steps} />;
+  return (
+    <OnboardingClient
+      workspaceSlug={workspace.slug}
+      assistantName={workspace.assistant_name}
+      initialSteps={steps}
+    />
+  );
 }
