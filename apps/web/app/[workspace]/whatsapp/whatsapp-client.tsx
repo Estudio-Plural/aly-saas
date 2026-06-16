@@ -117,7 +117,7 @@ export function WhatsAppClient({
       {/* Header */}
       <div>
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900">WhatsApp Business</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">WhatsApp Business</h1>
           {status === 'connected' && (
             <Badge className="bg-green-100 text-green-800 border-green-200">
               Conectado
@@ -129,7 +129,7 @@ export function WhatsAppClient({
             </Badge>
           )}
         </div>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-neutral-600 mt-1">
           Conectá tu número de WhatsApp Business para que los usuarios puedan hablar con tu asistente
         </p>
       </div>
@@ -153,20 +153,20 @@ export function WhatsAppClient({
       </Card>
 
       {/* Main Connection Card */}
-      <Card className="p-12 border border-gray-200 shadow-sm">
+      <Card className="p-12 border border-neutral-200 shadow-sm">
 
         {/* DISCONNECTED STATE */}
         {status === 'disconnected' && (
           <div className="text-center space-y-6">
-            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-gray-100">
-              <Phone className="w-12 h-12 text-gray-400" />
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-neutral-100">
+              <Phone className="w-12 h-12 text-neutral-400" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-2xl font-bold text-neutral-900">
                 Número no conectado
               </h3>
-              <p className="text-base text-gray-600 max-w-md mx-auto">
+              <p className="text-base text-neutral-600 max-w-md mx-auto">
                 Para activar tu asistente, necesitás conectar un número de WhatsApp Business.
                 El proceso toma menos de 2 minutos.
               </p>
@@ -182,7 +182,7 @@ export function WhatsAppClient({
                 Conectar WhatsApp Business
               </Button>
 
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-neutral-600">
                 Necesitás tener WhatsApp Business instalado en tu teléfono
               </p>
             </div>
@@ -197,22 +197,22 @@ export function WhatsAppClient({
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-2xl font-bold text-gray-900">
+              <h3 className="text-2xl font-bold text-neutral-900">
                 Esperando conexión...
               </h3>
-              <p className="text-base text-gray-600 max-w-md mx-auto">
+              <p className="text-base text-neutral-600 max-w-md mx-auto">
                 Escaneá el código QR con WhatsApp Business para conectar tu número
               </p>
             </div>
 
             {/* Mock QR Code */}
             <div className="inline-flex items-center justify-center w-64 h-64 rounded-2xl bg-white border-4 border-neutral-900">
-              <QrCode className="w-40 h-40 text-gray-300" />
+              <QrCode className="w-40 h-40 text-neutral-300" />
             </div>
 
             <div className="space-y-3">
-              <div className="bg-gray-50 rounded-xl p-6 text-left max-w-md mx-auto border border-gray-200">
-                <p className="text-base font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <div className="bg-neutral-50 rounded-xl p-6 text-left max-w-md mx-auto border border-neutral-200">
+                <p className="text-base font-semibold text-neutral-900 mb-3 flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-neutral-900 text-white text-xs flex items-center justify-center">ℹ</span>
                   Pasos para conectar:
                 </p>
@@ -227,7 +227,7 @@ export function WhatsAppClient({
                       <div className="w-6 h-6 rounded-full bg-neutral-900 text-white text-sm font-semibold flex items-center justify-center flex-shrink-0">
                         {i + 1}
                       </div>
-                      <p className="text-sm text-gray-700 pt-0.5">{step}</p>
+                      <p className="text-sm text-neutral-700 pt-0.5">{step}</p>
                     </div>
                   ))}
                 </div>
@@ -246,7 +246,7 @@ export function WhatsAppClient({
               )}
             </div>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-neutral-600">
               El código QR expira en 60 segundos
             </p>
           </div>
@@ -266,25 +266,25 @@ export function WhatsAppClient({
                 </h3>
                 <Sparkles className="w-6 h-6 text-green-600 animate-pulse" />
               </div>
-              <p className="text-base text-gray-600">
+              <p className="text-base text-neutral-600">
                 Tu asistente ya está activo y listo para recibir mensajes
               </p>
             </div>
 
             {/* Phone Number Display */}
             {phoneNumber && (
-              <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto border border-gray-200">
+              <div className="bg-neutral-50 rounded-xl p-6 max-w-md mx-auto border border-neutral-200">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-neutral-700">
                       Número conectado:
                     </span>
-                    <span className="text-base font-bold text-gray-900 font-mono">
+                    <span className="text-base font-bold text-neutral-900 font-mono">
                       {phoneNumber}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-neutral-700">
                       Estado:
                     </span>
                     <Badge className="bg-green-100 text-green-800 border-green-200 font-semibold">
@@ -292,10 +292,10 @@ export function WhatsAppClient({
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-neutral-700">
                       Conectado hace:
                     </span>
-                    <span className="text-sm text-gray-600 font-medium">
+                    <span className="text-sm text-neutral-600 font-medium">
                       {relativeTime(connectedAt)}
                     </span>
                   </div>
@@ -322,11 +322,11 @@ export function WhatsAppClient({
             </div>
 
             {/* Test Section */}
-            <div className="border-t border-gray-200 pt-6 mt-6">
-              <h4 className="text-base font-bold text-gray-900 mb-3">
+            <div className="border-t border-neutral-200 pt-6 mt-6">
+              <h4 className="text-base font-bold text-neutral-900 mb-3">
                 Probá tu asistente
               </h4>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-neutral-600 mb-4">
                 Mientras la integración real con Kapso no está activa, podés probar tu
                 asistente desde la <span className="font-semibold">Vista Previa del Chat</span> en el menú lateral.
               </p>
@@ -367,45 +367,45 @@ export function WhatsAppClient({
       {status === 'connected' && (
         hasMessages ? (
           <div className="grid grid-cols-3 gap-4">
-            <Card className="p-6 border border-gray-200 shadow-sm">
+            <Card className="p-6 border border-neutral-200 shadow-sm">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-lg bg-neutral-900 flex items-center justify-center">
                     <MessageCircle className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{stats.today}</p>
-                <p className="text-sm text-gray-600 font-medium">Mensajes hoy</p>
+                <p className="text-3xl font-bold text-neutral-900">{stats.today}</p>
+                <p className="text-sm text-neutral-600 font-medium">Mensajes hoy</p>
               </div>
             </Card>
 
-            <Card className="p-6 border border-gray-200 shadow-sm">
+            <Card className="p-6 border border-neutral-200 shadow-sm">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
                     <Clock className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{stats.sent}</p>
-                <p className="text-sm text-gray-600 font-medium">Mensajes enviados</p>
+                <p className="text-3xl font-bold text-neutral-900">{stats.sent}</p>
+                <p className="text-sm text-neutral-600 font-medium">Mensajes enviados</p>
               </div>
             </Card>
 
-            <Card className="p-6 border border-gray-200 shadow-sm">
+            <Card className="p-6 border border-neutral-200 shadow-sm">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center">
                     <TrendingUp className="w-5 h-5 text-white" />
                   </div>
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-                <p className="text-sm text-gray-600 font-medium">Mensajes totales</p>
+                <p className="text-3xl font-bold text-neutral-900">{stats.total}</p>
+                <p className="text-sm text-neutral-600 font-medium">Mensajes totales</p>
               </div>
             </Card>
           </div>
         ) : (
-          <Card className="p-6 border border-gray-200 shadow-sm">
-            <p className="text-sm text-gray-600">
+          <Card className="p-6 border border-neutral-200 shadow-sm">
+            <p className="text-sm text-neutral-600">
               Todavía no hay mensajes de WhatsApp registrados. Cuando la integración con
               Kapso esté activa, acá vas a ver las métricas reales de conversaciones.
             </p>
@@ -414,41 +414,41 @@ export function WhatsAppClient({
       )}
 
       {/* Help Card */}
-      <Card className="p-6 bg-gray-50 border border-gray-200">
+      <Card className="p-6 bg-neutral-50 border border-neutral-200">
         <div>
-          <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <Info className="w-5 h-5 text-gray-600" />
+          <h3 className="text-base font-bold text-neutral-900 mb-4 flex items-center gap-2">
+            <Info className="w-5 h-5 text-neutral-600" />
             ¿Necesitás ayuda?
           </h3>
-          <div className="space-y-3 text-sm text-gray-700">
+          <div className="space-y-3 text-sm text-neutral-700">
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-gray-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-neutral-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                 1
               </div>
               <p>
-                <strong className="text-gray-900">¿No tenés WhatsApp Business?</strong>{' '}
+                <strong className="text-neutral-900">¿No tenés WhatsApp Business?</strong>{' '}
                 <a href="https://business.whatsapp.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
                   Descargalo acá
                 </a>
               </p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-gray-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-neutral-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                 2
               </div>
               <p>
-                <strong className="text-gray-900">¿Problemas para conectar?</strong>{' '}
+                <strong className="text-neutral-900">¿Problemas para conectar?</strong>{' '}
                 <a href="https://docs.kapso.ai" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">
                   Ver documentación de Kapso
                 </a>
               </p>
             </div>
             <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-gray-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="w-6 h-6 rounded-full bg-neutral-500 text-white text-xs flex items-center justify-center flex-shrink-0 mt-0.5">
                 3
               </div>
               <p>
-                <strong className="text-gray-900">¿Querés cambiar de número?</strong> Desconectá el actual y conectá uno nuevo
+                <strong className="text-neutral-900">¿Querés cambiar de número?</strong> Desconectá el actual y conectá uno nuevo
               </p>
             </div>
           </div>

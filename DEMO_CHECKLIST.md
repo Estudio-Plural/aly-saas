@@ -2,7 +2,13 @@
 
 ## 🎯 Status: LISTO PARA PITCH
 
-Todas las páginas del MVP están construidas y funcionando. El demo completo está disponible en `localhost:3000`.
+La app es **funcional en local**: persistencia real en Postgres, chat con LLM
+real (OpenRouter) en streaming, uploads de documentos con metadatos automáticos
+y análisis de conversaciones. Ya **no es un mock**.
+
+> ⚠️ Antes de abrir la demo: Postgres corriendo + `./scripts/db-setup.sh`, luego
+> `cd apps/web && npx next dev`. El puerto suele ser `3000`, pero si hay otra app
+> corriendo Next elige `3001`/`3002` — mirá la URL que imprime la terminal.
 
 ---
 
@@ -16,11 +22,12 @@ Todas las páginas del MVP están construidas y funcionando. El demo completo es
 
 ### **Tabs Pre-cargados (para agilizar demo)**
 1. `localhost:3000/dashboard` (Dashboard)
-2. `localhost:3000/demo/settings` (Settings)
-3. `localhost:3000/demo/knowledge` (Knowledge Base)
+2. `localhost:3000/demo/settings` (General)
+3. `localhost:3000/demo/knowledge` (Conocimiento)
 4. `localhost:3000/demo/onboarding` (Onboarding Builder) ⭐
-5. `localhost:3000/demo/chat` (Chat Preview)
-6. `localhost:3000/demo/whatsapp` (WhatsApp Connection)
+5. `localhost:3000/demo/chat` (Vista Previa del Chat)
+6. `localhost:3000/demo/conversations` (Conversaciones + alertas)
+7. `localhost:3000/demo/whatsapp` (WhatsApp)
 
 ### **Documentos de Apoyo**
 - [ ] `PITCH_SCRIPT.md` abierto en editor (para referencia)
@@ -62,12 +69,14 @@ Todas las páginas del MVP están construidas y funcionando. El demo completo es
 **URL:** `localhost:3000/demo/knowledge`
 
 **Qué mostrar:**
-- Tabla con 4 documentos mock
-- Área de drag & drop
-- Info card explicando RAG
+- Tabla con los documentos reales del workspace (nombre, tipo, tamaño, fecha)
+- Subir un PDF/TXT en vivo (drag & drop o picker) → se extrae el texto y un LLM
+  le genera **resumen, keywords y tema** automáticamente (el usuario no completa nada)
+- Después de subir, abrir la Vista Previa del Chat y preguntar algo del documento
 
 **Talking point:**
-> "El conocimiento es el diferenciador. Subís PDFs y el asistente aprende sin alucinar."
+> "El conocimiento es el diferenciador. Subís un PDF y el asistente aprende —
+> sin que el cliente toque nada técnico; los metadatos los pone la IA."
 
 ---
 
@@ -90,26 +99,46 @@ Todas las páginas del MVP están construidas y funcionando. El demo completo es
 1. Click "Agregar paso → Pregunta" → aparece un paso nuevo
 2. Agarrar el ícono ⋮⋮ → arrastrar para reordenar
 3. Click "Editar" en "¿Cómo te llamas?" → cambiar texto y variable inline
-4. Mostrar cómo la Vista Previa (derecha) se actualiza en vivo
-5. Click "Guardar" → localStorage persiste
+4. Mostrar cómo la Vista Previa interactiva (derecha) corre el flujo de verdad
+5. Click "Guardar" → se persiste en la base y **ya corre en la Vista Previa del Chat**
 
 ---
 
-### **5. Chat Preview** (60s)
+### **5. Vista Previa del Chat** (90s)
 **URL:** `localhost:3000/demo/chat`
 
 **Qué mostrar:**
-- Interfaz de chat estilo mensajería (azul + blanco)
-- Escribir mensaje manual: "Hola, ¿qué hacés?"
-- Click "Simular Conversación" → 5 mensajes automáticos con delays
-- Typing indicators
+- Interfaz de chat estilo mensajería (neutro, primary negro)
+- La conversación nueva **arranca sola con el flujo de Onboarding** que guardaste
+- Respondé las preguntas del onboarding → al terminar, responde el **LLM real
+  en streaming** (token a token, con markdown) usando los documentos subidos
+- Botón "Reiniciar Conversación": al cerrar, el LLM **analiza el transcript**
+  contra las reglas de alerta y lo manda a Conversaciones
 
 **Talking point:**
-> "La experiencia final. Respuestas naturales, contexto preservado, indistinguible de un humano."
+> "La experiencia final. Onboarding sin código + respuestas reales de IA con el
+> conocimiento del cliente, todo persistido."
+
+> Nota: ya no existe el botón "Simular Conversación" del mock — ahora es chat real.
 
 ---
 
-### **6. WhatsApp Connection** (90s)
+### **6. Conversaciones + alertas** (90s)
+**URL:** `localhost:3000/demo/conversations`
+
+**Qué mostrar:**
+- Inbox de conversaciones (Web + WhatsApp) con resumen, keywords y flags por severidad
+- Card "Sistema de alertas": el dueño define **en lenguaje natural** qué marcar
+  (ej: "el usuario quiere cancelar") + severidad. Sin código.
+- Abrir una conversación con flag HIGH para mostrar el análisis automático
+
+**Talking point:**
+> "El dueño no programa reglas: las escribe como se las diría a un empleado, y la
+> IA marca sola lo importante de cada conversación."
+
+---
+
+### **7. WhatsApp** (90s)
 **URL:** `localhost:3000/demo/whatsapp`
 
 **Qué mostrar:**

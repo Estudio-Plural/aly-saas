@@ -190,7 +190,7 @@ function SortableStepCard({
         {/* Chips para insertar respuestas anteriores */}
         {availableVars.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            <span className="text-xs text-neutral-500">Insertar respuesta:</span>
+            <span className="text-xs text-neutral-600">Insertar respuesta:</span>
             {availableVars.map((variable) => (
               <button
                 key={variable}
@@ -546,7 +546,7 @@ export function OnboardingClient({
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-neutral-900">Flujo de Onboarding</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Flujo de Onboarding</h1>
           <p className="text-neutral-600 mt-1">
             Diseñá la conversación inicial con tus usuarios y probala en vivo a la derecha.
           </p>
@@ -601,7 +601,7 @@ export function OnboardingClient({
                 <CheckCircle className="h-4 w-4 text-white" />
               </div>
               <span className="text-xs font-semibold text-purple-700">FIN</span>
-              <span className="text-xs text-neutral-500">— siempre es el último paso</span>
+              <span className="text-xs text-neutral-600">— siempre es el último paso</span>
             </div>
             <Textarea
               value={endStep.content}
@@ -613,7 +613,7 @@ export function OnboardingClient({
             />
             {allVars.length > 0 && (
               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                <span className="text-xs text-neutral-500">Insertar respuesta:</span>
+                <span className="text-xs text-neutral-600">Insertar respuesta:</span>
                 {allVars.map((variable) => (
                   <button
                     key={variable}
@@ -630,7 +630,7 @@ export function OnboardingClient({
                 ))}
               </div>
             )}
-            <p className="text-xs text-neutral-500 mt-2">
+            <p className="text-xs text-neutral-600 mt-2">
               Después de este mensaje, {assistantName} responde solo, usando tu base de
               conocimiento.
             </p>

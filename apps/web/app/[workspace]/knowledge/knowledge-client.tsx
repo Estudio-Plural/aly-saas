@@ -144,7 +144,7 @@ export function KnowledgeClient({
           Base de Conocimiento
         </h1>
         <p className="text-neutral-700 mt-1">
-          Sube documentos para que tu asistente tenga contexto sobre tus productos y servicios
+          Subí documentos para que tu asistente tenga contexto sobre tus productos y servicios
         </p>
       </div>
 
@@ -260,7 +260,7 @@ export function KnowledgeClient({
                             </div>
                             {doc.summary && (
                               <p
-                                className="text-xs text-neutral-500 truncate max-w-md mt-0.5"
+                                className="text-xs text-neutral-600 truncate max-w-md mt-0.5"
                                 title={doc.summary}
                               >
                                 {doc.summary}

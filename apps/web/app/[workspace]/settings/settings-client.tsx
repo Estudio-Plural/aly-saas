@@ -88,19 +88,33 @@ export function SettingsClient({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 pb-32">
-      <div className="mx-auto max-w-5xl px-8 py-10">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight text-neutral-900">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
             Configuración General
           </h1>
-          <p className="text-neutral-600 mt-2 text-lg">
+          <p className="text-neutral-600 mt-1">
             Gestioná los datos básicos de tu asistente
           </p>
         </div>
+        <div className="flex items-center gap-3">
+          {isDirty && (
+            <span className="text-xs text-amber-700">Cambios sin guardar</span>
+          )}
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !isDirty}
+            className="bg-neutral-900 hover:bg-neutral-800 text-white font-medium shadow-sm"
+          >
+            <SaveIcon className="mr-2 h-4 w-4" />
+            {isSaving ? "Guardando..." : isDirty ? "Guardar Cambios" : "Guardado ✓"}
+          </Button>
+        </div>
+      </div>
 
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Información del Workspace */}
           <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="space-y-1 pb-6">
@@ -124,7 +138,7 @@ export function SettingsClient({
                   placeholder="Mi Empresa"
                   className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   Este nombre se muestra en el dashboard y notificaciones
                 </p>
               </div>
@@ -134,7 +148,7 @@ export function SettingsClient({
                 <p className="text-sm font-mono text-neutral-900">
                   app.plural.com/<span className="font-semibold text-neutral-900">{workspace.slug}</span>
                 </p>
-                <p className="text-xs text-neutral-500 mt-2">
+                <p className="text-xs text-neutral-600 mt-2">
                   Se genera automáticamente desde el nombre
                 </p>
               </div>
@@ -161,7 +175,7 @@ export function SettingsClient({
                   placeholder="Aly"
                   className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   Este nombre aparece en las respuestas del bot y en el chat
                 </p>
               </div>
@@ -169,7 +183,7 @@ export function SettingsClient({
               {/* Preview Card with Gradient Border */}
               <div className="relative p-px rounded-xl bg-neutral-200">
                 <div className="bg-white rounded-xl p-6">
-                  <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-4">
+                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-4">
                     Vista Previa
                   </p>
                   <div className="space-y-4">
@@ -189,7 +203,7 @@ export function SettingsClient({
                         </span>
                       </div>
                       <div className="flex-1">
-                        <div className="text-xs font-medium text-neutral-500 mb-2">
+                        <div className="text-xs font-medium text-neutral-600 mb-2">
                           {workspace.assistant_name}
                         </div>
                         <div className="rounded-2xl bg-neutral-100 px-5 py-3 max-w-[90%]">
@@ -269,33 +283,10 @@ export function SettingsClient({
           <Separator className="my-6" />
 
           {/* Info adicional */}
-          <div className="text-sm text-neutral-500 space-y-1">
-            <p>Workspace ID: {workspace.id}</p>
-            <p>Creado el: {new Date(workspace.created_at).toLocaleDateString("es-AR")}</p>
+          <div className="text-sm text-neutral-600">
+            <p>Creado el {new Date(workspace.created_at).toLocaleDateString("es-AR")}</p>
           </div>
         </div>
-      </div>
-
-      {/* Fixed Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-neutral-200 bg-white/80 backdrop-blur-md shadow-2xl">
-        <div className="mx-auto max-w-5xl px-8 py-4 flex items-center justify-between">
-          <p className="text-sm text-neutral-600">
-            {isSaving
-              ? "Guardando cambios..."
-              : isDirty
-              ? "Tenés cambios sin guardar"
-              : "Todos los cambios están guardados"}
-          </p>
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !isDirty}
-            className="h-11 px-8 bg-neutral-900 hover:bg-neutral-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
-          >
-            <SaveIcon className="mr-2 h-4 w-4" />
-            {isSaving ? "Guardando..." : "Guardar Cambios"}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

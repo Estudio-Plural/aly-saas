@@ -283,7 +283,7 @@ export function ChatClient({
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto bg-neutral-50 p-6 space-y-6">
             {messages.length === 0 && !isTyping && (
-              <div className="text-center text-sm text-neutral-500 pt-10">
+              <div className="text-center text-sm text-neutral-600 pt-10">
                 Escribí un mensaje para empezar la conversación
               </div>
             )}
@@ -330,7 +330,7 @@ export function ChatClient({
                       )}
                     </div>
                     <span
-                      className={`text-xs text-neutral-500 mt-1.5 px-2 ${
+                      className={`text-xs text-neutral-600 mt-1.5 px-2 ${
                         message.sender === "user" ? "text-right" : "text-left"
                       }`}
                     >
@@ -393,7 +393,7 @@ export function ChatClient({
                 <SendIcon className="h-5 w-5" />
               </Button>
             </div>
-            <p className="text-xs text-neutral-500 mt-3 px-1">
+            <p className="text-xs text-neutral-600 mt-3 px-1">
               {llmConfigured
                 ? "Presioná Enter para enviar • La conversación se guarda en tu workspace"
                 : "Presioná Enter para enviar • Configurá OPENROUTER_API_KEY para respuestas reales del asistente"}

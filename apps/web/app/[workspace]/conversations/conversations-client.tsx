@@ -160,7 +160,7 @@ export function ConversationsClient({
                       <span className="font-semibold text-sm text-neutral-900 truncate">
                         {conv.userName ?? conv.clientNumber}
                       </span>
-                      <span className="text-xs text-neutral-500 flex-shrink-0">
+                      <span className="text-xs text-neutral-600 flex-shrink-0">
                         {formatWhen(conv.lastAt)}
                       </span>
                     </div>
@@ -226,7 +226,7 @@ export function ConversationsClient({
                     <div className="mt-4 pt-4 border-t border-neutral-100 space-y-3">
                       {selected.summary && (
                         <div>
-                          <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1">
+                          <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide mb-1">
                             Resumen
                           </p>
                           <p className="text-sm text-neutral-800">{selected.summary}</p>
@@ -253,12 +253,12 @@ export function ConversationsClient({
 
                 <Card className="p-5 max-h-[520px] overflow-y-auto bg-neutral-50">
                   {isLoadingDetail && !selectedMessages ? (
-                    <div className="flex items-center justify-center py-10 text-neutral-500">
+                    <div className="flex items-center justify-center py-10 text-neutral-600">
                       <Loader2Icon className="h-5 w-5 animate-spin mr-2" />
                       Cargando conversación...
                     </div>
                   ) : !selectedMessages?.length ? (
-                    <p className="text-center text-sm text-neutral-500 py-10">
+                    <p className="text-center text-sm text-neutral-600 py-10">
                       Esta conversación no tiene mensajes
                     </p>
                   ) : (
@@ -395,7 +395,7 @@ function FlagRulesCard({
 
       <div className="space-y-2">
         {rules.length === 0 && (
-          <p className="text-sm text-neutral-500 py-2">
+          <p className="text-sm text-neutral-600 py-2">
             No hay reglas: las conversaciones se van a resumir igual, pero sin alertas.
           </p>
         )}
@@ -430,7 +430,7 @@ function FlagRulesCard({
               size="sm"
               onClick={() => removeRule(rule.id)}
               aria-label="Eliminar regla"
-              className="h-9 w-9 p-0 text-neutral-500 hover:text-red-600"
+              className="h-9 w-9 p-0 text-neutral-600 hover:text-red-600"
             >
               <TrashIcon className="h-4 w-4" />
             </Button>

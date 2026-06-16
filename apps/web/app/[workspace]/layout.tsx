@@ -29,7 +29,7 @@ export default async function WorkspaceLayout({
               </div>
               <span className="text-[15px] font-semibold text-neutral-900">
                 Plural{" "}
-                <span className="text-neutral-500 font-normal">
+                <span className="text-neutral-600 font-normal">
                   Conversational System
                 </span>
               </span>

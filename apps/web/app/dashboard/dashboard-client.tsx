@@ -141,7 +141,7 @@ export function DashboardClient({
                     setNewWorkspace({ ...newWorkspace, assistant_name: e.target.value })
                   }
                 />
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-neutral-600">
                   Cómo se presenta el bot en las conversaciones
                 </p>
               </div>

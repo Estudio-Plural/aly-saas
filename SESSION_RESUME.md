@@ -1,7 +1,42 @@
 # 🔄 Resumen de Sesión - Aly SaaS
 
-**Fecha:** 2026-06-12
+**Fecha:** 2026-06-16
 **Status:** ✅ La app es FUNCIONAL en local — persistencia real + chat con LLM
+
+---
+
+## ✨ Lo que cambió el 2026-06-16 (pulido pre-pitch)
+
+Sesión de consistencia visual y limpieza para el pitch. Sin cambios de
+funcionalidad; `next build` verde.
+
+- **WhatsApp restyle:** era la única pantalla en paleta `gray-*` → migrada a
+  `neutral-*` para que matchee con el resto; título `text-2xl` → `text-3xl`.
+- **Títulos unificados:** las 6 pantallas del workspace usan el mismo
+  `text-3xl font-bold tracking-tight` (antes Onboarding/WhatsApp/Settings
+  estaban desalineadas). El Dashboard queda en `4xl` a propósito (es el home).
+- **Contraste (regla de Daniel: nunca neutral-500 ni muted):** todos los
+  `text-neutral-500` → `600` en las 8 pantallas; token `--muted-foreground`
+  oscurecido `#71717a` → `#52525b` (afecta CardDescription/DialogDescription/
+  placeholders de shadcn).
+- **Settings reestructurada:** se quitó el layout anidado (tenía su propio
+  `min-h-screen`/`max-w-5xl` dentro del `max-w-4xl` del layout). El botón
+  Guardar pasó al header (como Onboarding) y se eliminó la barra fija inferior
+  que se montaba sobre el sidebar. Se ocultó el `Workspace ID` crudo (UUID =
+  ruido técnico, va contra la visión no-code).
+- **Voseo:** Knowledge "Sube documentos" → "Subí".
+- **CSS muerto:** eliminadas las utilidades de gradiente/`glass` no usadas
+  (CLAUDE: "sin gradientes").
+- **DB limpia:** borrado el workspace de prueba `aly-apapachat` (no era seed).
+  El dashboard queda con **Demo** + **Apapáchar**.
+- **DEMO_CHECKLIST.md actualizado:** describía el mock viejo (botón "Simular
+  Conversación" inexistente, "localStorage", "docs mock"). Corregido a chat LLM
+  real + onboarding en DB + metadatos por IA; se agregó la sección de
+  **Conversaciones + alertas** (faltaba) y nota del puerto variable.
+
+> Nota operativa: el dev de aly-saas suele caer al `3000`, pero si están
+> corriendo archetypeSuite/plural-monitor, Next elige `3001`/`3002` — mirar la
+> URL que imprime la terminal.
 
 ---
 

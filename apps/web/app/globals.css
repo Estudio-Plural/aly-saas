@@ -24,7 +24,7 @@
 
   /* Neutrals - Modern grays */
   --muted: #fafafa;
-  --muted-foreground: #71717a;
+  --muted-foreground: #52525b;
   --border: #e4e4e7;
   --input: #e4e4e7;
   --ring: #18181b;
@@ -132,50 +132,4 @@ body {
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Custom utilities for gradients */
-@layer utilities {
-  .bg-gradient-primary {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  }
-
-  .bg-gradient-primary-soft {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-  }
-
-  .bg-gradient-accent {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
-  }
-
-  .border-gradient {
-    border: 1px solid transparent;
-    background: linear-gradient(var(--background), var(--background)) padding-box,
-                linear-gradient(135deg, #6366f1, #8b5cf6) border-box;
-  }
-
-  /* Modern card styles */
-  .card-elevated {
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    transition: box-shadow 0.2s ease;
-  }
-
-  .card-elevated:hover {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  }
-
-  .card-subtle {
-    background: var(--card);
-    border: 1px solid var(--border);
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
-  }
-
-  /* Glass morphism effect */
-  .glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-  }
-
 }
