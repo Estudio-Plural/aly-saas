@@ -27,11 +27,31 @@ export interface WorkspaceUser {
   created_at: string;
 }
 
+// Capacidades estructurales del pipeline (ex ramas botId==="demo" del Aly-legacy).
+export interface WorkspaceCapabilities {
+  /** Triage de mensajes sensibles/riesgo → respuesta empática RAG-grounded. */
+  sensitive_safety: boolean;
+  /** Juntar slots de contexto antes de responder (ex slot-filling de clase). */
+  context_gathering: { on: boolean; slots: string[] };
+  /** Responder "sobre mi organización" desde un perfil estático (ex nodo identity). */
+  org_identity: boolean;
+}
+
 export interface WorkspaceConfig {
   workspace_id: string;
   theme_categories: string[];
   model_preferences: Record<string, string>;
+  /**
+   * Bundle de prompts del pipeline (campos _es/_en + compartidos). Vacío = usa
+   * el template default del engine. La key legacy `system` (chat de juguete)
+   * queda ignorada por el pipeline.
+   */
   prompts: Record<string, string>;
+  /** Flags de capacidades del pipeline (migración 006). */
+  capabilities: WorkspaceCapabilities;
+  /** Partición del corpus para retrieval, en orden de prioridad (migración 006). */
+  programs: string[];
+  flag_rules: { id: string; description: string; severity: "high" | "medium" | "low" }[];
   created_at: string;
   updated_at: string;
 }
