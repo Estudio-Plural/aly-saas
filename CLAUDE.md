@@ -18,10 +18,14 @@ El estado de sesión vivo está en `SESSION_RESUME.md` — leerlo al retomar.
 
 - Monorepo pnpm + Turborepo. Next.js 16 (App Router, Turbopack) + React 19 +
   Tailwind 4 + shadcn. TypeScript estricto.
-- `apps/web/` — la app completa. **El backend son route handlers** en
-  `apps/web/app/api/workspaces/...` (no hay servidor aparte).
-- `apps/api/` — scaffold Elysia/Bun **vacío a propósito** (decisión post-funding:
-  construirlo o consolidar en Next).
+- `apps/web/` — la app completa: UI + route handlers en
+  `apps/web/app/api/workspaces/...`.
+- `apps/api/` — **el engine conversacional real** (Elysia/Bun, sin langgraph ni
+  openai-SDK; solo `postgres` + `elysia` + `fetch`). Reproduce la topología de
+  16 nodos del Aly-legacy config-driven por workspace: prepare → normalize →
+  triage → fanout(intent ∥ librarian) → route → {sensitive | identity |
+  smalltalk | retrieve → factual/plan/ideate}. Config en
+  `workspace_configs` (cache 5 min, fallback a `src/config/defaults.ts`).
 - `packages/shared-types/` — tipos alineados al SQL (mantener sincronizados con
   `supabase/migrations/`).
 
@@ -29,9 +33,22 @@ El estado de sesión vivo está en `SESSION_RESUME.md` — leerlo al retomar.
 
 ```bash
 # Postgres 16 local (Homebrew) debe estar corriendo
-./scripts/db-setup.sh          # crea DB aly_saas + migraciones (idempotente)
-cd apps/web && npx next dev    # http://localhost:3000
+./scripts/db-setup.sh                 # crea DB aly_saas + migraciones (idempotente)
+cd apps/api && bun run src/index.ts   # engine real en :8080 (pipeline multi-tenant)
+cd apps/web && npx next dev           # http://localhost:3000
 ```
+
+- **El chat usa el engine real** (`apps/api`, pipeline portado de Aly-legacy,
+  config-driven por `workspace_configs`): la ruta de chat le pega a
+  `POST /api/rag/doQuestion` vía `lib/engine.ts` (`ENGINE_URL`, default
+  `http://localhost:8080`). Si el engine no responde, cae al camino legacy de
+  una sola llamada (`lib/llm.ts`) — el chat nunca se queda mudo.
+- El engine persiste el par user+assistant en `users_interactions` por su
+  cuenta; la ruta de chat NO debe volver a guardarlos cuando responde el engine.
+- ⚠️ Los prompts de `apps/api/src/config/defaults.ts` (fallback de workspaces
+  nuevos) DEBEN incluir los placeholders `{user_input}`/`{query}`/`{context}`/
+  `{history}` — `agents.ts` inserta la pregunta reemplazándolos dentro del
+  template; sin ellos el modelo responde un eco de las instrucciones.
 
 - `pnpm dev` desde el root puede fallar por build scripts bloqueados de pnpm →
   usar `npx next dev` directo en `apps/web`.

@@ -19,6 +19,7 @@ import {
   streamChatCompletion,
   type LlmMessage,
 } from "@/lib/llm";
+import { askEngine } from "@/lib/engine";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -79,6 +80,33 @@ export async function POST(request: Request, { params }: Params) {
   if (parsed.data.type === "append") {
     const inserted = await appendMessages(workspace.id, conversationId, parsed.data.messages);
     return NextResponse.json({ conversationId, messages: inserted });
+  }
+
+  // Motor real (apps/api): pipeline multi-tenant config-driven. Persiste el
+  // par user+assistant por su cuenta — acá NO se hace appendMessages. Si el
+  // engine no está disponible, se cae al camino legacy de una sola llamada.
+  const engine = await askEngine({
+    workspaceId: workspace.id,
+    conversationId,
+    userNumber: WEB_PREVIEW_NUMBER,
+    question: parsed.data.message,
+  });
+  if (engine) {
+    const encoder = new TextEncoder();
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(engine.answer));
+        controller.close();
+      },
+    });
+    return new Response(body, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Conversation-Id": conversationId,
+        "X-Intent": engine.intent,
+      },
+    });
   }
 
   const [userMessage] = await appendMessages(workspace.id, conversationId, [

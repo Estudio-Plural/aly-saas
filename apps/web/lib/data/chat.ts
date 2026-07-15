@@ -44,7 +44,7 @@ export async function getConversationMessages(
     SELECT id, role, message, timestamp
     FROM users_interactions
     WHERE workspace_id = ${workspaceId} AND conversation_id = ${conversationId}
-    ORDER BY created_at ASC
+    ORDER BY timestamp ASC, created_at ASC
   `;
   return rows.map(toChatMessage);
 }

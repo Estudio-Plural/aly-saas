@@ -1,7 +1,38 @@
 # 🔄 Resumen de Sesión - Aly SaaS
 
-**Fecha:** 2026-06-16
-**Status:** ✅ La app es FUNCIONAL en local — persistencia real + chat con LLM
+**Fecha:** 2026-07-15
+**Status:** ✅ El chat de la UI corre contra el ENGINE REAL (pipeline multi-tenant
+de 16 nodos, config-driven) — con fallback al camino legacy si el engine no está.
+
+---
+
+## ✨ Lo que cambió el 2026-07-15 (chat → engine real, E2E verde)
+
+- **Cableado chat → engine:** `apps/web/lib/engine.ts` (cliente HTTP, `ENGINE_URL`,
+  timeout 60s) + la ruta de chat intenta el engine primero y cae a `lib/llm.ts`
+  solo si no responde. El engine persiste el par user+assistant por su cuenta
+  (la ruta no duplica).
+- **Fix crítico en `apps/api/src/config/defaults.ts`:** los prompts default (los
+  que usa cualquier workspace nuevo, sin seed) NO tenían los placeholders
+  `{user_input}`/`{query}`/`{context}`/`{history}` que `agents.ts` reemplaza —
+  el modelo recibía instrucciones sin pregunta y respondía eco. Agregados en
+  los 10 prompts (normalize/triage/intent/librarian/factual/plan/ideate/
+  sensitive/smalltalk ES+EN).
+- **Orden determinista de mensajes:** el engine inserta el par en un solo INSERT
+  (mismo `created_at`, `timestamp` +1ms en la fila IA) → `getConversationMessages`
+  y el inbox ordenan ahora por `timestamp` con `created_at` de tiebreak.
+- **Deps:** `pnpm install` en el root (el clon no tenía node_modules) y
+  `bun add @sinclair/typebox` en apps/api (peer de Elysia que faltaba).
+- **E2E verificado** (workspace nuevo `la-espiga`, sin seed — puro default):
+  upload .txt con enriquecimiento LLM → FACTUAL responde precios/horarios del
+  doc → follow-up ("y hasta qué hora ese día?") resuelto por historial →
+  IDEATE con ideas ancladas al doc → SMALLTALK → SENSITIVE (triage) con
+  respuesta empática → cierre analiza la conversación → fallback con engine
+  caído responde igual. `next build` verde.
+- **Pendiente inmediato:** commitear todo esto (el engine de Fase 0 del
+  2026-07-01 sigue uncommitted + lo de hoy). Luego: parity test formal,
+  slot-filling (`collectContext`), streaming token a token desde el engine,
+  pgvector (Fase 2).
 
 ---
 
