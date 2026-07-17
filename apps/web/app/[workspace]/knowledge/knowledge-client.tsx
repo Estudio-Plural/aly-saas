@@ -23,9 +23,12 @@ import {
   TrashIcon,
   DownloadIcon,
   FileIcon,
+  PencilIcon,
+  SplitIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { DocumentRow } from "@/lib/workspaces";
 
@@ -41,6 +44,99 @@ function formatDate(dateString: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+/**
+ * "Cuándo lo consulta el asistente" — la señal de ruteo del documento.
+ * Se genera sola al subir; acá el usuario la puede ajustar en lenguaje natural.
+ */
+function RoutingHintEditor({
+  doc,
+  workspaceSlug,
+  onSaved,
+}: {
+  doc: DocumentRow;
+  workspaceSlug: string;
+  onSaved: (updated: DocumentRow) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const startEditing = () => {
+    setDraft(doc.routing_hint ?? "");
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const res = await fetch(
+        `/api/workspaces/${workspaceSlug}/documents/${doc.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ routing_hint: draft.trim() }),
+        }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "No se pudo guardar");
+        return;
+      }
+      onSaved(data.document);
+      setIsEditing(false);
+      toast.success("Ruteo del documento actualizado");
+    } catch {
+      toast.error("Error de conexión al guardar");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="mt-2 max-w-md space-y-2">
+        <Textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder='Ej: "Consultar cuando pregunten por precios o promociones"'
+          maxLength={300}
+          rows={2}
+          className="text-sm text-neutral-900"
+          autoFocus
+        />
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Guardando..." : "Guardar"}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsEditing(false)}
+            disabled={isSaving}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={startEditing}
+      className="group mt-1.5 flex items-start gap-1.5 text-left max-w-md"
+      title="Editar cuándo debe consultarse este documento"
+    >
+      <SplitIcon className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-neutral-600" />
+      <span className="text-xs text-neutral-700 group-hover:text-neutral-900">
+        {doc.routing_hint ?? "Definí cuándo debe consultarse este documento"}
+      </span>
+      <PencilIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-neutral-400 group-hover:text-neutral-900" />
+    </button>
+  );
 }
 
 export function KnowledgeClient({
@@ -266,6 +362,15 @@ export function KnowledgeClient({
                                 {doc.summary}
                               </p>
                             )}
+                            <RoutingHintEditor
+                              doc={doc}
+                              workspaceSlug={workspaceSlug}
+                              onSaved={(updated) =>
+                                setDocuments((prev) =>
+                                  prev.map((d) => (d.id === updated.id ? updated : d))
+                                )
+                              }
+                            />
                           </div>
                         </div>
                       </TableCell>
@@ -333,9 +438,11 @@ export function KnowledgeClient({
             </p>
             <p className="text-sm text-neutral-700 leading-relaxed">
               El texto de tus documentos (PDF, TXT, MD, CSV) se extrae y se suma al
-              contexto del asistente: probalo en la Vista Previa del Chat. Los DOC se
-              guardan y quedan listos para el procesamiento con embeddings (RAG) en
-              producción.
+              contexto del asistente: probalo en la Vista Previa del Chat. Cada
+              documento recibe automáticamente un <strong>&ldquo;cuándo consultarlo&rdquo;</strong>{" "}
+              que podés editar: el asistente lo usa para decidir qué documentos leer
+              según cada pregunta. Los DOC se guardan y quedan listos para el
+              procesamiento con embeddings (RAG) en producción.
             </p>
           </div>
         </div>

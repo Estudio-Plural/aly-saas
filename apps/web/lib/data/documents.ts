@@ -11,6 +11,7 @@ type DbDocument = {
   summary: string | null;
   keywords: string[] | null;
   theme_category: string | null;
+  routing_hint: string | null;
 };
 
 function toDocument(row: DbDocument): DocumentRow {
@@ -23,12 +24,13 @@ function toDocument(row: DbDocument): DocumentRow {
     summary: row.summary,
     keywords: row.keywords ?? [],
     theme_category: row.theme_category,
+    routing_hint: row.routing_hint,
   };
 }
 
 export async function listDocuments(workspaceId: string): Promise<DocumentRow[]> {
   const rows = await sql<DbDocument[]>`
-    SELECT id, name, type, size, created_at, summary, keywords, theme_category
+    SELECT id, name, type, size, created_at, summary, keywords, theme_category, routing_hint
     FROM documents
     WHERE workspace_id = ${workspaceId}
     ORDER BY created_at DESC
@@ -46,13 +48,29 @@ export async function createDocument(input: {
   summary: string | null;
   keywords: string[];
   themeCategory: string | null;
+  routingHint: string | null;
 }): Promise<DocumentRow> {
   const [row] = await sql<DbDocument[]>`
-    INSERT INTO documents (workspace_id, name, type, size, storage_path, text_content, summary, keywords, theme_category)
-    VALUES (${input.workspaceId}, ${input.name}, ${input.type}, ${input.size}, ${input.storagePath}, ${input.textContent}, ${input.summary}, ${input.keywords}::text[], ${input.themeCategory})
-    RETURNING id, name, type, size, created_at, summary, keywords, theme_category
+    INSERT INTO documents (workspace_id, name, type, size, storage_path, text_content, summary, keywords, theme_category, routing_hint)
+    VALUES (${input.workspaceId}, ${input.name}, ${input.type}, ${input.size}, ${input.storagePath}, ${input.textContent}, ${input.summary}, ${input.keywords}::text[], ${input.themeCategory}, ${input.routingHint})
+    RETURNING id, name, type, size, created_at, summary, keywords, theme_category, routing_hint
   `;
   return toDocument(row);
+}
+
+/** Actualiza el "cuándo consultarlo" de un documento (editable por el usuario). */
+export async function updateDocumentRouting(
+  workspaceId: string,
+  id: string,
+  routingHint: string | null
+): Promise<DocumentRow | null> {
+  const rows = await sql<DbDocument[]>`
+    UPDATE documents
+    SET routing_hint = ${routingHint}
+    WHERE workspace_id = ${workspaceId} AND id = ${id}
+    RETURNING id, name, type, size, created_at, summary, keywords, theme_category, routing_hint
+  `;
+  return rows.length ? toDocument(rows[0]) : null;
 }
 
 export async function getDocumentWithPath(

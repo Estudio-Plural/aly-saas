@@ -9,6 +9,8 @@ export type DocumentMetadata = {
   summary: string | null;
   keywords: string[];
   theme: string | null;
+  /** Cuándo debe consultarse el documento (señal de ruteo para el engine) */
+  routing: string | null;
 };
 
 export type ConversationAnalysis = {
@@ -55,7 +57,7 @@ export async function enrichDocument(
   if (!isLlmConfigured() || !text.trim()) return null;
 
   const prompt = `Analizá este documento de la base de conocimiento de un negocio y devolvé SOLO un JSON válido con esta forma exacta:
-{"summary": "resumen de 1 o 2 frases en español", "keywords": ["entre 3 y 6 palabras clave en minúsculas"], "theme": "categoría corta de 1 a 3 palabras (ej: precios, productos, políticas, horarios)"}
+{"summary": "resumen de 1 o 2 frases en español", "keywords": ["entre 3 y 6 palabras clave en minúsculas"], "theme": "categoría corta de 1 a 3 palabras (ej: precios, productos, políticas, horarios)", "routing": "una frase que empiece con 'Consultar cuando' describiendo qué tipo de preguntas se responden con este documento (ej: 'Consultar cuando pregunten por precios, promociones o formas de pago')"}
 
 Documento "${documentName}":
 ${text.slice(0, 8000)}`;
@@ -70,6 +72,7 @@ ${text.slice(0, 8000)}`;
       summary: asString(parsed.summary, 500),
       keywords: asKeywords(parsed.keywords),
       theme: asString(parsed.theme, 60)?.toLowerCase() ?? null,
+      routing: asString(parsed.routing, 300),
     };
   } catch (error) {
     console.error(`[enrichment] Falló el enriquecimiento de "${documentName}":`, error);

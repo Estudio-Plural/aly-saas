@@ -9,11 +9,11 @@
 // Fase 0: `retrieve` usa el puente de texto de documents (sin pgvector) y el
 // slot-filling (collectContext) queda pendiente detrás de context_gathering.
 
-import { resolveBotConfig } from "../config";
+import { resolveBotConfig, type BotConfig } from "../config";
 import * as agents from "./agents";
 import { formatHistory, getHistory, saveHistory } from "./history";
 import { INTENTS, type IntentType } from "./params";
-import { retrieveContext, type ChunkSource } from "./retrieval";
+import { listDocCatalog, retrieveContext, type ChunkSource } from "./retrieval";
 
 export interface QuestionInput {
   question: string;
@@ -64,10 +64,12 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
     );
   }
 
-  // ── fanout: intent ∥ librarian (en paralelo) ──────────────────────────────
-  const [intentRes] = await Promise.all([
+  // ── fanout: intent ∥ doc-router (en paralelo, como el librarian del legacy).
+  // El librarian temático (runLibrarian) vuelve en Fase 2 con pgvector; en el
+  // puente de texto el ruteo útil es por-documento, no por categoría.
+  const [intentRes, routedDocIds] = await Promise.all([
     agents.classifyIntent(standalone, config),
-    agents.runLibrarian(standalone, config), // themeFilters se usará en Fase 2 (vector)
+    selectDocuments(workspaceId, standalone, config),
   ]);
   const intent = intentRes.intent;
   const confidence = intentRes.confidence;
@@ -125,7 +127,7 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
   }
 
   // retrieve → agente terminal por intención
-  const { context, chunks } = await retrieveContext(workspaceId);
+  const { context, chunks } = await retrieveContext(workspaceId, routedDocIds);
   let answer: string;
   if (intent === INTENTS.PLAN) {
     answer = await agents.planAgent(standalone, context, language, historyString, config);
@@ -145,6 +147,18 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
     confidence,
     chunks,
   );
+}
+
+// Ruteo de documentos: con 0-1 docs no hay nada que decidir (sin LLM call);
+// con más, el doc-router elige el subconjunto. [] = todos (failsafe).
+async function selectDocuments(
+  workspaceId: string,
+  question: string,
+  config: BotConfig,
+): Promise<string[]> {
+  const catalog = await listDocCatalog(workspaceId);
+  if (catalog.length <= 1) return [];
+  return agents.routeDocuments(question, catalog, config);
 }
 
 async function finish(

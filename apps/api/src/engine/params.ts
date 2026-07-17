@@ -7,6 +7,7 @@ export const PARAMS = {
   triage: { temperature: 0.0, maxTokens: 16 },
   intent: { temperature: 0.1, maxTokens: 150 },
   librarian: { temperature: 0.1, maxTokens: 80 },
+  docRouter: { temperature: 0.0, maxTokens: 120 },
   keyword: { temperature: 0.1, maxTokens: 200 },
   factual: { temperature: 0.3, maxTokens: 800 },
   plan: { temperature: 0.5, maxTokens: 500 },

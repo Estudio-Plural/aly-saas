@@ -1,9 +1,43 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getWorkspaceBySlug } from "@/lib/data/workspaces";
-import { getDocumentWithPath, deleteDocument } from "@/lib/data/documents";
+import {
+  getDocumentWithPath,
+  deleteDocument,
+  updateDocumentRouting,
+} from "@/lib/data/documents";
 import { readUpload, removeUpload } from "@/lib/uploads";
 
 type Params = { params: Promise<{ slug: string; id: string }> };
+
+const patchSchema = z.object({
+  routing_hint: z.string().trim().max(300),
+});
+
+/** Edita el "cuándo consultarlo" del documento (string vacío lo borra). */
+export async function PATCH(request: Request, { params }: Params) {
+  const { slug, id } = await params;
+  const workspace = await getWorkspaceBySlug(slug);
+  if (!workspace) {
+    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const parsed = patchSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
+  }
+
+  const doc = await updateDocumentRouting(
+    workspace.id,
+    id,
+    parsed.data.routing_hint || null
+  );
+  if (!doc) {
+    return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
+  }
+  return NextResponse.json({ document: doc });
+}
 
 /** Descarga el archivo original. */
 export async function GET(_request: Request, { params }: Params) {

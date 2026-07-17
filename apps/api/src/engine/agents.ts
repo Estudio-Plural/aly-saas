@@ -115,6 +115,64 @@ export async function runLibrarian(
   }
 }
 
+// ── Doc router (ruteo de documentos) ──────────────────────────────────────
+// Port del doc-routing del librarian legacy, adaptado al SaaS: en vez de
+// categorías temáticas fijas, decide sobre el catálogo VIVO de documentos del
+// workspace usando el "cuándo consultarlo" de cada uno (routing_hint editable
+// por el usuario, fallback al summary). El prompt se arma en código porque el
+// catálogo es dinámico. Devuelve ids de documentos; [] = sin filtro (todos).
+export interface DocCatalogItem {
+  id: string;
+  name: string;
+  hint: string;
+}
+
+export async function routeDocuments(
+  question: string,
+  catalog: DocCatalogItem[],
+  config: BotConfig,
+): Promise<string[]> {
+  try {
+    const listing = catalog
+      .map((d, i) => `${i + 1}. "${d.name}"${d.hint ? ` — ${d.hint}` : ""}`)
+      .join("\n");
+
+    const prompt = `Sos el bibliotecario de un asistente conversacional. Tu única tarea es decidir qué documentos de la base de conocimiento hay que consultar para responder la pregunta del usuario.
+
+Documentos disponibles (con la indicación de cuándo consultar cada uno):
+${listing}
+
+Reglas:
+- Elegí SOLO los documentos claramente relevantes para la pregunta (la lista mínima).
+- Si la pregunta es muy amplia, pide un resumen general, o ningún documento aplica claramente, devolvé una lista vacía (se consultarán todos).
+
+Pregunta: "${question}"
+
+Respondé SOLO con JSON válido: {"documents": [numeros de la lista]}`;
+
+    const text = await callAgent({
+      model: config.models.librarian,
+      prompt,
+      temperature: PARAMS.docRouter.temperature,
+      maxTokens: PARAMS.docRouter.maxTokens,
+    });
+
+    const parsed = JSON.parse(stripCodeFence(text)) as { documents?: unknown };
+    const indices = Array.isArray(parsed.documents) ? parsed.documents : [];
+    const selected = indices
+      .map((n) => catalog[Number(n) - 1])
+      .filter((d): d is DocCatalogItem => Boolean(d));
+
+    console.log(
+      `📚 Doc router: ${selected.length ? selected.map((d) => `"${d.name}"`).join(", ") : "sin filtro (todos)"}`,
+    );
+    return selected.map((d) => d.id);
+  } catch (error) {
+    console.error("❌ Doc router failed → sin filtro (todos):", error);
+    return [];
+  }
+}
+
 // ── FACTUAL ────────────────────────────────────────────────────────────────
 export async function factualAgent(
   query: string,

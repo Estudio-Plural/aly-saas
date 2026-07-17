@@ -69,6 +69,7 @@ export async function POST(request: Request, { params }: Params) {
       summary: metadata?.summary ?? null,
       keywords: metadata?.keywords ?? [],
       themeCategory: metadata?.theme ?? null,
+      routingHint: metadata?.routing ?? null,
     });
     created.push(doc);
   }

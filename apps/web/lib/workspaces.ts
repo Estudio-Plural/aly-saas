@@ -34,6 +34,8 @@ export type DocumentRow = {
   summary: string | null;
   keywords: string[];
   theme_category: string | null;
+  /** Cuándo debe consultarse este documento — auto-generado, editable por el usuario */
+  routing_hint: string | null;
 };
 
 export type FlagSeverity = "high" | "medium" | "low";
