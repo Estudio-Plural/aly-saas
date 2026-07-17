@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { uid } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -343,7 +344,7 @@ function FlagRulesCard({
     }
     setRules((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), description: "", severity: "medium" },
+      { id: uid(), description: "", severity: "medium" },
     ]);
   };
 

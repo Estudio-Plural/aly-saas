@@ -9,7 +9,11 @@ const nextConfig: NextConfig = {
   },
   // Permite acceder al dev server desde la tailnet (VPS plural-ai);
   // sin esto Next 16 responde 403 a los assets /_next/* cross-origin.
-  allowedDevOrigins: ["100.102.137.92", "plural-ai.tail8d56f3.ts.net"],
+  allowedDevOrigins: [
+    "100.102.137.92",
+    "plural-ai.tail8d56f3.ts.net",
+    "*.trycloudflare.com",
+  ],
 };
 
 export default nextConfig;
