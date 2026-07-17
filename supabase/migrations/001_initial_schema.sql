@@ -207,7 +207,7 @@ BEGIN
     document_name TEXT NOT NULL,
     chunk_index INTEGER NOT NULL,
     text TEXT NOT NULL,
-    embedding vector(1536) NOT NULL, -- OpenAI ada-002 / text-embedding-3-small
+    embedding vector(3072) NOT NULL, -- OpenAI text-embedding-3-large
     summary TEXT,
     keywords TEXT[],
     theme_category TEXT,
@@ -220,10 +220,9 @@ BEGIN
   CREATE INDEX IF NOT EXISTS idx_aly_general_knowledge_document ON vector_aly.aly_general_knowledge(workspace_id, document_id);
   CREATE INDEX IF NOT EXISTS idx_aly_general_knowledge_theme ON vector_aly.aly_general_knowledge(workspace_id, theme_category);
 
-  -- Vector similarity index
-  CREATE INDEX IF NOT EXISTS idx_aly_general_knowledge_embedding ON vector_aly.aly_general_knowledge
-    USING ivfflat (embedding vector_cosine_ops)
-    WITH (lists = 100);
+  -- Sin índice vectorial: ivfflat/hnsw no soportan >2000 dims (acá 3072).
+  -- A este volumen el scan exacto es rápido y con recall perfecto; si el
+  -- volumen crece, evaluar índice HNSW sobre halfvec(3072).
 
   ALTER TABLE vector_aly.aly_general_knowledge ENABLE ROW LEVEL SECURITY;
 

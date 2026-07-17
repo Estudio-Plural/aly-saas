@@ -7,6 +7,7 @@ import {
   updateDocumentRouting,
 } from "@/lib/data/documents";
 import { readUpload, removeUpload } from "@/lib/uploads";
+import { deleteDocumentEmbeddings } from "@/lib/embeddings";
 
 type Params = { params: Promise<{ slug: string; id: string }> };
 
@@ -80,5 +81,6 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 });
   }
   await removeUpload(deleted.storage_path);
+  await deleteDocumentEmbeddings(workspace.id, id);
   return NextResponse.json({ ok: true });
 }

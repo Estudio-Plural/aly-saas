@@ -6,8 +6,9 @@
 //                                   SENSITIVE(safety-net) / IDENTITY / SMALLTALK
 //                                   / retrieve → {factual | plan | ideate}
 //
-// Fase 0: `retrieve` usa el puente de texto de documents (sin pgvector) y el
-// slot-filling (collectContext) queda pendiente detrás de context_gathering.
+// `retrieve` hace búsqueda vectorial (pgvector) con failsafe al puente de
+// texto plano de documents; el slot-filling (collectContext) queda pendiente
+// detrás de context_gathering.
 
 import { resolveBotConfig, type BotConfig } from "../config";
 import * as agents from "./agents";
@@ -126,8 +127,9 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
     );
   }
 
-  // retrieve → agente terminal por intención
-  const { context, chunks } = await retrieveContext(workspaceId, routedDocIds);
+  // retrieve → agente terminal por intención (búsqueda vectorial con la query
+  // normalizada; failsafe interno al texto plano)
+  const { context, chunks } = await retrieveContext(workspaceId, routedDocIds, standalone);
   let answer: string;
   if (intent === INTENTS.PLAN) {
     answer = await agents.planAgent(standalone, context, language, historyString, config);

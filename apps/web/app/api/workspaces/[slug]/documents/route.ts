@@ -4,6 +4,7 @@ import { getWorkspaceBySlug } from "@/lib/data/workspaces";
 import { listDocuments, createDocument } from "@/lib/data/documents";
 import { saveUpload, extractTextContent } from "@/lib/uploads";
 import { enrichDocument } from "@/lib/enrichment";
+import { indexDocument } from "@/lib/embeddings";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -71,6 +72,18 @@ export async function POST(request: Request, { params }: Params) {
       themeCategory: metadata?.theme ?? null,
       routingHint: metadata?.routing ?? null,
     });
+
+    // Embeddings para el RAG del engine (fail-silent: sin pgvector o sin
+    // OpenRouter el retrieval cae al texto plano)
+    if (textContent) {
+      await indexDocument({
+        workspaceId: workspace.id,
+        documentId: doc.id,
+        documentName: file.name,
+        text: textContent,
+        themeCategory: metadata?.theme ?? null,
+      });
+    }
     created.push(doc);
   }
 
