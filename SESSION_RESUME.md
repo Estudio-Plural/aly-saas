@@ -1,8 +1,69 @@
 # 🔄 Resumen de Sesión - Aly SaaS
 
-**Fecha:** 2026-07-15
-**Status:** ✅ El chat de la UI corre contra el ENGINE REAL (pipeline multi-tenant
-de 16 nodos, config-driven) — con fallback al camino legacy si el engine no está.
+**Fecha:** 2026-07-17
+**Status:** ✅ RAG vectorial REAL (pgvector + embeddings) en el engine, con
+failsafe a texto plano. El chat de la UI sigue contra el engine real.
+
+---
+
+## ✨ Lo que cambió el 2026-07-17 (embeddings / RAG real)
+
+- **pgvector instalado y activo** en esta máquina (Debian, Postgres 17,
+  paquete `postgresql-17-pgvector`, extensión 0.8.0 creada en `aly_saas`).
+  Re-corrida la migración 001 (idempotente) → ahora existe
+  `vector_aly.aly_general_knowledge`.
+- **Embeddings vía OpenRouter** (confirmado que su endpoint `/embeddings`
+  funciona con la key existente): `openai/text-embedding-3-large` (3072 dims,
+  pedido de Daniel: "vamos con lo mejor"; columna `vector(3072)` vía migración
+  008, sin índice vectorial — ivfflat/hnsw no soportan >2000 dims, scan exacto).
+  Override opcional `OPENROUTER_EMBEDDING_MODEL` — misma variable en web y
+  engine, DEBEN coincidir.
+- **Indexado al subir** (`apps/web/lib/embeddings.ts`): chunking por párrafos
+  (~1500 chars, overlap 200 para párrafos largos tipo PDF) + insert de chunks
+  con embedding. Fail-silent total (como enrichment). Cableado en el POST de
+  documents; el DELETE limpia los chunks. Backfill idempotente:
+  `cd apps/web && bun scripts/backfill-embeddings.ts` (corrido: 3 docs → 18
+  chunks; el PDF de 20k chars quedó en 16).
+- **Retrieval vectorial en el engine** (`apps/api/src/engine/retrieval.ts` +
+  `embeddings.ts` nuevo): embebe la query normalizada y trae TOP_K=8 chunks
+  por coseno, respetando el doc-routing (`retrieveContext(wsId, docIds, query)`
+  — el pipeline ahora pasa `standalone`). Failsafes en cadena: docs con texto
+  sin indexar entran completos; sin key / OpenRouter caído / sin pgvector /
+  error → puente de texto plano (Fase 0 intacto como `retrieveFullText`).
+- **E2E verificado:** pregunta al PDF (testeo) → 8 chunks por vector, respuesta
+  anclada; "¿puedo cancelar una torta?" (la-espiga) → doc-router elige
+  `pedidos-espiga.txt` y el vector trae su chunk (sim 0.52); upload nuevo por
+  la web indexa solo (catering test: routed + respondido con sim 0.69) y su
+  DELETE limpió los chunks. `next build` verde, tsc de ambas apps limpio.
+- **Ojo entorno:** en esta máquina el engine corre en **:8081**
+  (`API_PORT=8081` en apps/api/.env; el :8080 lo ocupa un uvicorn ajeno) y
+  `ENGINE_URL=http://localhost:8081` en apps/web/.env.local.
+- **Pendiente inmediato:** commitear TODO (engine Fase 0 + extracción + ruteo
+  + embeddings siguen uncommitted).
+
+---
+
+## ✨ Lo que cambió el 2026-07-15 (tarde — testeo de Daniel: extracción + ruteo de docs)
+
+- **Extracción de variables en onboarding** (reporte de Daniel: "Me llamo Daniel"
+  quedaba entero como `{nombre}`): nuevo `POST /api/workspaces/[slug]/extract`
+  (LLM extrae el valor limpio, failsafe total a la respuesta cruda) +
+  `lib/extract-variable.ts`, cableado en los dos runners de flujo
+  (`chat-client.tsx` y el preview del builder en `onboarding-client.tsx`).
+  El mensaje persistido sigue siendo el crudo; la variable interpolada queda limpia.
+- **Ruteo de documentos** (pedido de Daniel, port del doc-routing del librarian
+  legacy): migración `007` agrega `documents.routing_hint` ("cuándo consultarlo",
+  en lenguaje natural). Se auto-genera al subir (`enrichDocument`) y es editable
+  en la Base de Conocimiento (editor inline + `PATCH /documents/[id]`).
+  En el engine, `agents.routeDocuments` (doc-router) corre en el fanout en
+  paralelo con intent —reemplaza al librarian temático descartado de Fase 0—
+  y elige qué docs entran al contexto vía `retrieveContext(wsId, docIds)`.
+  Fallbacks: sin hint → usa summary; 0-1 docs → sin LLM call; router falla o
+  devuelve [] → todos los docs (comportamiento anterior).
+- **E2E verificado** (la-espiga con 2 docs): "puedo cancelar una torta" → solo
+  `pedidos-espiga.txt`; "a qué hora abren los domingos" → solo `kb-espiga.txt`
+  (ruteó por summary, sin hint). `next build` verde, tsc del engine limpio.
+- **Pendiente inmediato:** commitear (extracción + ruteo). Backlog igual que abajo.
 
 ---
 

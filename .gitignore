@@ -46,3 +46,6 @@ bun.lockb
 
 # OS
 Thumbs.db
+
+# Logs de dev locales
+dev.log
