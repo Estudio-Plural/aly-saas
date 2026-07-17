@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { SendIcon, RotateCcwIcon } from "lucide-react";
 import { toast } from "sonner";
+import { extractVariable } from "@/lib/extract-variable";
+import { uid } from "@/lib/utils";
 import type { ChatMessage, OnboardingStep } from "@/lib/workspaces";
 
 type Mode = "onboarding" | "llm";
@@ -22,7 +24,7 @@ function interpolate(content: string, answers: Record<string, string>): string {
 
 function localMessage(text: string, sender: "user" | "assistant"): ChatMessage {
   return {
-    id: crypto.randomUUID(),
+    id: uid(),
     text,
     sender,
     timestamp: new Date().toISOString(),
@@ -162,7 +164,7 @@ export function ChatClient({
       setIsStreaming(true);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      const messageId = crypto.randomUUID();
+      const messageId = uid();
       let accumulated = "";
       let started = false;
 
@@ -202,10 +204,20 @@ export function ChatClient({
 
     if (mode === "onboarding") {
       const currentStep = flowSteps[flowIndexRef.current];
+      // Persistir el mensaje crudo y extraer el valor limpio son independientes
+      const persisting = persistMessages([{ role: "user", text }]);
       if (currentStep?.type === "question" && currentStep.variable) {
-        answersRef.current = { ...answersRef.current, [currentStep.variable]: text };
+        // El valor limpio, no la frase entera ("Me llamo Daniel" → "Daniel")
+        setIsTyping(true);
+        const value = await extractVariable(workspaceSlug, {
+          question: currentStep.content,
+          variable: currentStep.variable,
+          answer: text,
+        });
+        setIsTyping(false);
+        answersRef.current = { ...answersRef.current, [currentStep.variable]: value };
       }
-      await persistMessages([{ role: "user", text }]);
+      await persisting;
       await advanceFlow(flowIndexRef.current + 1);
     } else {
       await sendToLlm(text);

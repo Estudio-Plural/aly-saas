@@ -18,6 +18,8 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { extractVariable } from "@/lib/extract-variable";
+import { uid } from "@/lib/utils";
 import {
   DndContext,
   closestCenter,
@@ -227,7 +229,15 @@ function SortableStepCard({
 
 type PreviewMessage = { id: string; text: string; sender: "user" | "assistant" };
 
-function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: string }) {
+function FlowPreview({
+  steps,
+  assistantName,
+  workspaceSlug,
+}: {
+  steps: Step[];
+  assistantName: string;
+  workspaceSlug: string;
+}) {
   const [messages, setMessages] = useState<PreviewMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -280,7 +290,7 @@ function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: s
       setIsTyping(false);
       setMessages((prev) => [
         ...prev,
-        { id: crypto.randomUUID(), text, sender: "assistant" },
+        { id: uid(), text, sender: "assistant" },
       ]);
     }
     setIsTyping(false);
@@ -308,15 +318,24 @@ function FlowPreview({ steps, assistantName }: { steps: Step[]; assistantName: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const text = inputValue.trim();
     if (!text || isTyping || isDone) return;
     setInputValue("");
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), text, sender: "user" }]);
+    setMessages((prev) => [...prev, { id: uid(), text, sender: "user" }]);
 
     const step = stepsRef.current[indexRef.current];
     if (step?.type === "question" && step.variable?.trim()) {
-      answersRef.current = { ...answersRef.current, [step.variable.trim()]: text };
+      // El valor limpio, no la frase entera ("Me llamo Daniel" → "Daniel")
+      const myRun = runIdRef.current;
+      setIsTyping(true);
+      const value = await extractVariable(workspaceSlug, {
+        question: step.content,
+        variable: step.variable.trim(),
+        answer: text,
+      });
+      if (runIdRef.current !== myRun) return;
+      answersRef.current = { ...answersRef.current, [step.variable.trim()]: value };
     }
     advance(indexRef.current + 1);
   };
@@ -486,7 +505,7 @@ export function OnboardingClient({
     setBody((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: uid(),
         type,
         content: "",
         variable: type === "question" ? "" : undefined,
@@ -571,6 +590,7 @@ export function OnboardingClient({
         {/* Left: Editor */}
         <div className="space-y-4 overflow-y-auto pr-2">
           <DndContext
+            id="onboarding-steps-dnd"
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -685,7 +705,11 @@ export function OnboardingClient({
 
         {/* Right: Preview interactiva */}
         <div className="min-h-[560px]">
-          <FlowPreview steps={allSteps} assistantName={assistantName} />
+          <FlowPreview
+            steps={allSteps}
+            assistantName={assistantName}
+            workspaceSlug={workspaceSlug}
+          />
         </div>
       </div>
     </div>
