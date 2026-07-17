@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.join(__dirname, "..", ".."),
   },
+  // Permite acceder al dev server desde la tailnet (VPS plural-ai);
+  // sin esto Next 16 responde 403 a los assets /_next/* cross-origin.
+  allowedDevOrigins: ["100.102.137.92", "plural-ai.tail8d56f3.ts.net"],
 };
 
 export default nextConfig;
