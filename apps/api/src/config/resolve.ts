@@ -12,6 +12,13 @@ import {
   DEFAULT_RAW_PROMPTS,
   DEFAULT_THEME_CATEGORIES,
 } from "./defaults";
+import {
+  DEFAULT_CORE_PROMPT,
+  DEFAULT_STORYBOARD,
+  compileIdentity,
+  type CorePrompt,
+  type Storyboard,
+} from "./identity";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -28,6 +35,10 @@ interface ConfigRow {
   capabilities: Partial<Capabilities> | null;
   programs: string[] | null;
   theme_categories: string[] | null;
+  core_prompt: CorePrompt | null;
+  storyboard: Storyboard | null;
+  assistant_name: string;
+  workspace_name: string;
 }
 
 type LangKey = "es" | "en";
@@ -103,9 +114,12 @@ export async function resolveBotConfig(
   }
 
   const rows = await sql<ConfigRow[]>`
-    SELECT prompts, model_preferences, capabilities, programs, theme_categories
-    FROM workspace_configs
-    WHERE workspace_id = ${workspaceId}
+    SELECT c.prompts, c.model_preferences, c.capabilities, c.programs,
+           c.theme_categories, c.core_prompt, c.storyboard,
+           w.assistant_name, w.name AS workspace_name
+    FROM workspace_configs c
+    JOIN workspaces w ON w.id = c.workspace_id
+    WHERE c.workspace_id = ${workspaceId}
   `;
   const row = rows[0];
   const raw = (row?.prompts ?? {}) as RawPromptStore;
@@ -118,6 +132,14 @@ export async function resolveBotConfig(
     themeCategories: row?.theme_categories?.length
       ? row.theme_categories
       : DEFAULT_THEME_CATEGORIES,
+    identity: row
+      ? compileIdentity(
+          row.assistant_name,
+          row.workspace_name,
+          row.core_prompt ?? DEFAULT_CORE_PROMPT,
+          row.storyboard ?? DEFAULT_STORYBOARD,
+        )
+      : "",
   };
 
   cache.set(cacheKey, { config, expiresAt: Date.now() + CACHE_TTL_MS });

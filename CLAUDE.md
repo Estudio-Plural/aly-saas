@@ -7,9 +7,14 @@ Repo: `Estudio-Plural/aly-saas`, branch de trabajo `main`.
 
 **Visión de producto (definida por Daniel):** el usuario es **no-code** — entra,
 crea su propio Aly y todo lo técnico es automático (metadatos de documentos,
-análisis de conversaciones). Las únicas dos superficies de "diseño" que toca:
-el **builder de onboarding** y **definir sus reglas de alerta** en lenguaje
-natural. No agregar configuración técnica visible al usuario.
+análisis de conversaciones). Las superficies de "diseño" que toca:
+- **Identidad / prompt núcleo** (`/[workspace]/identity`, desde 2026-07-18):
+  misión, alcance, criterio de éxito y acciones clave del asistente.
+- **Storyboard** (en `/[workspace]/onboarding`, ahora "Programa"): el arco de
+  la conversación en 4 momentos (arranque → qué pasa → qué debe pasar después
+  → cómo termina). El builder de pasos queda como "modo avanzado" colapsable.
+- **Reglas de alerta** en lenguaje natural.
+No agregar configuración técnica visible al usuario.
 
 **⚠️ Reencuadre de producto (Daniel, 2026-07-15 — PENDIENTE de bajar a detalle):**
 este producto es de **Estudio Plural, un estudio de ciencias del comportamiento**.
@@ -96,6 +101,13 @@ cd apps/web && npx next dev           # http://localhost:3000
 - Onboarding se guarda en `onboarding_flows.definition` como
   `{steps: [{id, type: question|message|end, content, variable?}]}` (secuencial,
   NO nodes/edges de React Flow).
+- Prompt núcleo y storyboard viven en `workspace_configs.core_prompt` /
+  `workspace_configs.storyboard` (migración 009; NULL → defaults comportamentales
+  en código: `DEFAULT_CORE_PROMPT` / `DEFAULT_STORYBOARD` en
+  `apps/web/lib/workspaces.ts`, duplicados en `apps/api/src/config/identity.ts`).
+  `compileIdentityBlock()` los compila al bloque de identidad que se inyecta en
+  los prompts (web fallback y engine vía `BotConfig.identity` + `withIdentity`
+  en factual/plan/ideate/smalltalk).
 - RLS habilitado en todas las tablas (las queries locales lo bypassean por ser
   superuser; las policies usan `current_setting('app.workspace_id')`).
 
@@ -103,9 +115,10 @@ cd apps/web && npx next dev           # http://localhost:3000
 
 - `lib/db.ts` — cliente postgres.js. **Solo importar desde código de servidor.**
 - `lib/data/*.ts` — queries por entidad (workspaces, documents, onboarding,
-  chat, conversations, whatsapp). Las fechas se devuelven como ISO strings.
-- `lib/llm.ts` — chat vía OpenRouter; system prompt = identidad del workspace +
-  override en `workspace_configs.prompts.system` + texto de documentos.
+  chat, conversations, whatsapp, program). Las fechas se devuelven como ISO strings.
+- `lib/llm.ts` — chat vía OpenRouter; system prompt = bloque de identidad
+  compilado (`compileIdentityBlock`: prompt núcleo + storyboard) + texto de
+  documentos.
   Modelo: `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`), override por
   workspace en `workspace_configs.model_preferences.chat`. La ruta de chat
   **streamea** la respuesta (`streamChatCompletion`, SSE de OpenRouter →

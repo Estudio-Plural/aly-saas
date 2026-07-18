@@ -14,6 +14,11 @@ export interface IntentClassification {
   confidence: number;
 }
 
+/** Antepone el bloque de identidad (prompt núcleo + storyboard) al prompt. */
+function withIdentity(prompt: string, config: BotConfig): string {
+  return config.identity ? `${config.identity}\n\n${prompt}` : prompt;
+}
+
 // ── Normalize ────────────────────────────────────────────────────────────
 export async function normalize(
   question: string,
@@ -196,6 +201,7 @@ export async function factualAgent(
   let prompt = config.prompts.factual.replace("{context}", context).replace("{query}", query);
   prompt = historyString + "\n\n" + prompt;
   prompt = applyLanguagePostfix(prompt, language);
+  prompt = withIdentity(prompt, config);
 
   return callAgent({
     model: config.models.factual,
@@ -217,6 +223,7 @@ export async function planAgent(
   let prompt = config.prompts.plan.replace("{context}", context).replace("{query}", query);
   prompt = historyString + "\n\n" + prompt;
   prompt = applyLanguagePostfix(prompt, language);
+  prompt = withIdentity(prompt, config);
   return callAgent({
     model: config.models.plan,
     prompt,
@@ -237,6 +244,7 @@ export async function ideateAgent(
   let prompt = config.prompts.ideate.replace("{context}", context).replace("{query}", query);
   prompt = historyString + "\n\n" + prompt;
   prompt = applyLanguagePostfix(prompt, language);
+  prompt = withIdentity(prompt, config);
   return callAgent({
     model: config.models.ideate,
     prompt,
@@ -256,6 +264,7 @@ export async function smalltalkAgent(
   let prompt = config.prompts.smalltalk.replace("{query}", query);
   prompt = historyString + "\n\n" + prompt;
   prompt = applyLanguagePostfix(prompt, language);
+  prompt = withIdentity(prompt, config);
   return callAgent({
     model: config.models.smalltalk,
     prompt,
