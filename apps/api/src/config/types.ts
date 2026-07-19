@@ -48,6 +48,8 @@ export interface BotConfig {
   capabilities: Capabilities;
   /** Categorías temáticas para el librarian (derivadas del corpus del tenant). */
   themeCategories: string[];
+  /** Bloque de identidad (prompt núcleo + storyboard) para los agentes de cara al usuario. */
+  identity: string;
 }
 
 /**

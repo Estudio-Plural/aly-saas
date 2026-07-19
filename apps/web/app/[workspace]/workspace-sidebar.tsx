@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   SettingsIcon,
+  FingerprintIcon,
   FileTextIcon,
   WorkflowIcon,
   BotIcon,
@@ -16,8 +17,9 @@ export function WorkspaceSidebar({ workspace }: { workspace: string }) {
 
   const navigation = [
     { name: "General", href: `/${workspace}/settings`, icon: SettingsIcon },
+    { name: "Identidad", href: `/${workspace}/identity`, icon: FingerprintIcon },
     { name: "Conocimiento", href: `/${workspace}/knowledge`, icon: FileTextIcon },
-    { name: "Onboarding", href: `/${workspace}/onboarding`, icon: WorkflowIcon },
+    { name: "Programa", href: `/${workspace}/onboarding`, icon: WorkflowIcon },
     { name: "Chat", href: `/${workspace}/chat`, icon: BotIcon },
     { name: "Conversaciones", href: `/${workspace}/conversations`, icon: MessagesSquareIcon },
     { name: "WhatsApp", href: `/${workspace}/whatsapp`, icon: PhoneIcon },
