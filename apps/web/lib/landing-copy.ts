@@ -9,14 +9,15 @@ export const LANDING_COPY = {
   },
   hero: {
     eyebrow: "Asistentes de IA para WhatsApp",
-    headline: "Convertí tu conocimiento en un programa conversacional que acompaña a cada persona",
+    headline: {
+      before: "Convertí tu conocimiento en un ",
+      highlight: "programa conversacional",
+      after: " que acompaña a cada persona",
+    },
     subheadline:
       "Diseñá flujos de aprendizaje y cambio de comportamiento por WhatsApp sin código. Cada participante interactúa con un asistente que entiende tu protocolo y responde con tus propias fuentes.",
     ctaPrimary: "Crear mi asistente",
     ctaSecondary: "Ver cómo funciona",
-  },
-  socialProof: {
-    label: "Ideal para programas sociales, capacitación y acompañamiento por WhatsApp",
   },
   steps: {
     title: "De tu conocimiento a una conversación en minutos",
@@ -24,11 +25,11 @@ export const LANDING_COPY = {
     items: [
       {
         title: "Subí tu conocimiento",
-        description: "Documentos, guías o protocolos. El asistente los indexa y cita al responder.",
+        description: "Documentos, guías o protocolos. El asistente los indexa y los usa como fuente al responder.",
       },
       {
-        title: "Diseñá la conversación",
-        description: "Armá el onboarding paso a paso con preguntas, mensajes y variables.",
+        title: "Diseñá el programa",
+        description: "Definí la identidad del asistente y el storyboard: el arco de la conversación en 4 momentos.",
       },
       {
         title: "Conectá WhatsApp",
@@ -41,12 +42,12 @@ export const LANDING_COPY = {
     subtitle: "Una plataforma pensada para programas conversacionales serios.",
     items: [
       {
-        title: "RAG con citas",
-        description: "No alucina: responde basándose en tus documentos y conserva el contexto.",
+        title: "RAG real",
+        description: "Responde basándose en tus propios documentos, no en conocimiento genérico.",
       },
       {
-        title: "Onboarding no-code",
-        description: "Flujos conversacionales con preview en vivo. Arrastrá, editá y publicá.",
+        title: "Programa no-code",
+        description: "Storyboard del programa y guion de arranque, con preview en vivo.",
       },
       {
         title: "Alertas en lenguaje natural",
@@ -75,7 +76,7 @@ export const LANDING_COPY = {
         price: "Gratis",
         period: "14 días",
         description: "Para probar tu primer asistente sin compromiso.",
-        features: ["1 workspace", "Base de conocimiento", "Chat de preview", "Onboarding builder"],
+        features: ["1 workspace", "Base de conocimiento", "Chat de preview", "Storyboard del programa"],
         cta: "Empezar gratis",
         highlighted: false,
       },

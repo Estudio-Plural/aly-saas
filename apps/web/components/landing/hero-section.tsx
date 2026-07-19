@@ -22,19 +22,9 @@ export function HeroSection() {
             </div>
 
             <h1 className="text-balance text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl lg:text-6xl">
-              {LANDING_COPY.hero.headline.replace(
-                "programa conversacional",
-                "{{PROGRAMA}}"
-              )
-                .split("{{PROGRAMA}}")
-                .map((part, i, arr) => (
-                  <span key={i}>
-                    {part}
-                    {i < arr.length - 1 && (
-                      <span className="gradient-text">programa conversacional</span>
-                    )}
-                  </span>
-                ))}
+              {LANDING_COPY.hero.headline.before}
+              <span className="gradient-text">{LANDING_COPY.hero.headline.highlight}</span>
+              {LANDING_COPY.hero.headline.after}
             </h1>
 
             <p className="mx-auto mt-5 max-w-xl text-balance text-lg text-neutral-600 lg:mx-0">
