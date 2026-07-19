@@ -36,7 +36,10 @@ El estado de sesión vivo está en `SESSION_RESUME.md` — leerlo al retomar.
 - Monorepo pnpm + Turborepo. Next.js 16 (App Router, Turbopack) + React 19 +
   Tailwind 4 + shadcn. TypeScript estricto.
 - `apps/web/` — la app completa: UI + route handlers en
-  `apps/web/app/api/workspaces/...`.
+  `apps/web/app/api/workspaces/...`. Desde 2026-07-19 la raíz `/` es la
+  **landing pública** (route group `app/(landing)/`, navbar/footer propios,
+  copy centralizado en `lib/landing-copy.ts`); la app vive en `/dashboard`
+  y `/[workspace]/...` como siempre.
 - `apps/api/` — **el engine conversacional real** (Elysia/Bun, sin langgraph ni
   openai-SDK; solo `postgres` + `elysia` + `fetch`). Reproduce la topología de
   16 nodos del Aly-legacy config-driven por workspace: prepare → normalize →
@@ -86,6 +89,26 @@ cd apps/web && npx next dev           # http://localhost:3000
 - `pnpm dev` desde el root puede fallar por build scripts bloqueados de pnpm →
   usar `npx next dev` directo en `apps/web`.
 - Build: `cd apps/web && npx next build` (debe quedar verde antes de commitear).
+
+## Deploy (VPS Debian — el entorno que se usa de verdad)
+
+La app corre deployada en una VPS Debian (desde 2026-07-19 como servicios
+systemd, `enabled`, sobreviven reboots):
+
+- **`aly-web`** — `next dev -H 0.0.0.0 -p 3000`: sirve el working tree con hot
+  reload (dejarlo en `main`; los merges a main se ven solos, sin deploy).
+  Deliberadamente dev mode; si un día hay producción real: `next build` + `next start`.
+- **`aly-engine`** — bun en **:8081** (`API_PORT=8081` en `apps/api/.env`; el
+  :8080 del ejemplo de arriba lo ocupa un uvicorn ajeno en esa máquina).
+  ⚠️ Bun NO recarga código: tras mergear cambios del engine →
+  `systemctl restart aly-engine` (también resetea el cache de config de 5 min).
+  Logs: `journalctl -u aly-engine`. No relanzar a mano con nohup.
+- **Entrada pública:** `cloudflared-aly-saas` (Quick Tunnel, URL en
+  `journalctl -u cloudflared-aly-saas`; cambia si el servicio se reinicia) →
+  caddy `:8093` con basic auth (usuario `equipo`) → `:3000`.
+- **Migraciones:** correrlas a mano con
+  `psql "<DATABASE_URL de apps/web/.env.local>" -f supabase/migrations/XXX.sql`
+  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS.
 
 ## Base de datos
 
@@ -153,7 +176,7 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 | Real | Simulado / pendiente |
 |---|---|
-| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview**, **RAG vectorial (pgvector + embeddings OpenRouter, con fallback a texto plano)** | Conexión WhatsApp/Kapso (teatro persistido en DB), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
+| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview**, **RAG vectorial (pgvector + embeddings OpenRouter, con fallback a texto plano)**, identidad + storyboard editables e inyectados en los prompts, **landing pública en `/`** | Conexión WhatsApp/Kapso (teatro persistido en DB), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
 
 ## Convenciones
 
@@ -164,6 +187,8 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
   significado: verde/azul en badges de estado, severidades de alertas
   (rojo/ámbar), tipos de paso del onboarding (azul/verde/morado) y links.
   No mostrar el email del usuario demo en los headers.
+  Excepción aceptada (2026-07-19): la **landing pública** usa `.gradient-text`
+  en el highlight del hero como acento de marketing — no "arreglarlo".
 - Commits estilo `feat:`/`fix:`/`chore:` con resumen en español.
 - Docs de pitch: `PITCH_SCRIPT.md`, `DEMO_CHECKLIST.md`. `KAPSO_INTEGRATION.md`
   es pseudocódigo aspiracional (menciona Prisma que no existe) — no tomarlo

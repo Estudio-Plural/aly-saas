@@ -1,8 +1,49 @@
 # 🔄 Resumen de Sesión - Aly SaaS
 
-**Fecha:** 2026-07-17
-**Status:** ✅ RAG vectorial REAL (pgvector + embeddings) en el engine, con
-failsafe a texto plano. El chat de la UI sigue contra el engine real.
+**Fecha:** 2026-07-19
+**Status:** ✅ PRs #1 (identidad + storyboard) y #2 (landing pública) revisadas,
+corregidas y mergeadas a main. La VPS quedó como entorno deployado formal:
+servicios systemd + túnel funcionando con el código nuevo.
+
+---
+
+## ✨ Lo que cambió el 2026-07-19 (merge de PRs + VPS como deploy formal)
+
+- **PR #1 mergeada (squash)** — identidad/prompt núcleo + storyboard. Antes del
+  merge se corrigieron dos fallas silenciosas: `saveCorePrompt`/`saveStoryboard`
+  pasaron de `UPDATE` a `INSERT ... ON CONFLICT (workspace_id) DO UPDATE`
+  (un workspace sin fila de config "guardaba" 0 filas y la UI decía éxito), y
+  `resolveBotConfig` pasó a `workspaces LEFT JOIN workspace_configs` (antes un
+  workspace sin config perdía la identidad entera en vez de caer a defaults).
+- **PR #2 mergeada (squash)** — landing pública en `/` (route group
+  `(landing)`, copy en `lib/landing-copy.ts`). Fixes de copy pre-merge:
+  "RAG con citas / no alucina" → "RAG real" honesto; pasos y plan Prueba en
+  lenguaje identidad+storyboard (coherente con la #1); headline del hero en
+  partes `before/highlight/after` (se fue el replace/split frágil); `socialProof`
+  sin uso eliminado. El `.gradient-text` del hero quedó como excepción aceptada
+  a "sin gradientes" (marketing).
+- **VPS = entorno deployado formal.** Se descubrió que las units systemd
+  `aly-web`/`aly-engine` ya existían (creadas 2026-07-15) pero estaban paradas
+  desde el 17 y todo corría como procesos sueltos. Se mataron los procesos
+  manuales y se re-arrancaron los servicios (enabled, sobreviven reboots).
+  Regla operativa: tras mergear cambios del engine → `systemctl restart
+  aly-engine` (bun no recarga; además resetea el cache de config de 5 min).
+  La web es `next dev` con hot reload del working tree → los merges a main se
+  ven solos.
+- **Cadena pública verificada:** Quick Tunnel de Cloudflare → caddy `:8093`
+  (basic auth `equipo`) → `:3000`. URL actual en
+  `journalctl -u cloudflared-aly-saas` (cambia si el servicio se reinicia —
+  a futuro conviene túnel con nombre/dominio fijo si el link circula).
+- **Verificado:** builds verdes en ambas ramas antes de cada merge; migración
+  009 ya aplicada en la VPS; smoke test E2E del engine reiniciado (respondió
+  con la identidad comportamental nueva; filas de prueba borradas de
+  `users_interactions`); landing y dashboard 200 detrás del túnel (401 sin
+  credenciales = basic auth OK).
+- **Pendientes que dejó la revisión (menores, no bloquean):** el prompt factual
+  default del engine sigue diciendo "Sos el asistente del negocio" y ahora
+  convive con el bloque de identidad comportamental que se le antepone — se
+  limpia cuando se baje el reencuadre de Daniel; en Programa, si colapsás el
+  modo avanzado con pasos sin guardar, el botón/aviso de guardar quedan ocultos.
 
 ---
 
