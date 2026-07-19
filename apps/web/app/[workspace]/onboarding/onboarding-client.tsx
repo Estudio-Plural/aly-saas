@@ -16,6 +16,7 @@ import {
   RotateCcwIcon,
   AlertTriangleIcon,
   PlusIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { extractVariable } from "@/lib/extract-variable";
@@ -37,7 +38,8 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { OnboardingStep } from "@/lib/workspaces";
+import type { OnboardingStep, Storyboard } from "@/lib/workspaces";
+import { StoryboardSection } from "./storyboard-section";
 
 type Step = OnboardingStep;
 
@@ -469,16 +471,19 @@ export function OnboardingClient({
   workspaceSlug,
   assistantName,
   initialSteps,
+  initialStoryboard,
 }: {
   workspaceSlug: string;
   assistantName: string;
   initialSteps: Step[];
+  initialStoryboard: Storyboard;
 }) {
   const initial = normalizeSteps(initialSteps.length ? initialSteps : TEMPLATE_STEPS);
   const [body, setBody] = useState<Step[]>(initial.body);
   const [endStep, setEndStep] = useState<Step>(initial.end);
   const [savedSnapshot, setSavedSnapshot] = useState(() => JSON.stringify(initialSteps));
   const [isSaving, setIsSaving] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   const allSteps = [...body, endStep];
   const isDirty = JSON.stringify(allSteps) !== savedSnapshot;
@@ -563,32 +568,59 @@ export function OnboardingClient({
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Flujo de Onboarding</h1>
-          <p className="text-neutral-600 mt-1">
-            Diseñá la conversación inicial con tus usuarios y probala en vivo a la derecha.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {hasEmptySteps && (
-            <span className="text-xs text-amber-700">Hay pasos sin completar</span>
-          )}
-          <Button
-            onClick={saveFlow}
-            disabled={!isDirty || hasEmptySteps || isSaving}
-            className="bg-neutral-900 hover:bg-neutral-800 text-white"
-          >
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? "Guardando..." : isDirty ? "Guardar" : "Guardado ✓"}
-          </Button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Programa conversacional</h1>
+        <p className="text-neutral-600 mt-1">
+          Definí el arco de la conversación en el storyboard. El guion paso a paso
+          queda como modo avanzado.
+        </p>
       </div>
 
       {/* Main Content: 2 columns */}
       <div className="flex-1 grid grid-cols-2 gap-6 min-h-0">
-        {/* Left: Editor */}
+        {/* Left: Storyboard + editor avanzado */}
         <div className="space-y-4 overflow-y-auto pr-2">
+          <StoryboardSection
+            workspaceSlug={workspaceSlug}
+            initialStoryboard={initialStoryboard}
+          />
+
+          {/* Modo avanzado: guion paso a paso (colapsable) */}
+          <div className="border border-neutral-200 rounded-lg bg-white">
+            <button
+              type="button"
+              onClick={() => setAdvancedOpen((open) => !open)}
+              className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
+            >
+              <span>Modo avanzado: guion paso a paso</span>
+              <ChevronDownIcon
+                className={`h-4 w-4 transition-transform ${advancedOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+          </div>
+
+          {advancedOpen && (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-neutral-600">
+                  Este guion corre al inicio de la primera conversación; después el
+                  asistente sigue el arco del storyboard.
+                </p>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {hasEmptySteps && (
+                    <span className="text-xs text-amber-700">Hay pasos sin completar</span>
+                  )}
+                  <Button
+                    onClick={saveFlow}
+                    disabled={!isDirty || hasEmptySteps || isSaving}
+                    size="sm"
+                    className="bg-neutral-900 hover:bg-neutral-800 text-white"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {isSaving ? "Guardando..." : isDirty ? "Guardar" : "Guardado ✓"}
+                  </Button>
+                </div>
+              </div>
           <DndContext
             id="onboarding-steps-dnd"
             sensors={sensors}
@@ -701,6 +733,8 @@ export function OnboardingClient({
               </div>
             </div>
           </Card>
+            </>
+          )}
         </div>
 
         {/* Right: Preview interactiva */}

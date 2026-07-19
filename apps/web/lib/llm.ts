@@ -1,7 +1,8 @@
 // Cliente LLM vía OpenRouter — solo servidor.
 import { sql } from "@/lib/db";
 import { getKnowledgeText } from "@/lib/data/documents";
-import type { Workspace } from "@/lib/workspaces";
+import { getCorePrompt, getStoryboard } from "@/lib/data/program";
+import { compileIdentityBlock, type Workspace } from "@/lib/workspaces";
 
 export type LlmMessage = {
   role: "system" | "user" | "assistant";
@@ -15,22 +16,23 @@ export function isLlmConfigured(): boolean {
 }
 
 /**
- * System prompt del asistente: identidad del workspace + override de config
+ * System prompt del asistente: identidad compilada (prompt núcleo + storyboard)
  * + knowledge base en texto plano (hasta tener RAG con pgvector).
  */
 export async function buildSystemPrompt(workspace: Workspace): Promise<string> {
-  const configRows = await sql<{ prompts: Record<string, string> }[]>`
-    SELECT prompts FROM workspace_configs WHERE workspace_id = ${workspace.id}
-  `;
-  const customSystem = configRows[0]?.prompts?.system;
-
-  const knowledge = await getKnowledgeText(workspace.id);
+  const [corePrompt, storyboard, knowledge] = await Promise.all([
+    getCorePrompt(workspace.id),
+    getStoryboard(workspace.id),
+    getKnowledgeText(workspace.id),
+  ]);
 
   const parts = [
-    customSystem ??
-      `Sos ${workspace.assistant_name}, el asistente virtual de "${workspace.name}". ` +
-        `Respondés en español rioplatense, con mensajes breves y cálidos, como en un chat de WhatsApp. ` +
-        `Tu objetivo es ayudar a los usuarios con sus consultas sobre el negocio.`,
+    compileIdentityBlock(
+      workspace.assistant_name,
+      workspace.name,
+      corePrompt,
+      storyboard
+    ),
   ];
 
   if (knowledge.length) {

@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation";
 import { getWorkspaceBySlug } from "@/lib/data/workspaces";
-import { getActiveFlowSteps } from "@/lib/data/onboarding";
-import { getStoryboard } from "@/lib/data/program";
-import { OnboardingClient } from "./onboarding-client";
+import { getCorePrompt } from "@/lib/data/program";
+import { IdentityClient } from "./identity-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function OnboardingPage({
+export default async function IdentityPage({
   params,
 }: {
   params: Promise<{ workspace: string }>;
@@ -15,16 +14,12 @@ export default async function OnboardingPage({
   const workspace = await getWorkspaceBySlug(workspaceSlug);
   if (!workspace) redirect("/dashboard");
 
-  const [steps, storyboard] = await Promise.all([
-    getActiveFlowSteps(workspace.id),
-    getStoryboard(workspace.id),
-  ]);
+  const corePrompt = await getCorePrompt(workspace.id);
   return (
-    <OnboardingClient
+    <IdentityClient
       workspaceSlug={workspace.slug}
       assistantName={workspace.assistant_name}
-      initialSteps={steps}
-      initialStoryboard={storyboard}
+      initialCorePrompt={corePrompt}
     />
   );
 }

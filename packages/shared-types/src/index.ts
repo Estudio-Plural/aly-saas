@@ -52,6 +52,20 @@ export interface WorkspaceConfig {
   /** Partición del corpus para retrieval, en orden de prioridad (migración 006). */
   programs: string[];
   flag_rules: { id: string; description: string; severity: "high" | "medium" | "low" }[];
+  /** Prompt núcleo del asistente (migración 009; null → defaults en código). */
+  core_prompt: {
+    mission: string;
+    scope: string;
+    success_criteria: string;
+    key_actions: string;
+  } | null;
+  /** Storyboard situacional en 4 momentos (migración 009; null → defaults). */
+  storyboard: {
+    opening: string;
+    development: string;
+    next_steps: string;
+    closing: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }
