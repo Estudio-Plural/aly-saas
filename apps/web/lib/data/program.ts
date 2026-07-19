@@ -29,9 +29,9 @@ export async function saveCorePrompt(
   corePrompt: CorePrompt
 ): Promise<void> {
   await sql`
-    UPDATE workspace_configs
-    SET core_prompt = ${sql.json(corePrompt)}
-    WHERE workspace_id = ${workspaceId}
+    INSERT INTO workspace_configs (workspace_id, core_prompt)
+    VALUES (${workspaceId}, ${sql.json(corePrompt)})
+    ON CONFLICT (workspace_id) DO UPDATE SET core_prompt = EXCLUDED.core_prompt
   `;
 }
 
@@ -40,8 +40,8 @@ export async function saveStoryboard(
   storyboard: Storyboard
 ): Promise<void> {
   await sql`
-    UPDATE workspace_configs
-    SET storyboard = ${sql.json(storyboard)}
-    WHERE workspace_id = ${workspaceId}
+    INSERT INTO workspace_configs (workspace_id, storyboard)
+    VALUES (${workspaceId}, ${sql.json(storyboard)})
+    ON CONFLICT (workspace_id) DO UPDATE SET storyboard = EXCLUDED.storyboard
   `;
 }

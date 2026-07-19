@@ -117,9 +117,9 @@ export async function resolveBotConfig(
     SELECT c.prompts, c.model_preferences, c.capabilities, c.programs,
            c.theme_categories, c.core_prompt, c.storyboard,
            w.assistant_name, w.name AS workspace_name
-    FROM workspace_configs c
-    JOIN workspaces w ON w.id = c.workspace_id
-    WHERE c.workspace_id = ${workspaceId}
+    FROM workspaces w
+    LEFT JOIN workspace_configs c ON c.workspace_id = w.id
+    WHERE w.id = ${workspaceId}
   `;
   const row = rows[0];
   const raw = (row?.prompts ?? {}) as RawPromptStore;
