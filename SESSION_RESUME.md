@@ -1,9 +1,41 @@
 # 🔄 Resumen de Sesión - Aly SaaS
 
-**Fecha:** 2026-07-19
-**Status:** ✅ PRs #1 (identidad + storyboard) y #2 (landing pública) revisadas,
-corregidas y mergeadas a main. La VPS quedó como entorno deployado formal:
-servicios systemd + túnel funcionando con el código nuevo.
+**Fecha:** 2026-07-21
+**Status:** ✅ Materiales del storyboard implementados y probados E2E en la VPS
+(sin commitear todavía). Antes: PRs #1/#2 mergeadas, VPS como deploy formal.
+
+---
+
+## ✨ Lo que cambió el 2026-07-21 (materiales del storyboard)
+
+- **Pedido de Daniel:** que el usuario pueda adjuntar imágenes/PDFs/videos/etc.
+  en el storyboard para que el bot los envíe en la conversación.
+- **Modelo de datos:** `storyboard.attachments` dentro del mismo JSONB
+  (`Partial<Record<momento, StoryboardAttachment[]>>`) — sin migración.
+  Archivos en `.uploads/<wsId>/<attId>__nombre` (reusa `saveUpload`).
+- **API:** `POST /api/workspaces/[slug]/program/attachments` (multipart
+  `moment`+`file`, 16 MB máx, extensiones imagen/pdf/doc/video/audio),
+  `GET .../attachments/[id]` (sirve inline) y `DELETE` (JSON + disco).
+  El `PUT /program` sigue validando solo los 4 textos (zod los stripea) y
+  `saveStoryboard` mergea preservando adjuntos → sin carrera con uploads.
+- **Prompt:** `compileIdentityBlock` (web) y `compileIdentity` (engine) agregan
+  la sección "Materiales del programa" con marcadores `[[adjunto:id]]` y la
+  instrucción de incluirlos en línea propia. El engine solo referencia ids.
+- **Chat preview:** `splitAttachmentMarkers` en `chat-client.tsx` parte el
+  mensaje del asistente y renderiza imagen/video/audio/tarjeta de descarga
+  (metadata llega por prop desde `chat/page.tsx`; marcador desconocido →
+  "(material no disponible)"; marcador a medio streamear se oculta).
+- **UI Storyboard:** botón "Adjuntar material" + chips con quitar
+  (ConfirmDialog) por momento, en `storyboard-section.tsx`.
+- **Verificado en la VPS:** build de web verde, `tsc --noEmit` del engine
+  limpio, y E2E real contra `:3000`: upload → GET 200 image/png → PUT de
+  textos preserva el adjunto → mensaje con marcador renderiza `<img>` en SSR
+  → DELETE limpia JSON y disco. Datos de prueba borrados.
+- **Al mergear:** `systemctl restart aly-engine` para que el engine anuncie
+  los materiales (bun no recarga; la web se ve sola por hot reload).
+- **Pendiente:** envío real por WhatsApp (Kapso) — el marcador ya deja el
+  gancho; el inbox de Conversaciones muestra el marcador crudo en el último
+  mensaje (cosmético).
 
 ---
 

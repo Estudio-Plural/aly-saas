@@ -131,6 +131,16 @@ systemd, `enabled`, sobreviven reboots):
   `compileIdentityBlock()` los compila al bloque de identidad que se inyecta en
   los prompts (web fallback y engine vía `BotConfig.identity` + `withIdentity`
   en factual/plan/ideate/smalltalk).
+- **Materiales del storyboard (desde 2026-07-21):** cada momento puede tener
+  adjuntos (imagen/PDF/video/audio/doc) que el asistente envía en el chat.
+  Viven dentro del mismo JSONB `storyboard.attachments` (sin migración);
+  archivos en `.uploads/` vía `lib/uploads.ts`; rutas en
+  `/api/workspaces/[slug]/program/attachments[/id]` (POST/GET inline/DELETE).
+  El bloque de identidad lista los materiales con marcador `[[adjunto:id]]`;
+  el modelo lo incluye en su respuesta y el chat preview lo renderiza como
+  media real (`splitAttachmentMarkers` en `chat-client.tsx`). El PUT de
+  `/program` guarda solo los textos y preserva adjuntos (`saveStoryboard`
+  mergea); el envío real por WhatsApp queda para la integración Kapso.
 - RLS habilitado en todas las tablas (las queries locales lo bypassean por ser
   superuser; las policies usan `current_setting('app.workspace_id')`).
 

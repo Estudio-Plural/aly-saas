@@ -68,6 +68,22 @@ export type CorePrompt = {
   key_actions: string;
 };
 
+export type StoryboardMomentKey =
+  | "opening"
+  | "development"
+  | "next_steps"
+  | "closing";
+
+/** Material (imagen, PDF, video, audio…) que el asistente puede enviar en el chat. */
+export type StoryboardAttachment = {
+  id: string;
+  name: string;
+  /** MIME type del archivo. */
+  type: string;
+  size: number;
+  storage_path: string;
+};
+
 /** Storyboard situacional: el arco de la conversación en 4 momentos. */
 export type Storyboard = {
   /** Arranque: cómo empieza la conversación. */
@@ -78,7 +94,38 @@ export type Storyboard = {
   next_steps: string;
   /** Cómo termina: el cierre de cada interacción. */
   closing: string;
+  /** Materiales por momento; el asistente los envía con el marcador [[adjunto:id]]. */
+  attachments?: Partial<Record<StoryboardMomentKey, StoryboardAttachment[]>>;
 };
+
+export const STORYBOARD_MOMENT_LABELS: Record<StoryboardMomentKey, string> = {
+  opening: "Arranque",
+  development: "Desarrollo",
+  next_steps: "Lo que debe pasar después",
+  closing: "Cierre",
+};
+
+/** Etiqueta humana del tipo de material según su MIME type. */
+export function attachmentKind(mime: string): string {
+  if (mime.startsWith("image/")) return "imagen";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime === "application/pdf") return "PDF";
+  return "archivo";
+}
+
+/** Aplana los materiales del storyboard preservando su momento. */
+export function listStoryboardAttachments(
+  storyboard: Storyboard
+): { moment: StoryboardMomentKey; attachment: StoryboardAttachment }[] {
+  const moments = Object.keys(STORYBOARD_MOMENT_LABELS) as StoryboardMomentKey[];
+  return moments.flatMap((moment) =>
+    (storyboard.attachments?.[moment] ?? []).map((attachment) => ({
+      moment,
+      attachment,
+    }))
+  );
+}
 
 /** Defaults con enfoque comportamental (programa de cambio de comportamiento). */
 export const DEFAULT_CORE_PROMPT: CorePrompt = {
@@ -124,7 +171,31 @@ export function compileIdentityBlock(
     `1) Arranque: ${storyboard.opening}\n` +
     `2) Desarrollo: ${storyboard.development}\n` +
     `3) Lo que debe pasar después: ${storyboard.next_steps}\n` +
-    `4) Cierre: ${storyboard.closing}`
+    `4) Cierre: ${storyboard.closing}` +
+    compileMaterialsBlock(storyboard)
+  );
+}
+
+/**
+ * Sección de materiales del bloque de identidad: lista los adjuntos del
+ * storyboard con su marcador [[adjunto:id]]. El chat convierte el marcador
+ * en el archivo real al renderizar (y WhatsApp lo hará al enviar).
+ */
+function compileMaterialsBlock(storyboard: Storyboard): string {
+  const materials = listStoryboardAttachments(storyboard);
+  if (!materials.length) return "";
+  const lines = materials.map(
+    ({ moment, attachment }) =>
+      `- [[adjunto:${attachment.id}]] → "${attachment.name}" (${attachmentKind(attachment.type)}) — momento: ${STORYBOARD_MOMENT_LABELS[moment]}`
+  );
+  return (
+    `\n\nMateriales del programa (archivos que podés enviar en el chat):\n` +
+    lines.join("\n") +
+    `\nCuando el arco lo pida, enviá el material incluyendo su marcador exacto ` +
+    `(ej: [[adjunto:abc123]]) en una línea propia de tu respuesta; el sistema lo ` +
+    `reemplaza por el archivo real. Presentalo con una frase breve antes del ` +
+    `marcador. No inventes marcadores que no estén en esta lista ni describas ` +
+    `el marcador en palabras.`
   );
 }
 

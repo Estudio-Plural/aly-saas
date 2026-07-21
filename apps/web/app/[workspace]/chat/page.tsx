@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { getWorkspaceBySlug } from "@/lib/data/workspaces";
 import { getActiveFlowSteps } from "@/lib/data/onboarding";
 import { getOpenConversationId, getConversationMessages } from "@/lib/data/chat";
+import { getStoryboard } from "@/lib/data/program";
 import { isLlmConfigured } from "@/lib/llm";
+import { listStoryboardAttachments } from "@/lib/workspaces";
 import { ChatClient } from "./chat-client";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +18,11 @@ export default async function ChatPage({
   const workspace = await getWorkspaceBySlug(workspaceSlug);
   if (!workspace) redirect("/dashboard");
 
-  const flowSteps = await getActiveFlowSteps(workspace.id);
-  const conversationId = await getOpenConversationId(workspace.id);
+  const [flowSteps, conversationId, storyboard] = await Promise.all([
+    getActiveFlowSteps(workspace.id),
+    getOpenConversationId(workspace.id),
+    getStoryboard(workspace.id),
+  ]);
   const messages = conversationId
     ? await getConversationMessages(workspace.id, conversationId)
     : [];
@@ -29,6 +34,9 @@ export default async function ChatPage({
       flowSteps={flowSteps}
       initialMessages={messages}
       llmConfigured={isLlmConfigured()}
+      storyboardAttachments={listStoryboardAttachments(storyboard).map(
+        ({ attachment }) => attachment
+      )}
     />
   );
 }

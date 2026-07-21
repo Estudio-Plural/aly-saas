@@ -6,11 +6,16 @@ import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { SendIcon, RotateCcwIcon } from "lucide-react";
+import { SendIcon, RotateCcwIcon, FileTextIcon, DownloadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { extractVariable } from "@/lib/extract-variable";
 import { uid } from "@/lib/utils";
-import type { ChatMessage, OnboardingStep } from "@/lib/workspaces";
+import {
+  attachmentKind,
+  type ChatMessage,
+  type OnboardingStep,
+  type StoryboardAttachment,
+} from "@/lib/workspaces";
 
 type Mode = "onboarding" | "llm";
 
@@ -20,6 +25,79 @@ function sleep(ms: number) {
 
 function interpolate(content: string, answers: Record<string, string>): string {
   return content.replace(/\{(\w+)\}/g, (match, key) => answers[key] ?? match);
+}
+
+// Marcador con el que el asistente "envía" un material del storyboard.
+// El bloque de identidad se lo enseña; acá se convierte en el archivo real.
+const ATTACHMENT_MARKER = /\[\[adjunto:([0-9a-fA-F-]+)\]\]/g;
+
+type MessageSegment =
+  | { kind: "text"; value: string }
+  | { kind: "attachment"; id: string };
+
+function splitAttachmentMarkers(text: string): MessageSegment[] {
+  // Un marcador a medio streamear al final se oculta hasta completarse
+  const clean = text.replace(/\[\[adjunto:[^\]]*$/, "");
+  const segments: MessageSegment[] = [];
+  let lastIndex = 0;
+  for (const match of clean.matchAll(ATTACHMENT_MARKER)) {
+    const before = clean.slice(lastIndex, match.index).trim();
+    if (before) segments.push({ kind: "text", value: before });
+    segments.push({ kind: "attachment", id: match[1] });
+    lastIndex = match.index + match[0].length;
+  }
+  const rest = clean.slice(lastIndex).trim();
+  if (rest) segments.push({ kind: "text", value: rest });
+  return segments;
+}
+
+function AttachmentBubble({
+  attachment,
+  url,
+}: {
+  attachment: StoryboardAttachment | undefined;
+  url: string;
+}) {
+  if (!attachment) {
+    return (
+      <p className="text-xs italic text-neutral-500">(material no disponible)</p>
+    );
+  }
+  const kind = attachmentKind(attachment.type);
+  if (kind === "imagen") {
+    return (
+      <a href={url} target="_blank" rel="noreferrer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt={attachment.name}
+          className="rounded-lg border border-neutral-200 max-h-64 w-auto"
+        />
+      </a>
+    );
+  }
+  if (kind === "video") {
+    return (
+      <video controls src={url} className="rounded-lg max-h-64 w-full bg-black" />
+    );
+  }
+  if (kind === "audio") {
+    return <audio controls src={url} className="w-64 max-w-full" />;
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      className="flex items-center gap-2.5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 hover:bg-neutral-100 transition-colors"
+    >
+      <FileTextIcon className="h-6 w-6 text-neutral-600 flex-shrink-0" />
+      <span className="text-sm text-neutral-900 truncate flex-1">
+        {attachment.name}
+      </span>
+      <DownloadIcon className="h-4 w-4 text-neutral-500 flex-shrink-0" />
+    </a>
+  );
 }
 
 function localMessage(text: string, sender: "user" | "assistant"): ChatMessage {
@@ -37,13 +115,18 @@ export function ChatClient({
   flowSteps,
   initialMessages,
   llmConfigured,
+  storyboardAttachments = [],
 }: {
   workspaceSlug: string;
   assistantName: string;
   flowSteps: OnboardingStep[];
   initialMessages: ChatMessage[];
   llmConfigured: boolean;
+  storyboardAttachments?: StoryboardAttachment[];
 }) {
+  const attachmentsById = new Map(
+    storyboardAttachments.map((att) => [att.id, att])
+  );
   // Si la conversación ya tiene mensajes, el onboarding ya corrió.
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [mode, setMode] = useState<Mode>(
@@ -331,9 +414,19 @@ export function ChatClient({
                     >
                       {message.sender === "assistant" ? (
                         <div className="text-sm leading-relaxed space-y-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:space-y-1 [&_strong]:font-semibold [&_a]:text-blue-600 [&_a]:underline [&_code]:rounded [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:text-[0.85em]">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {message.text}
-                          </ReactMarkdown>
+                          {splitAttachmentMarkers(message.text).map((segment, i) =>
+                            segment.kind === "text" ? (
+                              <ReactMarkdown key={i} remarkPlugins={[remarkGfm]}>
+                                {segment.value}
+                              </ReactMarkdown>
+                            ) : (
+                              <AttachmentBubble
+                                key={i}
+                                attachment={attachmentsById.get(segment.id)}
+                                url={`/api/workspaces/${workspaceSlug}/program/attachments/${segment.id}`}
+                              />
+                            )
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">

@@ -10,11 +10,44 @@ export interface CorePrompt {
   key_actions: string;
 }
 
+export type StoryboardMomentKey =
+  | "opening"
+  | "development"
+  | "next_steps"
+  | "closing";
+
+/** Material (imagen, PDF, video, audio…) que el asistente puede enviar en el chat. */
+export interface StoryboardAttachment {
+  id: string;
+  name: string;
+  /** MIME type del archivo. */
+  type: string;
+  size: number;
+  storage_path: string;
+}
+
 export interface Storyboard {
   opening: string;
   development: string;
   next_steps: string;
   closing: string;
+  /** Materiales por momento; el asistente los envía con el marcador [[adjunto:id]]. */
+  attachments?: Partial<Record<StoryboardMomentKey, StoryboardAttachment[]>>;
+}
+
+const MOMENT_LABELS: Record<StoryboardMomentKey, string> = {
+  opening: "Arranque",
+  development: "Desarrollo",
+  next_steps: "Lo que debe pasar después",
+  closing: "Cierre",
+};
+
+function attachmentKind(mime: string): string {
+  if (mime.startsWith("image/")) return "imagen";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("audio/")) return "audio";
+  if (mime === "application/pdf") return "PDF";
+  return "archivo";
 }
 
 export const DEFAULT_CORE_PROMPT: CorePrompt = {
@@ -57,6 +90,32 @@ export function compileIdentity(
     `1) Arranque: ${storyboard.opening}\n` +
     `2) Desarrollo: ${storyboard.development}\n` +
     `3) Lo que debe pasar después: ${storyboard.next_steps}\n` +
-    `4) Cierre: ${storyboard.closing}`
+    `4) Cierre: ${storyboard.closing}` +
+    compileMaterials(storyboard)
+  );
+}
+
+/**
+ * Materiales del storyboard: el modelo envía un archivo incluyendo su marcador
+ * [[adjunto:id]]; la superficie de chat (web/WhatsApp) lo convierte en el
+ * archivo real. El engine solo referencia ids — nunca toca los archivos.
+ */
+function compileMaterials(storyboard: Storyboard): string {
+  const moments = Object.keys(MOMENT_LABELS) as StoryboardMomentKey[];
+  const lines = moments.flatMap((moment) =>
+    (storyboard.attachments?.[moment] ?? []).map(
+      (att) =>
+        `- [[adjunto:${att.id}]] → "${att.name}" (${attachmentKind(att.type)}) — momento: ${MOMENT_LABELS[moment]}`,
+    ),
+  );
+  if (!lines.length) return "";
+  return (
+    `\n\nMateriales del programa (archivos que podés enviar en el chat):\n` +
+    lines.join("\n") +
+    `\nCuando el arco lo pida, enviá el material incluyendo su marcador exacto ` +
+    `(ej: [[adjunto:abc123]]) en una línea propia de tu respuesta; el sistema lo ` +
+    `reemplaza por el archivo real. Presentalo con una frase breve antes del ` +
+    `marcador. No inventes marcadores que no estén en esta lista ni describas ` +
+    `el marcador en palabras.`
   );
 }

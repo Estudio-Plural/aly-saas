@@ -6,8 +6,11 @@ import { sql } from "@/lib/db";
 import {
   DEFAULT_CORE_PROMPT,
   DEFAULT_STORYBOARD,
+  listStoryboardAttachments,
   type CorePrompt,
   type Storyboard,
+  type StoryboardAttachment,
+  type StoryboardMomentKey,
 } from "@/lib/workspaces";
 
 export async function getCorePrompt(workspaceId: string): Promise<CorePrompt> {
@@ -35,7 +38,7 @@ export async function saveCorePrompt(
   `;
 }
 
-export async function saveStoryboard(
+async function upsertStoryboard(
   workspaceId: string,
   storyboard: Storyboard
 ): Promise<void> {
@@ -44,4 +47,65 @@ export async function saveStoryboard(
     VALUES (${workspaceId}, ${sql.json(storyboard)})
     ON CONFLICT (workspace_id) DO UPDATE SET storyboard = EXCLUDED.storyboard
   `;
+}
+
+/** Guarda los textos de los 4 momentos preservando los adjuntos existentes. */
+export async function saveStoryboard(
+  workspaceId: string,
+  texts: Omit<Storyboard, "attachments">
+): Promise<void> {
+  const current = await getStoryboard(workspaceId);
+  await upsertStoryboard(workspaceId, {
+    ...texts,
+    ...(current.attachments ? { attachments: current.attachments } : {}),
+  });
+}
+
+/** Agrega un material a un momento del storyboard y devuelve el storyboard actualizado. */
+export async function addStoryboardAttachment(
+  workspaceId: string,
+  moment: StoryboardMomentKey,
+  attachment: StoryboardAttachment
+): Promise<Storyboard> {
+  const current = await getStoryboard(workspaceId);
+  const updated: Storyboard = {
+    ...current,
+    attachments: {
+      ...current.attachments,
+      [moment]: [...(current.attachments?.[moment] ?? []), attachment],
+    },
+  };
+  await upsertStoryboard(workspaceId, updated);
+  return updated;
+}
+
+/** Saca un material del storyboard; devuelve el adjunto (para borrar el archivo) o null. */
+export async function removeStoryboardAttachment(
+  workspaceId: string,
+  attachmentId: string
+): Promise<StoryboardAttachment | null> {
+  const current = await getStoryboard(workspaceId);
+  const found = listStoryboardAttachments(current).find(
+    ({ attachment }) => attachment.id === attachmentId
+  );
+  if (!found) return null;
+
+  const attachments = { ...current.attachments };
+  attachments[found.moment] = (attachments[found.moment] ?? []).filter(
+    (att) => att.id !== attachmentId
+  );
+  await upsertStoryboard(workspaceId, { ...current, attachments });
+  return found.attachment;
+}
+
+export async function getStoryboardAttachment(
+  workspaceId: string,
+  attachmentId: string
+): Promise<StoryboardAttachment | null> {
+  const storyboard = await getStoryboard(workspaceId);
+  return (
+    listStoryboardAttachments(storyboard).find(
+      ({ attachment }) => attachment.id === attachmentId
+    )?.attachment ?? null
+  );
 }
