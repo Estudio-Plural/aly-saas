@@ -53,16 +53,7 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
     : false;
 
   if (isSensitive) {
-    return finish(
-      workspaceId,
-      conversationId,
-      userNumber,
-      question,
-      await agents.sensitiveAgent(question, "", language, config),
-      INTENTS.SENSITIVE,
-      1,
-      [],
-    );
+    return sensitiveTurn(input, standalone, historyString, config, 1);
   }
 
   // ── fanout: intent ∥ doc-router (en paralelo, como el librarian del legacy).
@@ -79,16 +70,7 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
 
   // safety-net: intent detectó SENSITIVE aunque triage lo dejó pasar
   if (intent === INTENTS.SENSITIVE) {
-    return finish(
-      workspaceId,
-      conversationId,
-      userNumber,
-      question,
-      await agents.sensitiveAgent(question, "", language, config),
-      INTENTS.SENSITIVE,
-      confidence,
-      [],
-    );
+    return sensitiveTurn(input, standalone, historyString, config, confidence);
   }
 
   // identity: responde desde el perfil estático de la organización (sin retrieval)
@@ -146,6 +128,38 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
     question,
     answer,
     intent,
+    confidence,
+    chunks,
+  );
+}
+
+// Turno sensible: el momento más delicado no puede ser el más genérico. Lleva
+// historia, identidad (vía el agente) y contexto recuperado de TODOS los docs
+// del workspace — el protocolo de derivación puede no estar entre los que el
+// doc-router eligió. Si el retrieval falla, se responde igual sin contexto:
+// este camino nunca puede caerse por la base.
+async function sensitiveTurn(
+  input: QuestionInput,
+  standalone: string,
+  historyString: string,
+  config: BotConfig,
+  confidence: number,
+): Promise<QueryResponse> {
+  const { question, userNumber, language, conversationId, workspaceId } = input;
+  let context = "";
+  let chunks: ChunkSource[] = [];
+  try {
+    ({ context, chunks } = await retrieveContext(workspaceId, [], standalone));
+  } catch (error) {
+    console.error("❌ SENSITIVE retrieval failed, answering without context:", error);
+  }
+  return finish(
+    workspaceId,
+    conversationId,
+    userNumber,
+    question,
+    await agents.sensitiveAgent(question, context, language, historyString, config),
+    INTENTS.SENSITIVE,
     confidence,
     chunks,
   );

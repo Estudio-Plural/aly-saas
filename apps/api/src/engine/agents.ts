@@ -273,11 +273,12 @@ export async function smalltalkAgent(
   });
 }
 
-// ── SENSITIVE (RAG-grounded en legacy; Fase 0: contexto vacío) ────────────
+// ── SENSITIVE (RAG-grounded como en el legacy, con historia e identidad) ───
 export async function sensitiveAgent(
   query: string,
   context: string,
   language: string,
+  historyString: string,
   config: BotConfig,
 ): Promise<string> {
   console.log("🛡️ SENSITIVE agent...");
@@ -285,7 +286,9 @@ export async function sensitiveAgent(
     let prompt = config.prompts.sensitive
       .replace("{user_input}", query)
       .replace("{context}", context);
+    prompt = historyString + "\n\n" + prompt;
     prompt = applyLanguagePostfix(prompt, language);
+    prompt = withIdentity(prompt, config);
     const answer = await callAgent({
       model: config.models.sensitive,
       prompt,
