@@ -222,6 +222,36 @@ export type ConversationSummary = {
   keywords: string[];
   flags: string | null;
   flagSeverity: string | null;
+  /** Alerta marcada como revisada por el equipo (null = pendiente). */
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  /** Análisis estructurado del supervisor del engine (null si no corrió). */
+  supervision: ConversationSupervision | null;
+};
+
+/**
+ * Análisis del supervisor de conversaciones (conversations_data.analysis,
+ * lo escribe apps/api/src/supervisor). La evidencia de cada flag ya viene
+ * verificada: el fragmento existe textual en el mensaje citado.
+ */
+export type ConversationSupervision = {
+  version: 1;
+  summary: string | null;
+  keywords: string[];
+  momentoAlcanzado: StoryboardMomentKey | null;
+  cumplioCriterioExito: {
+    value: boolean;
+    evidence: { messageIndex: number; messageId: string }[];
+  };
+  flags: {
+    ruleId: string;
+    ruleDescription: string;
+    severity: "HIGH" | "MEDIUM" | "LOW";
+    detail: string;
+    evidence: { messageIndex: number; messageId: string; fragment: string }[];
+  }[];
+  discardedFlags: number;
+  model: string;
 };
 
 /** Convierte un nombre en un slug URL-safe (sin acentos ni símbolos). */

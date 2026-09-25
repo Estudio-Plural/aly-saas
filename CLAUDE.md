@@ -108,7 +108,9 @@ systemd, `enabled`, sobreviven reboots):
   caddy `:8093` con basic auth (usuario `equipo`) → `:3000`.
 - **Migraciones:** correrlas a mano con
   `psql "<DATABASE_URL de apps/web/.env.local>" -f supabase/migrations/XXX.sql`
-  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS.
+  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS; la 010
+  (supervisor) NO — aplicarla ANTES de mergear a main (el inbox y el
+  "Reiniciar" del preview ya leen/escriben sus columnas; aly-web recarga solo).
 
 ## Base de datos
 
@@ -165,6 +167,20 @@ systemd, `enabled`, sobreviven reboots):
   contra las `workspace_configs.flag_rules` → upsert en `conversations_data`;
   la severidad sale de la regla configurada, no del LLM). Ambos fallan en
   silencio (log + null): subir/cerrar nunca debe romperse por el LLM.
+- **Supervisor de conversaciones** (engine, `apps/api/src/supervisor/`, migración
+  010): analiza las conversaciones **inactivas** (≥ `SUPERVISOR_IDLE_MINUTES`,
+  sin análisis o con `analyzed_through` anterior al último mensaje) — web y
+  WhatsApp. Disparo: `POST /internal/supervise` con `Authorization: Bearer
+  $SUPERVISOR_TOKEN` (sin token → 503) o intervalo en proceso
+  (`SUPERVISOR_INTERVAL_MINUTES`, 0 = off). Una llamada LLM estructurada por
+  conversación (sin tool-calling) → resumen, momento del storyboard, criterio de
+  éxito con índices de mensajes y flags con evidencia; `verify.ts` descarta todo
+  flag cuyo fragmento no esté textual en el mensaje citado, y la severidad sale de
+  la regla. Guarda en `conversations_data` (`analysis` JSONB). Alertas HIGH
+  **nuevas** → Telegram (`TELEGRAM_ALERTS_*`, fallback `TELEGRAM_ERROR_*`) o log,
+  **sin texto de mensajes** (usuarios menores). El inbox muestra pendientes vs
+  revisadas (`POST|DELETE .../conversations/[id]/review` → `reviewed_at/by`).
+  Nunca contacta al usuario ni cierra casos. Tests: `cd apps/api && bun test`.
 - `lib/embeddings.ts` — indexado vectorial al subir: chunking (~1500 chars,
   overlap 200) + embeddings vía OpenRouter → filas en
   `vector_aly.aly_general_knowledge`; limpieza al borrar el doc. Fail-silent
