@@ -89,12 +89,12 @@
 
 ```bash
 # Terminal 1 - Frontend
-cd /Users/daniel/Documents/Dev/aly-saas/apps/web
+cd /Users/daniel/Dev/aly-saas/apps/web
 npx next dev
 # → http://localhost:3000
 
 # Terminal 2 - Backend (cuando esté listo)
-cd /Users/daniel/Documents/Dev/aly-saas/apps/api
+cd /Users/daniel/Dev/aly-saas/apps/api
 bun run dev
 # → http://localhost:8080
 ```
@@ -216,7 +216,7 @@ aly-saas/
 
 **Proyecto:** agentChatBuilder  
 **URL:** https://lroiqesjdmocmawtazhd.supabase.co  
-**Credenciales:** En `/Users/daniel/Documents/Dev/agentChatBuilder/.env`
+**Credenciales:** En `/Users/daniel/Dev/agentChatBuilder/.env`
 
 ### Verificar Tablas
 
