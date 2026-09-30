@@ -1,37 +1,17 @@
 // Servidor del engine (Elysia/Bun). Expone el pipeline conversacional
-// multi-tenant. La UI de Next le pega a POST /api/rag/doQuestion.
+// multi-tenant (la UI de Next le pega a POST /api/rag/doQuestion) y el
+// disparador interno del supervisor de conversaciones.
 //
-// Fase 0 local: sin auth (se agrega bearer + workspace ownership en Fase 3).
+// Fase 0 local: sin auth en el chat (se agrega bearer + workspace ownership
+// en Fase 3). /internal/* sí exige SUPERVISOR_TOKEN.
 
-import { Elysia, t } from "elysia";
-import { processQuestion } from "./engine";
-import { isLlmConfigured } from "./engine/openrouter";
+import { createApp } from "./app";
+import { startSupervisorInterval } from "./supervisor";
 
 const port = Number(process.env.API_PORT ?? 8080);
 
-const app = new Elysia()
-  .get("/health", () => ({ ok: true, llm: isLlmConfigured() }))
-  .post(
-    "/api/rag/doQuestion",
-    async ({ body }) =>
-      processQuestion({
-        question: body.userQuestion,
-        userNumber: body.userNumber,
-        conversationId: body.conversationId,
-        workspaceId: body.workspaceId,
-        language: body.language ?? "es",
-      }),
-    {
-      body: t.Object({
-        userQuestion: t.String(),
-        userNumber: t.String(),
-        conversationId: t.String(),
-        workspaceId: t.String(),
-        language: t.Optional(t.String()),
-      }),
-    },
-  )
-  .listen(port);
+const app = createApp().listen(port);
+startSupervisorInterval();
 
 console.log(`🚀 engine escuchando en http://localhost:${port}`);
 
