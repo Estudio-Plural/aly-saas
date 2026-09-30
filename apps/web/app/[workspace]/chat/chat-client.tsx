@@ -13,11 +13,18 @@ import { uid } from "@/lib/utils";
 import {
   attachmentKind,
   type ChatMessage,
-  type OnboardingStep,
   type StoryboardAttachment,
 } from "@/lib/workspaces";
+import {
+  CONSENT_QUESTION,
+  CONSENT_REJECTED_MESSAGE,
+  evaluateConsent,
+  matchOption,
+  type PreviewStep,
+} from "@/lib/design";
 
-type Mode = "onboarding" | "llm";
+// "ended": la persona rechazó el consentimiento; la conversación termina.
+type Mode = "onboarding" | "llm" | "ended";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -119,7 +126,7 @@ export function ChatClient({
 }: {
   workspaceSlug: string;
   assistantName: string;
-  flowSteps: OnboardingStep[];
+  flowSteps: PreviewStep[];
   initialMessages: ChatMessage[];
   llmConfigured: boolean;
   storyboardAttachments?: StoryboardAttachment[];
@@ -142,6 +149,10 @@ export function ChatClient({
   const flowIndexRef = useRef(0);
   const answersRef = useRef<Record<string, string>>({});
   const startedRef = useRef(false);
+  // Antes de aceptar no se guarda nada: los mensajes esperan acá.
+  const hasConsentStep = flowSteps.some((step) => step.type === "consent");
+  const pendingConsentRef = useRef(hasConsentStep);
+  const bufferRef = useRef<{ role: "user" | "assistant"; text: string }[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -152,6 +163,10 @@ export function ChatClient({
   const persistMessages = async (
     toPersist: { role: "user" | "assistant"; text: string }[]
   ) => {
+    if (pendingConsentRef.current) {
+      bufferRef.current.push(...toPersist);
+      return;
+    }
     try {
       await fetch(`/api/workspaces/${workspaceSlug}/chat`, {
         method: "POST",
@@ -175,7 +190,7 @@ export function ChatClient({
     while (i < flowSteps.length) {
       const step = flowSteps[i];
       const text = interpolate(step.content, answersRef.current).trim();
-      if (step.type === "question") {
+      if (step.type === "question" || step.type === "consent") {
         if (text) botTexts.push(text);
         break;
       }
@@ -285,11 +300,38 @@ export function ChatClient({
     setInputValue("");
     setMessages((prev) => [...prev, localMessage(text, "user")]);
 
+    if (mode === "onboarding" && flowSteps[flowIndexRef.current]?.type === "consent") {
+      const decision = evaluateConsent(text);
+      if (decision === "accept") {
+        pendingConsentRef.current = false;
+        const buffered = bufferRef.current;
+        bufferRef.current = [];
+        await persistMessages([...buffered, { role: "user", text }]);
+        await advanceFlow(flowIndexRef.current + 1);
+      } else if (decision === "reject") {
+        // No se guarda ningún dato: el buffer se descarta.
+        bufferRef.current = [];
+        setMessages((prev) => [...prev, localMessage(CONSENT_REJECTED_MESSAGE, "assistant")]);
+        setMode("ended");
+      } else {
+        setIsTyping(true);
+        await sleep(500);
+        setIsTyping(false);
+        setMessages((prev) => [...prev, localMessage(CONSENT_QUESTION, "assistant")]);
+      }
+      return;
+    }
+
     if (mode === "onboarding") {
       const currentStep = flowSteps[flowIndexRef.current];
       // Persistir el mensaje crudo y extraer el valor limpio son independientes
       const persisting = persistMessages([{ role: "user", text }]);
-      if (currentStep?.type === "question" && currentStep.variable) {
+      if (currentStep?.type === "question" && currentStep.variable && currentStep.options?.length) {
+        answersRef.current = {
+          ...answersRef.current,
+          [currentStep.variable]: matchOption(currentStep.options, text),
+        };
+      } else if (currentStep?.type === "question" && currentStep.variable) {
         // El valor limpio, no la frase entera ("Me llamo Daniel" → "Daniel")
         setIsTyping(true);
         const value = await extractVariable(workspaceSlug, {
@@ -315,6 +357,8 @@ export function ChatClient({
       setMessages([]);
       answersRef.current = {};
       flowIndexRef.current = 0;
+      pendingConsentRef.current = hasConsentStep;
+      bufferRef.current = [];
       if (flowSteps.length > 0) {
         setMode("onboarding");
         await advanceFlow(0);
@@ -356,7 +400,7 @@ export function ChatClient({
           className="px-6 py-3 h-auto text-base font-semibold"
         >
           <RotateCcwIcon className="mr-2 h-5 w-5" />
-          {isResetting ? "Reiniciando..." : "Reiniciar Conversación"}
+          {isResetting ? "Reiniciando…" : "Reiniciar conversación"}
         </Button>
       </div>
 
@@ -380,7 +424,7 @@ export function ChatClient({
           <div className="flex-1 overflow-y-auto bg-neutral-50 p-6 space-y-6">
             {messages.length === 0 && !isTyping && (
               <div className="text-center text-sm text-neutral-600 pt-10">
-                Escribí un mensaje para empezar la conversación
+                Escribe un mensaje para empezar la conversación
               </div>
             )}
             {messages.map((message) => (
@@ -440,7 +484,7 @@ export function ChatClient({
                         message.sender === "user" ? "text-right" : "text-left"
                       }`}
                     >
-                      {new Date(message.timestamp).toLocaleTimeString("es-AR", {
+                      {new Date(message.timestamp).toLocaleTimeString("es", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
@@ -486,13 +530,17 @@ export function ChatClient({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Escribí un mensaje..."
-                disabled={isBusy}
+                placeholder={
+                  mode === "ended"
+                    ? "La persona no aceptó. Reinicia la conversación para probar de nuevo."
+                    : "Escribe un mensaje…"
+                }
+                disabled={isBusy || mode === "ended"}
                 className="flex-1 h-12 px-5 border-2 border-neutral-300 rounded-xl focus:border-neutral-400 focus:ring-2 focus:ring-neutral-900/10 text-base"
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isBusy}
+                disabled={!inputValue.trim() || isBusy || mode === "ended"}
                 aria-label="Enviar mensaje"
                 className="h-12 px-6 bg-neutral-900 hover:bg-neutral-800 rounded-xl"
               >
@@ -501,7 +549,7 @@ export function ChatClient({
             </div>
             <p className="text-xs text-neutral-600 mt-3 px-1">
               {llmConfigured
-                ? "Presiona Enter para enviar • La conversación se guarda en tu workspace"
+                ? "Presiona Enter para enviar. La conversación de prueba se guarda en tu programa."
                 : "El asistente todavía no está activado. Escríbenos a hola@estudio-plural.co."}
             </p>
           </div>
@@ -530,9 +578,9 @@ export function ChatClient({
               Acerca de esta vista previa
             </h3>
             <p className="text-sm text-neutral-700">
-              Las conversaciones nuevas arrancan con tu flujo de Onboarding y después
-              responde el asistente usando los documentos de texto de tu Base de
-              Conocimiento. Todo se guarda en la base de datos del workspace.
+              Cada conversación nueva arranca con tu bienvenida y el aviso de
+              privacidad, igual que en WhatsApp. Después responde el asistente con tu
+              material, sus límites y tus rutas de ayuda.
             </p>
           </div>
         </div>

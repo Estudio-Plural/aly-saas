@@ -48,14 +48,45 @@ export async function extractTextContent(
   fileName: string,
   mimeType: string,
   data: Buffer,
-  maxChars = 20000
+  maxChars = MAX_TEXT_CHARS
+): Promise<string | null> {
+  return (await extractTextWithReport(fileName, mimeType, data, maxChars)).text;
+}
+
+/** Tope de texto que se guarda por documento. */
+export const MAX_TEXT_CHARS = 20000;
+
+/**
+ * Igual que extractTextContent, pero informa cuánto texto había y cuánto se
+ * omitió por el tope: la revisión al subir en «Material» lo muestra.
+ */
+export async function extractTextWithReport(
+  fileName: string,
+  mimeType: string,
+  data: Buffer,
+  maxChars = MAX_TEXT_CHARS
+): Promise<{ text: string | null; totalChars: number; omittedChars: number }> {
+  const full = await extractFullText(fileName, mimeType, data);
+  if (!full) return { text: null, totalChars: 0, omittedChars: 0 };
+  return {
+    text: full.slice(0, maxChars),
+    totalChars: full.length,
+    omittedChars: Math.max(0, full.length - maxChars),
+  };
+}
+
+async function extractFullText(
+  fileName: string,
+  mimeType: string,
+  data: Buffer
 ): Promise<string | null> {
   const ext = path.extname(fileName).toLowerCase();
 
   const isText =
     mimeType.startsWith("text/") || [".txt", ".md", ".markdown", ".csv"].includes(ext);
   if (isText) {
-    return data.toString("utf8").slice(0, maxChars);
+    const text = data.toString("utf8");
+    return text.trim() ? text : null;
   }
 
   if (ext === ".pdf" || mimeType === "application/pdf") {
@@ -63,7 +94,7 @@ export async function extractTextContent(
       const { extractText } = await import("unpdf");
       const { text } = await extractText(new Uint8Array(data), { mergePages: true });
       const cleaned = text.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-      return cleaned ? cleaned.slice(0, maxChars) : null;
+      return cleaned || null;
     } catch (error) {
       // PDF escaneado/corrupto: se guarda igual, solo sin texto para el chat
       console.error(`[uploads] No se pudo extraer texto de ${fileName}:`, error);

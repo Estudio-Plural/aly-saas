@@ -16,3 +16,13 @@ export {
   invalidateBotConfig,
   resolveBotConfig,
 } from "./resolve";
+export {
+  SAFETY_RULES,
+  NO_HELP_ROUTES_BLOCK,
+  compileBoundaries,
+  compileHelpRoutes,
+  type Boundaries,
+  type BoundaryRule,
+  type HelpRoute,
+} from "./guardrails";
+export { compileIdentity } from "./identity";

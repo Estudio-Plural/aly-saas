@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { PlusIcon, BotIcon, UsersIcon, FileTextIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { slugify, type Workspace } from "@/lib/workspaces";
+import type { Workspace } from "@/lib/workspaces";
 
 export function DashboardClient({
   initialWorkspaces,
@@ -45,15 +45,15 @@ export function DashboardClient({
   const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  // Crear programa: dos campos. La dirección (slug) se genera sola.
   const [newWorkspace, setNewWorkspace] = useState({
     name: "",
-    slug: "",
-    assistant_name: "Aly",
+    assistant_name: "",
   });
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspace.name.trim()) {
-      toast.error("Poné un nombre para tu asistente");
+      toast.error("Escribe el nombre del programa");
       return;
     }
     setIsCreating(true);
@@ -63,30 +63,29 @@ export function DashboardClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newWorkspace.name.trim(),
-          slug: newWorkspace.slug,
           assistant_name: newWorkspace.assistant_name.trim() || "Aly",
           org_id: newOrg || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data.error ?? "No se pudo crear el asistente");
+        toast.error(data.error ?? "No se pudo crear el programa");
         return;
       }
       setWorkspaces((prev) => [...prev, data.workspace]);
       setIsCreateOpen(false);
-      setNewWorkspace({ name: "", slug: "", assistant_name: "Aly" });
-      toast.success(`Asistente "${data.workspace.name}" creado`);
-      router.push(`/${data.workspace.slug}/identity`);
+      setNewWorkspace({ name: "", assistant_name: "" });
+      // Se aterriza en Primeros pasos.
+      router.push(`/${data.workspace.slug}`);
     } catch {
-      toast.error("Error de conexión al crear el asistente");
+      toast.error("Error de conexión al crear el programa");
     } finally {
       setIsCreating(false);
     }
   };
 
   const handleOpenWorkspace = (slug: string) => {
-    router.push(`/${slug}/identity`);
+    router.push(`/${slug}`);
   };
 
   return (
@@ -95,10 +94,10 @@ export function DashboardClient({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight text-neutral-900">
-            Tus Asistentes
+            Tus programas
           </h1>
           <p className="text-neutral-600 mt-2 text-lg">
-            Seleccioná un workspace para gestionar tu asistente de IA
+            Elige un programa para diseñarlo, probarlo u operarlo
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -108,41 +107,28 @@ export function DashboardClient({
               className="h-12 px-6 bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm transition-colors"
             >
               <PlusIcon className="mr-2 h-5 w-5" />
-              Crear Asistente
+              Crear programa
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Crear Nuevo Asistente</DialogTitle>
+              <DialogTitle>Crear programa</DialogTitle>
               <DialogDescription>
-                Configurá tu asistente de IA personalizado con tu propio conocimiento.
+                Después te guiamos paso a paso para diseñarlo, probarlo y conectarlo.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Nombre del Workspace</Label>
+                <Label htmlFor="name">Nombre del programa</Label>
                 <Input
                   id="name"
-                  placeholder="Mi Empresa"
+                  placeholder="Ej: Cuidar a quien cuida"
                   value={newWorkspace.name}
-                  onChange={(e) => {
-                    const newName = e.target.value;
-                    setNewWorkspace({
-                      ...newWorkspace,
-                      name: newName,
-                      slug: slugify(newName),
-                    });
-                  }}
+                  onChange={(e) =>
+                    setNewWorkspace({ ...newWorkspace, name: e.target.value })
+                  }
                 />
               </div>
-
-              <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-3">
-                <p className="text-xs font-medium text-neutral-600 mb-1">URL del workspace</p>
-                <p className="text-sm font-mono text-neutral-900">
-                  app.plural.com/<span className="font-semibold text-neutral-900">{newWorkspace.slug || "tu-workspace"}</span>
-                </p>
-              </div>
-
               {showOrgPicker && (
                 <div className="space-y-2">
                   <Label htmlFor="new-org">Organización</Label>
@@ -160,19 +146,18 @@ export function DashboardClient({
                   </select>
                 </div>
               )}
-
               <div className="space-y-2">
-                <Label htmlFor="assistant_name">Nombre del Asistente</Label>
+                <Label htmlFor="assistant_name">Nombre del asistente</Label>
                 <Input
                   id="assistant_name"
-                  placeholder="Aly"
+                  placeholder="Ej: Aly"
                   value={newWorkspace.assistant_name}
                   onChange={(e) =>
                     setNewWorkspace({ ...newWorkspace, assistant_name: e.target.value })
                   }
                 />
                 <p className="text-xs text-neutral-600">
-                  Cómo se presenta el bot en las conversaciones
+                  Así se presenta en WhatsApp. Si lo dejas vacío, se llama Aly.
                 </p>
               </div>
             </div>
@@ -181,7 +166,7 @@ export function DashboardClient({
                 Cancelar
               </Button>
               <Button onClick={handleCreateWorkspace} disabled={isCreating}>
-                {isCreating ? "Creando..." : "Crear Asistente"}
+                {isCreating ? "Creando…" : "Crear programa"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -299,10 +284,10 @@ export function DashboardClient({
             <BotIcon className="h-10 w-10 text-white" />
           </div>
           <h3 className="text-2xl font-semibold text-neutral-900 mb-3">
-            No tenés asistentes todavía
+            Todavía no tienes programas
           </h3>
           <p className="text-neutral-600 mb-6 text-lg">
-            Creá tu primer asistente de IA para empezar
+            Crea tu primer programa para empezar
           </p>
           <Button
             onClick={() => setIsCreateOpen(true)}
@@ -310,7 +295,7 @@ export function DashboardClient({
             className="h-12 px-6 bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm transition-colors"
           >
             <PlusIcon className="mr-2 h-5 w-5" />
-            Crear Mi Primer Asistente
+            Crear mi primer programa
           </Button>
         </div>
       )}

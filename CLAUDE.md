@@ -7,13 +7,15 @@ Repo: `Estudio-Plural/aly-saas`, branch de trabajo `main`.
 
 **Visión de producto (definida por Daniel):** el usuario es **no-code** — entra,
 crea su propio Aly y todo lo técnico es automático (metadatos de documentos,
-análisis de conversaciones). Las superficies de "diseño" que toca:
-- **Identidad / prompt núcleo** (`/[workspace]/identity`, desde 2026-07-18):
-  misión, alcance, criterio de éxito y acciones clave del asistente.
-- **Storyboard** (en `/[workspace]/onboarding`, ahora "Programa"): el arco de
-  la conversación en 4 momentos (arranque → qué pasa → qué debe pasar después
-  → cómo termina). El builder de pasos queda como "modo avanzado" colapsable.
-- **Reglas de alerta** en lenguaje natural.
+análisis de conversaciones). **Navegación por ciclo de vida (desde 2026-09,
+Fase 1):** Primeros pasos (`/[workspace]`, checklist con un solo «Siguiente
+paso») → **Diseñar** (Tu programa `/programa` · Qué no hace `/limites` · Rutas
+de ayuda `/rutas` · Material `/knowledge` · Bienvenida y consentimiento
+`/bienvenida`) → **Probar** (`/chat`) → **Conectar WhatsApp** (`/whatsapp`) →
+**Operar** (`/conversations`) + Ajustes. Cada sección tiene check de «hecho»
+con estado real (`getProgramProgress` en `lib/data/design.ts`). Crear programa
+pide 2 campos (nombre del programa y del asistente); el slug se genera solo.
+`/identity` y `/onboarding` redirigen (el guion paso a paso ya no existe).
 No agregar configuración técnica visible al usuario.
 
 **⚠️ Reencuadre de producto (Daniel, 2026-07-15 — PENDIENTE de bajar a detalle):**
@@ -123,11 +125,36 @@ systemd, `enabled`, sobreviven reboots):
   `db-setup.sh` (la 001 la crea al re-ejecutarse).
 - Onboarding se guarda en `onboarding_flows.definition` como
   `{steps: [{id, type: question|message|end, content, variable?}]}` (secuencial,
-  NO nodes/edges de React Flow).
+  NO nodes/edges de React Flow). **Legacy desde 2026-09:** el chat de prueba
+  ya no lo usa (lo reemplaza `welcome`) y no hay pantalla para editarlo.
+- **«Diseñar» (migración 012)** — tres JSONB en `workspace_configs` (NULL =
+  sección sin revisar; formato también en el comentario de la 012):
+  - `boundaries`: `{"rules": [{"id", "text"}]}` — reglas PROPIAS de «Qué no
+    hace». Las 6 reglas de SEGURIDAD (no inventa contactos, fidelidad al
+    material con «(sugerencia)», no nombra archivos, no promete seguimiento,
+    no dice que es privado, una oferta por respuesta) viven en código
+    (`apps/api/src/config/guardrails.ts` ↔ `apps/web/lib/design.ts`, mismo
+    texto) y se compilan SIEMPRE al bloque de identidad, aunque la fila no exista.
+  - `help_routes`: `[{"id", "name", "contact", "hours", "when", "territory"}]`
+    (`territory: ""` = todos). Van al prompt de SENSITIVE (`BotConfig.helpRoutes`);
+    sin rutas, instrucción de no inventar números y remitir al territorio.
+  - `welcome`: `{"welcome_message", "privacy_notice" (EXACTO), "privacy_policy_url",
+    "profile_questions": [{"id", "question", "variable", "options": []}]}`.
+    Reglas de aceptación FIJAS en `evaluateConsent()` (`lib/design.ts`): acepta
+    «1», «sí», «acepto», «sí, acepto», «estoy de acuerdo»; rechaza SOLO «2» o
+    un mensaje que empieza con «no»; otra cosa repite la pregunta; al rechazar
+    no se guarda nada. El chat de prueba ya lo corre (`welcomeToSteps`); el
+    canal de WhatsApp debe usar la misma función del lado servidor.
+  - El contexto de retrieval del engine ya no lleva nombres de archivo
+    (`engine/context.ts`): el modelo no puede citarlos.
 - Prompt núcleo y storyboard viven en `workspace_configs.core_prompt` /
   `workspace_configs.storyboard` (migración 009; NULL → defaults comportamentales
   en código: `DEFAULT_CORE_PROMPT` / `DEFAULT_STORYBOARD` en
   `apps/web/lib/workspaces.ts`, duplicados en `apps/api/src/config/identity.ts`).
+  Desde 2026-09 `core_prompt` suma `audience`, `voice_tone`, `voice_use`,
+  `voice_avoid` (`scope`/`key_actions` quedan como legacy opcional) y los
+  campos vacíos caen al ejemplo **campo a campo**; en el panel los defaults se
+  muestran como «ejemplo editable», nunca como valores llenos.
   `compileIdentityBlock()` los compila al bloque de identidad que se inyecta en
   los prompts (web fallback y engine vía `BotConfig.identity` + `withIdentity`
   en factual/plan/ideate/smalltalk).
@@ -213,7 +240,9 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 ## Convenciones
 
-- UI en español rioplatense (vos/tenés). Toasts con `sonner`; confirmaciones con
+- UI en español con **tú** (no voseo, desde 2026-09; quedan pantallas viejas con
+  voseo por migrar). Vocabulario «programa» / «asistente», sin jerga. El
+  asistente también tutea (bloque de identidad). Toasts con `sonner`; confirmaciones con
   `ConfirmDialog` (nunca `alert`/`confirm`).
 - **Estética estilo Chatbase** (pedido de Daniel): light, neutral, primary negro
   (`--primary: #18181b` en globals.css), **sin gradientes**. Color solo con

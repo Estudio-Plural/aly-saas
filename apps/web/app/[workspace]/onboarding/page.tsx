@@ -1,28 +1,14 @@
-import { workspaceDePagina } from "@/lib/sesion";
-import { getActiveFlowSteps } from "@/lib/data/onboarding";
-import { getStoryboard } from "@/lib/data/program";
-import { OnboardingClient } from "./onboarding-client";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
+/**
+ * El guion paso a paso se reemplazó por «Bienvenida y consentimiento» y los
+ * momentos del programa pasaron a «Tu programa» (2026-09).
+ */
 export default async function OnboardingPage({
   params,
 }: {
   params: Promise<{ workspace: string }>;
 }) {
-  const { workspace: workspaceSlug } = await params;
-  const { workspace } = await workspaceDePagina(workspaceSlug);
-
-  const [steps, storyboard] = await Promise.all([
-    getActiveFlowSteps(workspace.id),
-    getStoryboard(workspace.id),
-  ]);
-  return (
-    <OnboardingClient
-      workspaceSlug={workspace.slug}
-      assistantName={workspace.assistant_name}
-      initialSteps={steps}
-      initialStoryboard={storyboard}
-    />
-  );
+  const { workspace } = await params;
+  redirect(`/${workspace}/bienvenida`);
 }

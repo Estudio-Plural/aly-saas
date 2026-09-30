@@ -2,14 +2,17 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { resolverWorkspace } from "@/lib/api-acceso";
 import { listDocuments, createDocument } from "@/lib/data/documents";
-import { saveUpload, extractTextContent } from "@/lib/uploads";
+import { saveUpload, extractTextWithReport } from "@/lib/uploads";
+import type { UploadReview } from "@/lib/workspaces";
 import { enrichDocument } from "@/lib/enrichment";
 import { indexDocument } from "@/lib/embeddings";
 
 type Params = { params: Promise<{ slug: string }> };
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (lo que promete la UI)
-const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md", ".markdown", ".csv", ".doc", ".docx"];
+// Solo formatos de los que se puede leer el texto: un archivo que el asistente
+// no puede leer no le sirve a nadie.
+const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md", ".markdown", ".csv"];
 
 export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
@@ -34,13 +37,19 @@ export async function POST(request: Request, { params }: Params) {
 
   const created = [];
   const rejected: string[] = [];
+  // Revisión al subir: qué se pudo leer y qué quedó afuera.
+  const reviews: UploadReview[] = [];
 
   for (const file of files) {
     const ext = file.name.includes(".")
       ? `.${file.name.split(".").pop()!.toLowerCase()}`
       : "";
+    if (ext === ".doc" || ext === ".docx") {
+      rejected.push(`${file.name} (Word todavía no se puede leer: guárdalo como PDF)`);
+      continue;
+    }
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-      rejected.push(`${file.name} (formato no soportado)`);
+      rejected.push(`${file.name} (usa PDF, TXT o MD)`);
       continue;
     }
     if (file.size > MAX_FILE_SIZE) {
@@ -51,7 +60,8 @@ export async function POST(request: Request, { params }: Params) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const docId = randomUUID();
     const storagePath = await saveUpload(workspace.id, docId, file.name, buffer);
-    const textContent = await extractTextContent(file.name, file.type, buffer);
+    const extraction = await extractTextWithReport(file.name, file.type, buffer);
+    const textContent = extraction.text;
 
     // Metadatos automáticos (el usuario no-code no completa nada a mano)
     const metadata = textContent
@@ -73,8 +83,9 @@ export async function POST(request: Request, { params }: Params) {
 
     // Embeddings para el RAG del engine (fail-silent: sin pgvector o sin
     // OpenRouter el retrieval cae al texto plano)
+    let fragments: number | null = null;
     if (textContent) {
-      await indexDocument({
+      fragments = await indexDocument({
         workspaceId: workspace.id,
         documentId: doc.id,
         documentName: file.name,
@@ -83,7 +94,19 @@ export async function POST(request: Request, { params }: Params) {
       });
     }
     created.push(doc);
+    reviews.push({
+      documentId: doc.id,
+      name: file.name,
+      readable: Boolean(textContent),
+      totalChars: extraction.totalChars,
+      omittedChars: extraction.omittedChars,
+      fragments,
+      headings: textContent ? (textContent.match(/^#{1,6}\s+\S/gm) ?? []).length : 0,
+    });
   }
 
-  return NextResponse.json({ documents: created, rejected }, { status: created.length ? 201 : 400 });
+  return NextResponse.json(
+    { documents: created, rejected, reviews },
+    { status: created.length ? 201 : 400 }
+  );
 }

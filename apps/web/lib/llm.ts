@@ -2,6 +2,8 @@
 import { sql } from "@/lib/db";
 import { getKnowledgeText } from "@/lib/data/documents";
 import { getCorePrompt, getStoryboard } from "@/lib/data/program";
+import { getDesign } from "@/lib/data/design";
+import { compileHelpRoutesBlock } from "@/lib/design";
 import { compileIdentityBlock, type Workspace } from "@/lib/workspaces";
 
 export type LlmMessage = {
@@ -20,10 +22,11 @@ export function isLlmConfigured(): boolean {
  * + knowledge base en texto plano (hasta tener RAG con pgvector).
  */
 export async function buildSystemPrompt(workspace: Workspace): Promise<string> {
-  const [corePrompt, storyboard, knowledge] = await Promise.all([
+  const [corePrompt, storyboard, knowledge, design] = await Promise.all([
     getCorePrompt(workspace.id),
     getStoryboard(workspace.id),
     getKnowledgeText(workspace.id),
+    getDesign(workspace.id),
   ]);
 
   const parts = [
@@ -31,21 +34,25 @@ export async function buildSystemPrompt(workspace: Workspace): Promise<string> {
       workspace.assistant_name,
       workspace.name,
       corePrompt,
-      storyboard
+      storyboard,
+      design.boundaries
     ),
+    // Sin triage sensible en este camino: las rutas van siempre.
+    compileHelpRoutesBlock(design.help_routes),
   ];
 
   if (knowledge.length) {
+    // Sin nombres de archivo: el asistente nunca los cita.
     parts.push(
-      `Basate en esta base de conocimiento del negocio para responder:\n\n` +
-        knowledge.map((doc) => `### ${doc.name}\n${doc.text}`).join("\n\n")
+      `Material del programa (tu única fuente para lo que presentes como del programa):\n\n` +
+        knowledge.map((doc, i) => `### Material ${i + 1}\n${doc.text}`).join("\n\n")
     );
     parts.push(
-      `Si la respuesta no está en la base de conocimiento, decilo honestamente y ofrecé derivar la consulta a una persona del equipo.`
+      `Si la respuesta no está en el material, dilo con naturalidad y ofrece lo más cercano que sí tengas.`
     );
   } else {
     parts.push(
-      `Todavía no hay documentos en la base de conocimiento. Respondé lo mejor posible y aclará cuando no tengas información específica del negocio.`
+      `Todavía no hay material del programa. Responde lo mejor posible y aclara cuando no tengas información específica del programa.`
     );
   }
 

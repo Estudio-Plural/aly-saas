@@ -1,23 +1,11 @@
-import { workspaceDePagina } from "@/lib/sesion";
-import { getCorePrompt } from "@/lib/data/program";
-import { IdentityClient } from "./identity-client";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
+/** Identidad se fusionó con Programa en «Tu programa» (2026-09). */
 export default async function IdentityPage({
   params,
 }: {
   params: Promise<{ workspace: string }>;
 }) {
-  const { workspace: workspaceSlug } = await params;
-  const { workspace } = await workspaceDePagina(workspaceSlug);
-
-  const corePrompt = await getCorePrompt(workspace.id);
-  return (
-    <IdentityClient
-      workspaceSlug={workspace.slug}
-      assistantName={workspace.assistant_name}
-      initialCorePrompt={corePrompt}
-    />
-  );
+  const { workspace } = await params;
+  redirect(`/${workspace}/programa`);
 }

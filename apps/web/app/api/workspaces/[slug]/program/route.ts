@@ -7,6 +7,7 @@ import {
   saveCorePrompt,
   saveStoryboard,
 } from "@/lib/data/program";
+import { getDesign } from "@/lib/data/design";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -22,18 +23,25 @@ export async function GET(request: Request, { params }: Params) {
   return NextResponse.json({ core_prompt: corePrompt, storyboard });
 }
 
+// Campos vacíos permitidos: el asistente usa el ejemplo y el panel lo marca pendiente.
+const text = z.string().trim().max(2000);
+
 const corePromptSchema = z.object({
-  mission: z.string().trim().min(3).max(2000),
-  scope: z.string().trim().min(3).max(2000),
-  success_criteria: z.string().trim().min(3).max(2000),
-  key_actions: z.string().trim().min(3).max(2000),
+  mission: text,
+  audience: text.optional(),
+  success_criteria: text,
+  voice_tone: text.optional(),
+  voice_use: text.optional(),
+  voice_avoid: text.optional(),
+  scope: text.optional(),
+  key_actions: text.optional(),
 });
 
 const storyboardSchema = z.object({
-  opening: z.string().trim().min(3).max(2000),
-  development: z.string().trim().min(3).max(2000),
-  next_steps: z.string().trim().min(3).max(2000),
-  closing: z.string().trim().min(3).max(2000),
+  opening: text,
+  development: text,
+  next_steps: text,
+  closing: text,
 });
 
 const putSchema = z
@@ -58,7 +66,9 @@ export async function PUT(request: Request, { params }: Params) {
   }
 
   if (parsed.data.core_prompt) {
-    await saveCorePrompt(workspace.id, parsed.data.core_prompt);
+    // Merge: no se pierden campos que esta pantalla no envía.
+    const { core_prompt: current } = await getDesign(workspace.id);
+    await saveCorePrompt(workspace.id, { ...current, ...parsed.data.core_prompt });
   }
   if (parsed.data.storyboard) {
     await saveStoryboard(workspace.id, parsed.data.storyboard);

@@ -35,7 +35,6 @@ export async function POST(request: Request) {
   }
 
   const { name } = parsed.data;
-  const slug = slugify(parsed.data.slug || name);
   const assistant_name = parsed.data.assistant_name || "Aly";
   // Sin org explícita: la única del cliente, o la de pruebas del equipo Plural.
   const org_id =
@@ -46,6 +45,10 @@ export async function POST(request: Request) {
   }
   if (!puedeVerOrg(acceso, org_id)) return sinPermiso();
 
+  // Sin slug (el panel ya no lo pide), la dirección sale del nombre. Si está tomada
+  // (por cualquier organización), createWorkspace usa la siguiente libre: nombre-2, nombre-3…
+  // Un 409 revelaría que existe un programa en otra organización.
+  const slug = slugify(parsed.data.slug || name).slice(0, 90) || "programa";
   try {
     const workspace = await createWorkspace({ name, slug, assistant_name, org_id }, acceso);
     return NextResponse.json({ workspace }, { status: 201 });
