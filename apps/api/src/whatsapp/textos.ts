@@ -1,27 +1,27 @@
 // ── Textos del onboarding de WhatsApp, por workspace ───────────────────────
 //
-// CONTRATO CON LA MIGRACIÓN 012 (carril B, "Diseñar"): el canal lee UNA columna
-// JSONB de `workspace_configs`:
+// CONTRATO CON LA MIGRACIÓN 012 (carril B, "Diseñar",
+// `012_disenar_programa.sql`): el canal lee la columna JSONB
+// `workspace_configs.welcome`:
 //
-//   workspace_configs.whatsapp_onboarding = {
-//     "bienvenida":              "¡Hola! Soy ...",          // primer mensaje
-//     "aviso_privacidad":        "Antes de empezar ...",     // qué se guarda y para qué
-//     "politica_url":            "https://...",              // link a la política (opcional)
-//     "pregunta_consentimiento": "¿Aceptas continuar? ...",  // debe pedir 1 / 2
-//     "despedida_rechazo":       "Entiendo. No guardé ...",
-//     "cierre_onboarding":       "¡Gracias! ¿En qué te ayudo?",
-//     "preguntas_perfil": [                                  // opcionales, en orden
-//       { "id": "rol", "pregunta": "¿Cuál es tu rol?", "opciones": ["Docente", "Facilitador/a"] },
-//       { "id": "ciudad", "pregunta": "¿En qué ciudad estás?" }
-//     ]
-//   }
+//   {"welcome_message": "¡Hola! Soy Aly…",
+//    "privacy_notice": "texto EXACTO que escribe la organización",
+//    "privacy_policy_url": "https://…" | "",
+//    "profile_questions": [
+//      {"id": "q1", "question": "¿En qué región vives?", "variable": "region", "options": []},
+//      {"id": "q2", "question": "¿Con qué género te identificas?", "variable": "genero",
+//       "options": ["Mujer", "Hombre", "No binario", "Prefiero no decir"]}]}
 //
-// La lectura es TOLERANTE a propósito, porque B trabaja en paralelo:
-//   * si la columna no existe todavía (la 012 no corrió), se lee la fila con
+// La respuesta de perfil se guarda en users_data.profile bajo `variable` (o
+// `id` si no hay variable).
+//
+// La lectura es TOLERANTE a propósito:
+//   * si la columna no existe (la 012 no corrió), se lee la fila con
 //     `to_jsonb(wc)` y no hay error: se usan los defaults;
-//   * se aceptan alias en inglés dentro del objeto (welcome, privacy_notice,
-//     policy_url, consent_question, rejection_message, closing_message,
-//     profile_questions — con `question`/`options` en cada pregunta);
+//   * se acepta también `whatsapp_onboarding` con claves en español
+//     (bienvenida, aviso_privacidad, politica_url, pregunta_consentimiento,
+//     despedida_rechazo, cierre_onboarding, preguntas_perfil[{id, pregunta,
+//     opciones}]) — el nombre que propuso este carril antes de ver la 012;
 //   * cualquier campo vacío o con tipo raro cae a su default seguro.
 //
 // ⚠️ El aviso por defecto es PROVISIONAL y genérico: no cita una política
@@ -77,7 +77,7 @@ function preguntas(v: unknown): PreguntaPerfil[] {
   v.forEach((p: any, i) => {
     const pregunta = texto(p?.pregunta ?? p?.question ?? p?.texto ?? p?.text);
     if (!pregunta) return;
-    const id = texto(p?.id ?? p?.key ?? p?.variable) ?? `pregunta_${i + 1}`;
+    const id = texto(p?.variable ?? p?.id ?? p?.key) ?? `pregunta_${i + 1}`;
     const opcionesCrudas = p?.opciones ?? p?.options;
     const opciones = Array.isArray(opcionesCrudas)
       ? opcionesCrudas.map((o: unknown) => texto(o)).filter((o): o is string => !!o)
@@ -98,14 +98,14 @@ export function resolverTextos(
   organizacion?: string,
 ): TextosCanal {
   const base = textosPorDefecto(asistente, organizacion);
-  const raw = (fila?.whatsapp_onboarding ?? null) as Record<string, unknown> | null;
+  const raw = (fila?.welcome ?? fila?.whatsapp_onboarding ?? null) as Record<string, unknown> | null;
   if (!raw || typeof raw !== "object") return base;
 
   return {
     ...base,
-    bienvenida: texto(raw.bienvenida ?? raw.welcome) ?? base.bienvenida,
+    bienvenida: texto(raw.welcome_message ?? raw.bienvenida ?? raw.welcome) ?? base.bienvenida,
     avisoPrivacidad: texto(raw.aviso_privacidad ?? raw.privacy_notice) ?? base.avisoPrivacidad,
-    politicaUrl: url(raw.politica_url ?? raw.policy_url) ?? base.politicaUrl,
+    politicaUrl: url(raw.privacy_policy_url ?? raw.politica_url ?? raw.policy_url) ?? base.politicaUrl,
     preguntaConsentimiento:
       texto(raw.pregunta_consentimiento ?? raw.consent_question) ?? base.preguntaConsentimiento,
     despedidaRechazo: texto(raw.despedida_rechazo ?? raw.rejection_message) ?? base.despedidaRechazo,

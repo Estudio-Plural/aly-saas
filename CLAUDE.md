@@ -124,8 +124,8 @@ systemd, `enabled`, sobreviven reboots):
   por wamid (se libera si el turno falla antes de generar; si falla el envío,
   el reintento reenvía lo ya generado); reglas del gate EXACTAS de Aly; al
   rechazar no se guarda nada; sesión nueva a los 70 min; `salir` cierra.
-- Textos del onboarding: `workspace_configs.whatsapp_onboarding` (lo define la
-  012; lectura tolerante con defaults en `whatsapp/textos.ts`).
+- Textos del onboarding: `workspace_configs.welcome` (lo define la 012 de
+  Diseñar; lectura tolerante con defaults en `whatsapp/textos.ts`).
 - Panel `/[workspace]/whatsapp`: checklist con estado real; «Activo» solo tras
   un mensaje real recibido y respondido. Vista cliente vs Plural por
   `esPlural()` (`apps/web/lib/roles.ts`). Runbook: `docs/whatsapp-conectar-numero.md`.

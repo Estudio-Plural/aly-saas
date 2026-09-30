@@ -187,6 +187,27 @@ describe("textos del workspace (contrato con la 012, lectura tolerante)", () => 
     expect(r.preguntasPerfil).toEqual([{ id: "rol", pregunta: "¿Rol?", opciones: ["A", "B"] }]);
   });
 
+  test("lee la columna `welcome` con la forma EXACTA de la 012 de Diseñar", () => {
+    const r = resolverTextos({
+      welcome: {
+        welcome_message: "¡Hola! Soy Aly",
+        privacy_notice: "Guardamos lo que escribes para…",
+        privacy_policy_url: "",
+        profile_questions: [
+          { id: "q1", question: "¿En qué región vives?", variable: "region", options: [] },
+          { id: "q2", question: "¿Género?", variable: "genero", options: ["Mujer", "Hombre"] },
+        ],
+      },
+    });
+    expect(r.bienvenida).toBe("¡Hola! Soy Aly");
+    expect(r.avisoPrivacidad).toBe("Guardamos lo que escribes para…");
+    expect(r.politicaUrl).toBeNull();
+    expect(r.preguntasPerfil).toEqual([
+      { id: "region", pregunta: "¿En qué región vives?", opciones: [] },
+      { id: "genero", pregunta: "¿Género?", opciones: ["Mujer", "Hombre"] },
+    ]);
+  });
+
   test("acepta alias en inglés", () => {
     const r = resolverTextos({
       whatsapp_onboarding: {

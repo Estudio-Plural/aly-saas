@@ -74,10 +74,11 @@ organización**; la organización ve en «WhatsApp» solo el estado y las cifras
 
 ## Textos del onboarding por programa (contrato con la migración 012)
 
-El engine lee `workspace_configs.whatsapp_onboarding` (JSONB) con las claves
-`bienvenida`, `aviso_privacidad`, `politica_url`, `pregunta_consentimiento`,
-`despedida_rechazo`, `cierre_onboarding` y `preguntas_perfil`
-(`[{id, pregunta, opciones?}]`). Si la columna o un campo no existe, usa
-defaults. ⚠️ El aviso por defecto es genérico y provisional: **antes de abrir
+El engine lee `workspace_configs.welcome` (JSONB, migración 012 de Diseñar):
+`welcome_message`, `privacy_notice`, `privacy_policy_url` y
+`profile_questions` (`[{id, question, variable, options}]`; la respuesta se
+guarda en `users_data.profile[variable]`). Si la columna o un campo no existe,
+usa defaults. La pregunta «¿Aceptas continuar? 1/2», la despedida al rechazar
+y el cierre son fijos del canal. ⚠️ El aviso por defecto es genérico y provisional: **antes de abrir
 un número a participantes reales, el programa tiene que cargar su aviso y el
 link a su política.**
