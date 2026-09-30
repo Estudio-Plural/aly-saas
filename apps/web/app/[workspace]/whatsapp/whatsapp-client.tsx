@@ -97,7 +97,7 @@ export function WhatsAppClient({
               </p>
             )}
             <p className="text-sm text-neutral-600">
-              ¿Prefieres escribirnos? <a href="mailto:hola@plural-estudio.co" className="font-medium text-neutral-900 underline underline-offset-2">hola@plural-estudio.co</a>
+              ¿Prefieres escribirnos? <a href="mailto:hola@estudio-plural.co" className="font-medium text-neutral-900 underline underline-offset-2">hola@estudio-plural.co</a>
             </p>
           </form>
         </div>

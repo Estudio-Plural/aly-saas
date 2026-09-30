@@ -502,7 +502,7 @@ export function ChatClient({
             <p className="text-xs text-neutral-600 mt-3 px-1">
               {llmConfigured
                 ? "Presiona Enter para enviar • La conversación se guarda en tu workspace"
-                : "El asistente todavía no está activado. Escríbenos a hola@plural-estudio.co."}
+                : "El asistente todavía no está activado. Escríbenos a hola@estudio-plural.co."}
             </p>
           </div>
         </Card>

@@ -120,7 +120,7 @@ export async function POST(request: Request, { params }: Params) {
     const [reply] = await appendMessages(workspace.id, conversationId, [
       {
         role: "assistant",
-        text: "El asistente todavía no está activado. Escríbenos a hola@plural-estudio.co.",
+        text: "El asistente todavía no está activado. Escríbenos a hola@estudio-plural.co.",
       },
     ]);
     return NextResponse.json({ conversationId, messages: [userMessage, reply] });
