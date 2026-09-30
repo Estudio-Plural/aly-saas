@@ -22,8 +22,10 @@ import {
   PlusIcon,
   TrashIcon,
   BellIcon,
+  LockIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TRANSCRIPCIONES_SOLO_PLURAL } from "@/lib/workspaces";
 import type {
   ChatMessage,
   ConversationSummary,
@@ -71,11 +73,14 @@ export function ConversationsClient({
   assistantName,
   conversations,
   initialFlagRules,
+  canSeeTranscripts,
 }: {
   workspaceSlug: string;
   assistantName: string;
   conversations: ConversationSummary[];
   initialFlagRules: FlagRule[];
+  /** Solo el equipo de Plural ve el texto de las conversaciones. */
+  canSeeTranscripts: boolean;
 }) {
   const [selectedId, setSelectedId] = useState<string | null>(
     conversations[0]?.conversationId ?? null
@@ -89,7 +94,7 @@ export function ConversationsClient({
 
   const openConversation = async (conversationId: string) => {
     setSelectedId(conversationId);
-    if (messagesById[conversationId]) return;
+    if (!canSeeTranscripts || messagesById[conversationId]) return;
 
     setIsLoadingDetail(true);
     try {
@@ -167,10 +172,14 @@ export function ConversationsClient({
                         {formatWhen(conv.lastAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-neutral-600 truncate mb-1.5">
-                      {conv.lastMessageRole === "assistant" ? `${assistantName}: ` : ""}
-                      {conv.lastMessage}
-                    </p>
+                    {conv.lastMessage !== null ? (
+                      <p className="text-xs text-neutral-600 truncate mb-1.5">
+                        {conv.lastMessageRole === "assistant" ? `${assistantName}: ` : ""}
+                        {conv.lastMessage}
+                      </p>
+                    ) : conv.summary ? (
+                      <p className="text-xs text-neutral-600 truncate mb-1.5">{conv.summary}</p>
+                    ) : null}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {conv.isWebPreview ? (
                         <Badge variant="outline" className="gap-1 text-neutral-600">
@@ -255,7 +264,12 @@ export function ConversationsClient({
                 </Card>
 
                 <Card className="p-5 max-h-[520px] overflow-y-auto bg-neutral-50">
-                  {isLoadingDetail && !selectedMessages ? (
+                  {!canSeeTranscripts ? (
+                    <div className="flex items-start gap-3 py-2 text-sm text-neutral-700">
+                      <LockIcon className="h-4 w-4 mt-0.5 flex-shrink-0 text-neutral-500" />
+                      <p>{TRANSCRIPCIONES_SOLO_PLURAL}</p>
+                    </div>
+                  ) : isLoadingDetail && !selectedMessages ? (
                     <div className="flex items-center justify-center py-10 text-neutral-600">
                       <Loader2Icon className="h-5 w-5 animate-spin mr-2" />
                       Cargando conversación...

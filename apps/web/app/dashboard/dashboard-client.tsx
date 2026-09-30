@@ -27,10 +27,21 @@ import { slugify, type Workspace } from "@/lib/workspaces";
 
 export function DashboardClient({
   initialWorkspaces,
+  orgs,
+  selectedOrg,
+  isPlural,
 }: {
   initialWorkspaces: Workspace[];
+  /** Organizaciones visibles (el equipo Plural ve todas). */
+  orgs: { id: string; nombre: string }[];
+  /** Filtro activo (?org=); null = todas. */
+  selectedOrg: string | null;
+  isPlural: boolean;
 }) {
   const router = useRouter();
+  // Organización del programa nuevo: la filtrada, o la primera visible.
+  const [newOrg, setNewOrg] = useState(selectedOrg ?? orgs[0]?.id ?? "");
+  const showOrgPicker = orgs.length > 1;
   const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -54,6 +65,7 @@ export function DashboardClient({
           name: newWorkspace.name.trim(),
           slug: newWorkspace.slug,
           assistant_name: newWorkspace.assistant_name.trim() || "Aly",
+          org_id: newOrg || undefined,
         }),
       });
       const data = await res.json();
@@ -131,6 +143,24 @@ export function DashboardClient({
                 </p>
               </div>
 
+              {showOrgPicker && (
+                <div className="space-y-2">
+                  <Label htmlFor="new-org">Organización</Label>
+                  <select
+                    id="new-org"
+                    value={newOrg}
+                    onChange={(e) => setNewOrg(e.target.value)}
+                    className="h-9 w-full rounded-md border border-neutral-200 bg-white px-3 text-sm"
+                  >
+                    {orgs.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="assistant_name">Nombre del Asistente</Label>
                 <Input
@@ -158,6 +188,34 @@ export function DashboardClient({
         </Dialog>
       </div>
 
+      {showOrgPicker && (
+        <div className="flex items-center gap-3">
+          <Label htmlFor="org-filter" className="text-sm text-neutral-700">
+            Organización
+          </Label>
+          <select
+            id="org-filter"
+            value={selectedOrg ?? ""}
+            onChange={(e) =>
+              router.push(e.target.value ? `/dashboard?org=${e.target.value}` : "/dashboard")
+            }
+            className="h-9 rounded-md border border-neutral-200 bg-white px-3 text-sm"
+          >
+            <option value="">Todas</option>
+            {orgs.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.nombre}
+              </option>
+            ))}
+          </select>
+          {isPlural && (
+            <a href="/admin" className="text-sm text-neutral-600 underline underline-offset-2">
+              Administrar organizaciones
+            </a>
+          )}
+        </div>
+      )}
+
       {/* Workspaces Grid */}
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         {workspaces.map((workspace) => (
@@ -178,6 +236,7 @@ export function DashboardClient({
                     </CardTitle>
                     <CardDescription className="text-base text-neutral-600">
                       {workspace.assistant_name}
+                      {showOrgPicker && !selectedOrg ? ` · ${workspace.org_name}` : ""}
                     </CardDescription>
                   </div>
                 </div>

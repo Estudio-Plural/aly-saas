@@ -144,6 +144,29 @@ systemd, `enabled`, sobreviven reboots):
 - RLS habilitado en todas las tablas (las queries locales lo bypassean por ser
   superuser; las policies usan `current_setting('app.workspace_id')`).
 
+## Acceso, organizaciones y aislamiento (desde Fase 0, migración 011)
+
+- **Identidad:** Aly va detrás de `plural-gate` (repo `plural-suite`), que inyecta
+  `X-Plural-User-Email/-Id/-Role/-Ts/-Sig` firmados con `GATE_SECRET`. `lib/auth.ts`
+  verifica la firma (≤ 5 min) igual que el portal. Sin `GATE_SECRET` en desarrollo se acepta
+  el encabezado o `DEV_USER_EMAIL`; con `NODE_ENV=production` **o `PLURAL_REQUIRE_GATE=1`**
+  (la VPS corre `next dev`: ponerlo ahí) sin secreto nadie entra.
+- **Roles:** correo con dominio de `PLURAL_DOMAINS` (default `estudio-plural.co`) = rol
+  plural: ve todas las orgs, las transcripciones y `/admin`. Cliente = filas en
+  `org_members (org_id, email, rol admin|miembro)`; ve solo los programas de sus orgs.
+  Borrar un programa: admin de la org o Plural.
+- **Aislamiento (la conexión es superuser: el RLS no protege):** `getWorkspaceBySlug(slug,
+  acceso)` y el resto de `lib/data/workspaces.ts` filtran por org; todo lo demás de
+  `lib/data/*` recibe un `workspaceId` que SOLO puede salir de ahí. Rutas:
+  `resolverWorkspace(request, slug)` (`lib/api-acceso.ts`) → 401 sin identidad, 404 si el
+  programa es de otra org (igual que inexistente). Páginas: `workspaceDePagina(slug)`
+  (`lib/sesion.ts`) → `notFound()`. **Toda ruta nueva debe empezar por ahí.**
+- **Transcripciones solo para Plural:** `listConversations(wsId, { verTranscripciones })`
+  quita texto, nombre y teléfono para clientes; `GET conversations/[id]` → 403.
+- **Tests:** `cd apps/web && bun test tests/` contra `aly_saas_acceso` (o
+  `TEST_DATABASE_URL`; se niega a correr contra `aly_saas`). Barren solas todas las rutas de
+  `app/api/**`: una ruta nueva sin filtro hace fallar el test.
+
 ## Arquitectura de datos (apps/web)
 
 - `lib/db.ts` — cliente postgres.js. **Solo importar desde código de servidor.**
@@ -186,7 +209,7 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 | Real | Simulado / pendiente |
 |---|---|
-| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview**, **RAG vectorial (pgvector + embeddings OpenRouter, con fallback a texto plano)**, identidad + storyboard editables e inyectados en los prompts, **materiales del storyboard (imagen/PDF/video/audio) que el asistente envía en el chat preview**, **landing pública en `/`** | Conexión WhatsApp/Kapso (teatro persistido en DB; incluye el envío de materiales por WhatsApp), auth (usuario fijo `demo_user_001` / hola@plural-estudio.co), billing, análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
+| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview**, **RAG vectorial (pgvector + embeddings OpenRouter, con fallback a texto plano)**, identidad + storyboard editables e inyectados en los prompts, **materiales del storyboard (imagen/PDF/video/audio) que el asistente envía en el chat preview**, **landing pública en `/`** | Conexión WhatsApp/Kapso (teatro persistido en DB; incluye el envío de materiales por WhatsApp), billing, análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
 
 ## Convenciones
 

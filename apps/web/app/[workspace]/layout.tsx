@@ -1,8 +1,7 @@
 import { ReactNode } from "react";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { WorkspaceSidebar } from "./workspace-sidebar";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { workspaceDePagina } from "@/lib/sesion";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +13,7 @@ export default async function WorkspaceLayout({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const workspace = await getWorkspaceBySlug(workspaceSlug);
-  if (!workspace) redirect("/dashboard");
+  const { workspace } = await workspaceDePagina(workspaceSlug);
 
   return (
     <div className="min-h-screen bg-neutral-50">

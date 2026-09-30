@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { workspaceDePagina } from "@/lib/sesion";
 import { WhatsAppClient } from "./whatsapp-client";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +9,7 @@ export default async function WhatsAppPage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const workspace = await getWorkspaceBySlug(workspaceSlug);
-  if (!workspace) redirect("/dashboard");
+  const { workspace } = await workspaceDePagina(workspaceSlug);
 
   // La conexión directa (Kapso) todavía no existe: no hay bandera ni cliente
   // real que consultar. La pantalla muestra siempre el estado "en preparación"

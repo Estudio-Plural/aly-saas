@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import { listDocuments, createDocument } from "@/lib/data/documents";
 import { saveUpload, extractTextContent } from "@/lib/uploads";
 import { enrichDocument } from "@/lib/enrichment";
@@ -11,22 +11,20 @@ type Params = { params: Promise<{ slug: string }> };
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB (lo que promete la UI)
 const ALLOWED_EXTENSIONS = [".pdf", ".txt", ".md", ".markdown", ".csv", ".doc", ".docx"];
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
   const documents = await listDocuments(workspace.id);
   return NextResponse.json({ documents });
 }
 
 export async function POST(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const formData = await request.formData().catch(() => null);
   const files = formData?.getAll("files").filter((f): f is File => f instanceof File) ?? [];

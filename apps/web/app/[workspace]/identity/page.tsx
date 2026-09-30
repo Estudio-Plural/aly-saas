@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { workspaceDePagina } from "@/lib/sesion";
 import { getCorePrompt } from "@/lib/data/program";
 import { IdentityClient } from "./identity-client";
 
@@ -11,8 +10,7 @@ export default async function IdentityPage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const workspace = await getWorkspaceBySlug(workspaceSlug);
-  if (!workspace) redirect("/dashboard");
+  const { workspace } = await workspaceDePagina(workspaceSlug);
 
   const corePrompt = await getCorePrompt(workspace.id);
   return (

@@ -1,23 +1,18 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  getWorkspaceBySlug,
-  updateWorkspace,
-  deleteWorkspace,
-  SlugTakenError,
-} from "@/lib/data/workspaces";
+import { updateWorkspace, deleteWorkspace, SlugTakenError } from "@/lib/data/workspaces";
+import { noEncontrado, resolverWorkspace, sinPermiso } from "@/lib/api-acceso";
+import { puedeAdministrarOrg } from "@/lib/auth";
 import { removeWorkspaceUploads } from "@/lib/uploads";
 import { slugify } from "@/lib/workspaces";
 
 type Params = { params: Promise<{ slug: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
-  return NextResponse.json({ workspace });
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  return NextResponse.json({ workspace: r.workspace });
 }
 
 const updateSchema = z.object({
@@ -28,6 +23,9 @@ const updateSchema = z.object({
 
 export async function PATCH(request: Request, { params }: Params) {
   const { slug } = await params;
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+
   const body = await request.json().catch(() => null);
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) {
@@ -35,13 +33,12 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
-    const workspace = await updateWorkspace(slug, {
-      ...parsed.data,
-      slug: slugify(parsed.data.slug),
-    });
-    if (!workspace) {
-      return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-    }
+    const workspace = await updateWorkspace(
+      slug,
+      { ...parsed.data, slug: slugify(parsed.data.slug) },
+      r.acceso
+    );
+    if (!workspace) return noEncontrado();
     return NextResponse.json({ workspace });
   } catch (error) {
     if (error instanceof SlugTakenError) {
@@ -51,12 +48,16 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspaceId = await deleteWorkspace(slug);
-  if (!workspaceId) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  // Borrar un programa: solo un admin de la organización o el equipo Plural.
+  if (!puedeAdministrarOrg(r.acceso, r.workspace.org_id)) {
+    return sinPermiso("Solo quien administra la organización puede borrar un programa.");
   }
+  const workspaceId = await deleteWorkspace(slug, r.acceso);
+  if (!workspaceId) return noEncontrado();
   await removeWorkspaceUploads(workspaceId);
   return NextResponse.json({ ok: true });
 }

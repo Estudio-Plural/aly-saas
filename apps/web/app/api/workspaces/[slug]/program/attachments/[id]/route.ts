@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import {
   getStoryboardAttachment,
   removeStoryboardAttachment,
@@ -9,12 +9,11 @@ import { readUpload, removeUpload } from "@/lib/uploads";
 type Params = { params: Promise<{ slug: string; id: string }> };
 
 /** Sirve el material inline (para <img>/<video>/<audio> y visor de PDF del chat). */
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug, id } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const attachment = await getStoryboardAttachment(workspace.id, id);
   if (!attachment) {
@@ -38,12 +37,11 @@ export async function GET(_request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { slug, id } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const removed = await removeStoryboardAttachment(workspace.id, id);
   if (!removed) {

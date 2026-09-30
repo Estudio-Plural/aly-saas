@@ -22,6 +22,9 @@ export type Workspace = {
   whatsapp_phone_number: string | null;
   kapso_connection_status: KapsoConnectionStatus;
   stats: WorkspaceStats;
+  /** Organización dueña del programa (migración 011). */
+  org_id: string;
+  org_name: string;
 };
 
 export type DocumentRow = {
@@ -206,13 +209,18 @@ export type ChatMessage = {
   timestamp: string;
 };
 
+/** Lo que ve un cliente en lugar del texto de las conversaciones (decisión de producto). */
+export const TRANSCRIPCIONES_SOLO_PLURAL =
+  "Las conversaciones completas solo las ve el equipo de Plural, por la privacidad de las personas.";
+
 /** Fila del inbox de conversaciones (lista agregada por conversación). */
 export type ConversationSummary = {
   conversationId: string;
   clientNumber: string;
   userName: string | null;
   isWebPreview: boolean;
-  lastMessage: string;
+  /** null cuando quien mira no puede ver transcripciones (rol cliente). */
+  lastMessage: string | null;
   lastMessageRole: "user" | "assistant";
   messagesCount: number;
   isOpen: boolean;
