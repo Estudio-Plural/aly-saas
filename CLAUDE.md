@@ -267,8 +267,8 @@ systemd, `enabled`, sobreviven reboots):
   correo/Telegram (WhatsApp pendiente Kapso), siempre sin texto de mensajes.
   **Reporte semanal** (engine `src/operar/`): `POST /internal/weekly-report`
   (mismo `SUPERVISOR_TOKEN`) o `WEEKLY_REPORT_INTERVAL_MINUTES`; idempotente por
-  semana en `weekly_reports`; con `SMTP_*` y miembros con
-  `workspace_users.email` manda correo + Excel; si no, se descarga desde Operar.
+  semana en `weekly_reports`; con `SMTP_*` y miembros de la organización
+  (`org_members`, 011) manda correo + Excel; si no, se descarga desde Operar.
 - `lib/embeddings.ts` — indexado vectorial al subir: chunking (~1500 chars,
   overlap 200) + embeddings vía OpenRouter → filas en
   `vector_aly.aly_general_knowledge`; limpieza al borrar el doc. Fail-silent

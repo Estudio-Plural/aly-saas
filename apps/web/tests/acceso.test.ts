@@ -54,11 +54,13 @@ async function snapshotB() {
   const [ws] = await sql`SELECT slug, name, assistant_name, org_id, whatsapp_phone_number, kapso_connection_status FROM workspaces WHERE id = ${WS_B}`;
   const docs = await sql`SELECT id, name, routing_hint FROM documents WHERE workspace_id = ${WS_B} ORDER BY id`;
   const msgs = await sql`SELECT id, message, status FROM users_interactions WHERE workspace_id = ${WS_B} ORDER BY id`;
-  const cfg = await sql`SELECT flag_rules, core_prompt, storyboard FROM workspace_configs WHERE workspace_id = ${WS_B}`;
+  const cfg = await sql`SELECT flag_rules, core_prompt, storyboard, boundaries, help_routes, welcome FROM workspace_configs WHERE workspace_id = ${WS_B}`;
   const flows = await sql`SELECT definition FROM onboarding_flows WHERE workspace_id = ${WS_B}`;
   const miembros = await sql`SELECT email, rol FROM org_members WHERE org_id = ${ORG_B} ORDER BY email`;
-  const cd = await sql`SELECT conversation_id, summary FROM conversations_data WHERE workspace_id = ${WS_B}`;
-  return JSON.stringify({ ws, docs, msgs, cfg, flows, miembros, cd });
+  const cd = await sql`SELECT conversation_id, summary, reviewed_at, reviewed_by FROM conversations_data WHERE workspace_id = ${WS_B}`;
+  const protocolo = await sql`SELECT * FROM alert_protocols WHERE workspace_id = ${WS_B}`;
+  const wa = await sql`SELECT phone_number_id, token_env, checklist FROM whatsapp_connections WHERE workspace_id = ${WS_B}`;
+  return JSON.stringify({ ws, docs, msgs, cfg, flows, miembros, cd, protocolo, wa });
 }
 
 beforeAll(async () => {
@@ -77,8 +79,17 @@ beforeAll(async () => {
   await sql`INSERT INTO users_interactions (workspace_id, conversation_id, client_number, role, message) VALUES
     (${WS_B}, ${CONV_B}, '+573001112233', 'user', 'MENSAJE PRIVADO DE UNA PERSONA'),
     (${WS_B}, ${CONV_B}, '+573001112233', 'assistant', 'respuesta del asistente')`;
-  await sql`INSERT INTO conversations_data (workspace_id, conversation_id, user_number, summary, flags, flag_severity)
-    VALUES (${WS_B}, ${CONV_B}, '+573001112233', 'Resumen de la conversación', 'Alerta', 'high')`;
+  const analisis = {
+    version: 1, summary: "Resumen del supervisor", keywords: [], momentoAlcanzado: null,
+    cumplioCriterioExito: { value: true, evidence: [{ messageIndex: 0, messageId: "m1" }] },
+    flags: [{
+      ruleId: "1", ruleDescription: "Riesgo", severity: "HIGH",
+      detail: "La persona dijo MENSAJE PRIVADO", evidence: [{ messageIndex: 0, messageId: "m1", fragment: "MENSAJE PRIVADO" }],
+    }],
+    discardedFlags: 0, model: "x",
+  };
+  await sql`INSERT INTO conversations_data (workspace_id, conversation_id, user_number, summary, flags, flag_severity, analysis)
+    VALUES (${WS_B}, ${CONV_B}, '+573001112233', 'Resumen de la conversación', 'Alerta', 'high', ${sql.json(analisis)})`;
 });
 
 afterAll(async () => {
@@ -136,7 +147,11 @@ const CUERPOS: Record<string, unknown> = {
   "workspaces/[slug]": { name: "HACKEADO", slug: "hackeado-" + R, assistant_name: "X" },
   "workspaces/[slug]/flags": { rules: [{ id: "9", description: "Regla inyectada", severity: "low" }] },
   "workspaces/[slug]/onboarding": { steps: [{ id: "1", type: "message", content: "inyectado" }] },
-  "workspaces/[slug]/whatsapp": { phoneNumber: "+570000000000" },
+  "workspaces/[slug]/whatsapp": { phoneNumberId: "1234567890", displayNumber: "+57 300", tokenEnv: "META_TOKEN_INYECTADO" },
+  "workspaces/[slug]/design": { help_routes: [{ id: "1", name: "Ruta inyectada", contact: "123" }] },
+  "workspaces/[slug]/operar/protocolo": {
+    responsibleName: "Intruso", channel: "email", channelTarget: "intruso@x.test", responseTimeHours: 1, active: true,
+  },
   "workspaces/[slug]/documents/[id]": { routing_hint: "inyectado" },
   "workspaces/[slug]/program": {
     core_prompt: { mission: "inyectado", scope: "inyectado", success_criteria: "inyectado", key_actions: "inyectado" },
@@ -297,6 +312,17 @@ describe("transcripciones: solo el equipo Plural", () => {
     expect(JSON.stringify(lista)).not.toContain("3001112233");
   });
 
+  test("la evidencia textual del supervisor no le llega al cliente: solo regla y severidad", async () => {
+    const [cliente] = await listConversations(WS_B, { verTranscripciones: false });
+    expect(cliente.supervision?.flags[0].severity).toBe("HIGH");
+    expect(cliente.supervision?.flags[0].ruleDescription).toBe("Riesgo");
+    expect(cliente.supervision?.flags[0].evidence).toEqual([]);
+    expect(cliente.supervision?.flags[0].detail).toBe("");
+    expect(JSON.stringify(cliente)).not.toContain("MENSAJE PRIVADO");
+    const [plural] = await listConversations(WS_B, { verTranscripciones: true });
+    expect(plural.supervision?.flags[0].evidence[0].fragment).toBe("MENSAJE PRIVADO");
+  });
+
   test("el equipo Plural sí ve la conversación", async () => {
     const { GET } = await import("@/app/api/workspaces/[slug]/conversations/[id]/route");
     const res = await GET(new Request("http://localhost", { headers: headersDe(PLURAL) }), {
@@ -308,6 +334,31 @@ describe("transcripciones: solo el equipo Plural", () => {
 });
 
 describe("permisos dentro de la org", () => {
+  test("un cliente no conecta números de WhatsApp (403); Plural sí puede", async () => {
+    const { PUT } = await import("@/app/api/workspaces/[slug]/whatsapp/route");
+    const cuerpo = JSON.stringify({ phoneNumberId: null, displayNumber: "+57 300 000", wabaId: null, tokenEnv: null });
+    const h = headersDe(CLIENTE_B);
+    h.set("content-type", "application/json");
+    const res = await PUT(new Request("http://localhost", { method: "PUT", headers: h, body: cuerpo }), {
+      params: Promise.resolve({ slug: SLUG_B }),
+    });
+    expect(res.status).toBe(403);
+    const [{ n }] = await sql`SELECT count(*)::int AS n FROM whatsapp_connections WHERE workspace_id = ${WS_B}`;
+    expect(n).toBe(0);
+  });
+
+  test("revisar una alerta registra el correo real de quien revisa", async () => {
+    const { POST, DELETE } = await import("@/app/api/workspaces/[slug]/conversations/[id]/review/route");
+    const ctx = { params: Promise.resolve({ slug: SLUG_B, id: CONV_B }) };
+    const res = await POST(new Request("http://localhost", { method: "POST", headers: headersDe(CLIENTE_B) }), ctx);
+    expect(res.status).toBe(200);
+    const [row] = await sql`SELECT reviewed_by FROM conversations_data WHERE workspace_id = ${WS_B} AND conversation_id = ${CONV_B}`;
+    expect(row.reviewed_by).toBe(CLIENTE_B);
+    await DELETE(new Request("http://localhost", { method: "DELETE", headers: headersDe(CLIENTE_B) }), {
+      params: Promise.resolve({ slug: SLUG_B, id: CONV_B }),
+    });
+  });
+
   test("un miembro (no admin) no borra el programa", async () => {
     const { DELETE } = await import("@/app/api/workspaces/[slug]/route");
     const res = await DELETE(new Request("http://localhost", { method: "DELETE", headers: headersDe(CLIENTE_B) }), {

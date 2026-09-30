@@ -73,9 +73,8 @@ DROP POLICY IF EXISTS alert_protocols_isolation ON alert_protocols;
 CREATE POLICY alert_protocols_isolation ON alert_protocols
   USING (workspace_id::text = current_setting('app.workspace_id', true));
 
--- Destinatarios del reporte semanal: los miembros de la org con correo.
--- (IF NOT EXISTS: otra migración de acceso puede agregar la misma columna.)
-ALTER TABLE workspace_users ADD COLUMN IF NOT EXISTS email TEXT;
+-- Destinatarios del reporte semanal: los miembros de la organización del programa
+-- (org_members, migración 011). Aquí no se agrega nada: workspace_users no lleva correo.
 
 -- Corridas del reporte semanal. Idempotencia: una fila por workspace y
 -- semana; si ya se mandó, no se vuelve a mandar. Solo cifras agregadas

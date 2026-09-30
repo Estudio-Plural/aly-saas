@@ -20,10 +20,15 @@ export const sqlWeeklyStore: WeeklyStore = {
     `;
     return rows[0]?.active === true;
   },
+  // Destinatarios: los miembros (admin y miembro) de la organización dueña del programa
+  // (org_members, migración 011). El equipo Plural no está en org_members: no recibe
+  // el reporte de cada cliente.
   async destinatarios(workspaceId) {
     const rows = await sql<{ email: string }[]>`
-      SELECT DISTINCT lower(trim(email)) AS email FROM workspace_users
-      WHERE workspace_id = ${workspaceId} AND email IS NOT NULL AND trim(email) <> ''
+      SELECT DISTINCT m.email FROM org_members m
+      JOIN workspaces w ON w.org_id = m.org_id
+      WHERE w.id = ${workspaceId}
+      ORDER BY m.email
     `;
     return rows.map((r) => r.email);
   },
