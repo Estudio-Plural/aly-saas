@@ -24,7 +24,7 @@ const PATH_LABELS: Record<string, string> = {
   ...Object.fromEntries(DESIGN_STEPS.map((step) => [step.path, step.label])),
   chat: "Probar",
   whatsapp: "Conectar WhatsApp",
-  conversations: "Operar",
+  operar: "Operar",
 };
 
 function countDone(progress: ProgramProgress): { done: number; total: number } {
@@ -68,8 +68,8 @@ export default async function FirstStepsPage({
     {
       title: "Operar",
       done: progress.operate,
-      href: `${base}/conversations`,
-      description: "Cifras de uso y las alertas que definas, sin leer conversaciones una por una.",
+      href: `${base}/operar`,
+      description: "Cifras de uso, alertas y qué hacer ante una situación de riesgo, sin leer conversaciones una por una.",
     },
   ];
 

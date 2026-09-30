@@ -73,7 +73,11 @@ export function WorkspaceSidebar({
     {
       title: "Operar",
       done: progress.operate,
-      items: [{ name: "Conversaciones y cifras", href: `${base}/conversations` }],
+      items: [
+        { name: "Cifras", href: `${base}/operar` },
+        { name: "Conversaciones", href: `${base}/conversations` },
+        { name: "Protocolo ante riesgo", href: `${base}/operar/protocolo` },
+      ],
     },
   ];
 

@@ -23,6 +23,9 @@ import {
   TrashIcon,
   BellIcon,
   LockIcon,
+  CheckIcon,
+  FlagIcon,
+  TargetIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TRANSCRIPCIONES_SOLO_PLURAL } from "@/lib/workspaces";
@@ -32,6 +35,7 @@ import type {
   FlagRule,
   FlagSeverity,
 } from "@/lib/workspaces";
+import { STORYBOARD_MOMENT_LABELS } from "@/lib/workspaces";
 
 const SEVERITY_LABELS: Record<FlagSeverity, string> = {
   high: "Alta",
@@ -47,6 +51,18 @@ function formatWhen(iso: string): string {
     return date.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
   }
   return date.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
+}
+
+type ReviewFilter = "all" | "pending" | "reviewed";
+
+const REVIEW_FILTER_LABELS: Record<ReviewFilter, string> = {
+  all: "Todas",
+  pending: "Alertas sin revisar",
+  reviewed: "Alertas revisadas",
+};
+
+function hasAlert(conv: ConversationSummary): boolean {
+  return Boolean(conv.flagSeverity);
 }
 
 function severityBadge(severity: string | null) {
@@ -82,15 +98,56 @@ export function ConversationsClient({
   /** Solo el equipo de Plural ve el texto de las conversaciones. */
   canSeeTranscripts: boolean;
 }) {
+  const [items, setItems] = useState<ConversationSummary[]>(conversations);
+  const [filter, setFilter] = useState<ReviewFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(
     conversations[0]?.conversationId ?? null
   );
   const [messagesById, setMessagesById] = useState<Record<string, ChatMessage[]>>({});
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [isReviewing, setIsReviewing] = useState(false);
 
-  const selected =
-    conversations.find((conv) => conv.conversationId === selectedId) ?? null;
+  const selected = items.find((conv) => conv.conversationId === selectedId) ?? null;
   const selectedMessages = selectedId ? messagesById[selectedId] : undefined;
+  const pendingCount = items.filter((conv) => hasAlert(conv) && !conv.reviewedAt).length;
+  const visible = items.filter((conv) =>
+    filter === "all"
+      ? true
+      : filter === "pending"
+        ? hasAlert(conv) && !conv.reviewedAt
+        : hasAlert(conv) && Boolean(conv.reviewedAt)
+  );
+  // Mensajes citados como evidencia por el supervisor (se resaltan en el detalle)
+  const evidenceIds = new Set(
+    selected?.supervision?.flags.flatMap((flag) => flag.evidence.map((e) => e.messageId)) ?? []
+  );
+
+  const toggleReviewed = async (conv: ConversationSummary) => {
+    setIsReviewing(true);
+    try {
+      const res = await fetch(
+        `/api/workspaces/${workspaceSlug}/conversations/${encodeURIComponent(conv.conversationId)}/review`,
+        { method: conv.reviewedAt ? "DELETE" : "POST" }
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        toast.error(data?.error ?? "No se pudo actualizar la alerta");
+        return;
+      }
+      setItems((prev) =>
+        prev.map((item) =>
+          item.conversationId === conv.conversationId
+            ? { ...item, reviewedAt: data.reviewedAt, reviewedBy: data.reviewedBy }
+            : item
+        )
+      );
+      toast.success(data.reviewedAt ? "Alerta marcada como revisada" : "Alerta pendiente otra vez");
+    } catch {
+      toast.error("Error de conexión al actualizar la alerta");
+    } finally {
+      setIsReviewing(false);
+    }
+  };
 
   const openConversation = async (conversationId: string) => {
     setSelectedId(conversationId);
@@ -138,7 +195,7 @@ export function ConversationsClient({
         initialRules={initialFlagRules}
       />
 
-      {conversations.length === 0 ? (
+      {items.length === 0 ? (
         <Card className="p-12 text-center">
           <MessagesSquareIcon className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
           <p className="font-semibold text-neutral-900 mb-1">
@@ -146,15 +203,39 @@ export function ConversationsClient({
           </p>
           <p className="text-sm text-neutral-600 max-w-md mx-auto">
             Cuando conectes WhatsApp, las conversaciones de tus usuarios van a aparecer
-            acá. Mientras tanto, puedes generar una desde «Probar».
+            aquí. Mientras tanto, puedes generar una desde «Probar».
           </p>
         </Card>
       ) : (
         <div className="grid grid-cols-[minmax(260px,2fr)_3fr] gap-4 items-start">
           {/* Lista */}
           <Card className="p-2 max-h-[700px] overflow-y-auto">
+            <div className="flex items-center justify-between gap-2 px-2 pt-1 pb-2">
+              <span className="text-xs text-neutral-600">
+                {pendingCount === 0
+                  ? "Sin alertas pendientes"
+                  : `${pendingCount} ${pendingCount === 1 ? "alerta sin revisar" : "alertas sin revisar"}`}
+              </span>
+              <Select value={filter} onValueChange={(value) => setFilter(value as ReviewFilter)}>
+                <SelectTrigger className="h-8 w-44 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(REVIEW_FILTER_LABELS) as ReviewFilter[]).map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {REVIEW_FILTER_LABELS[key]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-1">
-              {conversations.map((conv) => {
+              {visible.length === 0 && (
+                <p className="text-center text-sm text-neutral-600 py-8">
+                  No hay conversaciones con este filtro
+                </p>
+              )}
+              {visible.map((conv) => {
                 const isActive = conv.conversationId === selectedId;
                 return (
                   <button
@@ -196,6 +277,16 @@ export function ConversationsClient({
                         </Badge>
                       )}
                       {severityBadge(conv.flagSeverity)}
+                      {hasAlert(conv) &&
+                        (conv.reviewedAt ? (
+                          <Badge variant="outline" className="gap-1 text-neutral-600">
+                            <CheckIcon className="h-3 w-3" /> Revisada
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-neutral-900 border-neutral-400">
+                            Sin revisar
+                          </Badge>
+                        ))}
                     </div>
                   </button>
                 );
@@ -234,7 +325,10 @@ export function ConversationsClient({
                     </Badge>
                   </div>
 
-                  {(selected.summary || selected.flags || selected.keywords.length > 0) && (
+                  {(selected.summary ||
+                    selected.flags ||
+                    selected.supervision ||
+                    selected.keywords.length > 0) && (
                     <div className="mt-4 pt-4 border-t border-neutral-100 space-y-3">
                       {selected.summary && (
                         <div>
@@ -244,10 +338,74 @@ export function ConversationsClient({
                           <p className="text-sm text-neutral-800">{selected.summary}</p>
                         </div>
                       )}
+                      {selected.supervision && (
+                        <SupervisionSummary supervision={selected.supervision} />
+                      )}
                       {selected.flags && (
-                        <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                          <AlertTriangleIcon className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                          <p className="text-sm text-amber-800">{selected.flags}</p>
+                        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 space-y-2">
+                          {selected.supervision?.flags.length ? (
+                            selected.supervision.flags.map((flag) => (
+                              <div key={flag.ruleId} className="flex items-start gap-2">
+                                <AlertTriangleIcon className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm text-amber-900 min-w-0">
+                                  <p>
+                                    <span className="font-semibold">
+                                      {SEVERITY_LABELS[flag.severity.toLowerCase() as FlagSeverity] ?? flag.severity}
+                                    </span>
+                                    {" · "}
+                                    {flag.ruleDescription}
+                                  </p>
+                                  {/* El rol cliente ve solo la regla y la severidad: el
+                                      detalle y la evidencia citan mensajes de la persona
+                                      (además, el servidor ya no se los manda). */}
+                                  {canSeeTranscripts && flag.detail && (
+                                    <p className="text-amber-800">{flag.detail}</p>
+                                  )}
+                                  {canSeeTranscripts && flag.evidence.map((e) => (
+                                    <p
+                                      key={`${e.messageId}-${e.fragment}`}
+                                      className="text-xs text-amber-800 mt-0.5"
+                                    >
+                                      Mensaje {e.messageIndex + 1}: “{e.fragment}”
+                                    </p>
+                                  ))}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="flex items-start gap-2">
+                              <AlertTriangleIcon className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                              <p className="text-sm text-amber-800">{selected.flags}</p>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-amber-200">
+                            <p className="text-xs text-amber-800">
+                              {selected.reviewedAt
+                                ? `Revisada el ${new Date(selected.reviewedAt).toLocaleString("es-AR", {
+                                    day: "2-digit",
+                                    month: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}`
+                                : "Alerta sin revisar"}
+                            </p>
+                            <Button
+                              size="sm"
+                              variant={selected.reviewedAt ? "ghost" : "outline"}
+                              onClick={() => toggleReviewed(selected)}
+                              disabled={isReviewing}
+                              className="h-8 bg-white"
+                            >
+                              {selected.reviewedAt ? (
+                                "Volver a pendiente"
+                              ) : (
+                                <>
+                                  <CheckIcon className="mr-1.5 h-4 w-4" />
+                                  Marcar como revisada
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       )}
                       {selected.keywords.length > 0 && (
@@ -280,7 +438,7 @@ export function ConversationsClient({
                     </p>
                   ) : (
                     <div className="space-y-3">
-                      {selectedMessages.map((message) => (
+                      {selectedMessages.map((message, index) => (
                         <div
                           key={message.id}
                           className={`flex ${
@@ -294,7 +452,7 @@ export function ConversationsClient({
                               message.sender === "assistant"
                                 ? "bg-neutral-900 text-white"
                                 : "bg-white text-neutral-900 border border-neutral-200"
-                            }`}
+                            } ${evidenceIds.has(message.id) ? "ring-2 ring-amber-400" : ""}`}
                           >
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">
                               {message.text}
@@ -311,6 +469,7 @@ export function ConversationsClient({
                                 : selected.userName ?? selected.clientNumber}
                               {" · "}
                               {formatWhen(message.timestamp)}
+                              {evidenceIds.has(message.id) && ` · mensaje ${index + 1}, evidencia de alerta`}
                             </p>
                           </div>
                         </div>
@@ -322,6 +481,46 @@ export function ConversationsClient({
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+/** Momento del storyboard alcanzado + criterio de éxito (análisis del supervisor). */
+function SupervisionSummary({
+  supervision,
+}: {
+  supervision: NonNullable<ConversationSummary["supervision"]>;
+}) {
+  const criterio = supervision.cumplioCriterioExito;
+  return (
+    <div className="flex items-center gap-4 flex-wrap text-sm text-neutral-800">
+      <span className="flex items-center gap-1.5">
+        <FlagIcon className="h-4 w-4 text-neutral-500" />
+        Llegó a:{" "}
+        <span className="font-medium">
+          {supervision.momentoAlcanzado
+            ? STORYBOARD_MOMENT_LABELS[supervision.momentoAlcanzado]
+            : "sin arrancar el programa"}
+        </span>
+      </span>
+      <span className="flex items-center gap-1.5">
+        <TargetIcon className="h-4 w-4 text-neutral-500" />
+        Criterio de éxito:{" "}
+        <span className="font-medium">
+          {criterio.value
+            ? criterio.evidence.length
+              ? `cumplido (mensajes ${criterio.evidence.map((e) => e.messageIndex + 1).join(", ")})`
+              : "cumplido"
+            : "no cumplido"}
+        </span>
+      </span>
+      {supervision.discardedFlags > 0 && (
+        <span className="text-xs text-neutral-500">
+          {supervision.discardedFlags}{" "}
+          {supervision.discardedFlags === 1 ? "posible alerta descartada" : "posibles alertas descartadas"} por
+          falta de evidencia
+        </span>
       )}
     </div>
   );
@@ -404,8 +603,9 @@ function FlagRulesCard({
         <div>
           <p className="font-semibold text-neutral-900">Sistema de alertas</p>
           <p className="text-sm text-neutral-600">
-            Contale a {assistantName} en tus palabras qué conversaciones querés que te
-            marque. Se evalúan automáticamente cuando una conversación se cierra.
+            Cuéntale a {assistantName} en tus palabras qué conversaciones quieres que te
+            marque. Se evalúan automáticamente cuando una conversación termina (se cierra o
+            queda inactiva un rato).
           </p>
         </div>
       </div>

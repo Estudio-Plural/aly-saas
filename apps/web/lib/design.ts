@@ -231,7 +231,7 @@ export function nextStepPath(progress: ProgramProgress): string | null {
   if (pendingDesign) return pendingDesign.path;
   if (!progress.test) return "chat";
   if (!progress.connect) return "whatsapp";
-  if (!progress.operate) return "conversations";
+  if (!progress.operate) return "operar";
   return null;
 }
 

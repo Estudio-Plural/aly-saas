@@ -110,7 +110,9 @@ systemd, `enabled`, sobreviven reboots):
   caddy `:8093` con basic auth (usuario `equipo`) → `:3000`.
 - **Migraciones:** correrlas a mano con
   `psql "<DATABASE_URL de apps/web/.env.local>" -f supabase/migrations/XXX.sql`
-  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS.
+  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS; la 010
+  (supervisor) NO — aplicarla ANTES de mergear a main (el inbox y el
+  "Reiniciar" del preview ya leen/escriben sus columnas; aly-web recarga solo).
 
 ## Canal WhatsApp (Meta Cloud API directo, desde 2026-09-30)
 
@@ -238,6 +240,35 @@ systemd, `enabled`, sobreviven reboots):
   contra las `workspace_configs.flag_rules` → upsert en `conversations_data`;
   la severidad sale de la regla configurada, no del LLM). Ambos fallan en
   silencio (log + null): subir/cerrar nunca debe romperse por el LLM.
+- **Supervisor de conversaciones** (engine, `apps/api/src/supervisor/`, migración
+  010): analiza las conversaciones **inactivas** (≥ `SUPERVISOR_IDLE_MINUTES`,
+  sin análisis o con `analyzed_through` anterior al último mensaje) — web y
+  WhatsApp. Disparo: `POST /internal/supervise` con `Authorization: Bearer
+  $SUPERVISOR_TOKEN` (sin token → 503) o intervalo en proceso
+  (`SUPERVISOR_INTERVAL_MINUTES`, 0 = off). Una llamada LLM estructurada por
+  conversación (sin tool-calling) → resumen, momento del storyboard, criterio de
+  éxito con índices de mensajes y flags con evidencia; `verify.ts` descarta todo
+  flag cuyo fragmento no esté textual en el mensaje citado, y la severidad sale de
+  la regla. Guarda en `conversations_data` (`analysis` JSONB). Alertas HIGH
+  **nuevas** → Telegram (`TELEGRAM_ALERTS_*`, fallback `TELEGRAM_ERROR_*`) o log,
+  **sin texto de mensajes** (usuarios menores). El inbox muestra pendientes vs
+  revisadas (`POST|DELETE .../conversations/[id]/review` → `reviewed_at/by`).
+  Nunca contacta al usuario ni cierra casos. Tests: `cd apps/api && bun test`.
+- **Operar** (fase 4, `/[workspace]/operar`, migración 010): cifras agregadas
+  **sin PII** (personas, conversaciones, conversan vs. solo saludan, mediana de
+  mensajes por persona, momentos del storyboard, temas que se repiten en ≥ 2
+  conversaciones, día y hora, conteo de situaciones sensibles, tiempo de
+  respuesta), con base declarada y filtro de período; excluye el chat de prueba
+  (`web-preview`). El cálculo vive en `packages/operar` (TS puro, alias
+  `@aly-saas/operar` en los tsconfig de web y api): el panel, el correo y el
+  Excel usan el mismo código. **Protocolo ante riesgo** (`/operar/protocolo`,
+  tabla `alert_protocols`): sin protocolo activo la org no recibe alertas (el
+  supervisor igual avisa a Plural); con protocolo, `orgNotifier` avisa por
+  correo/Telegram (WhatsApp pendiente Kapso), siempre sin texto de mensajes.
+  **Reporte semanal** (engine `src/operar/`): `POST /internal/weekly-report`
+  (mismo `SUPERVISOR_TOKEN`) o `WEEKLY_REPORT_INTERVAL_MINUTES`; idempotente por
+  semana en `weekly_reports`; con `SMTP_*` y miembros con
+  `workspace_users.email` manda correo + Excel; si no, se descarga desde Operar.
 - `lib/embeddings.ts` — indexado vectorial al subir: chunking (~1500 chars,
   overlap 200) + embeddings vía OpenRouter → filas en
   `vector_aly.aly_general_knowledge`; limpieza al borrar el doc. Fail-silent

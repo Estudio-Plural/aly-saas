@@ -78,18 +78,22 @@ function filled(value: string | undefined | null): boolean {
  * - Material: al menos un documento.
  * - Bienvenida: mensaje de bienvenida y aviso de privacidad escritos.
  * - Probar: hay al menos un mensaje en el chat de prueba.
- * - Conectar WhatsApp: número conectado.
+ * - Conectar WhatsApp: la conexión de la 013 está activa — habilitada y con un mensaje
+ *   real recibido Y respondido (whatsapp_connections.last_reply_at, lo escribe el engine).
+ *   Es la misma «prueba de vida» del checklist de Conectar WhatsApp.
  * - Operar: hay al menos una conversación real (no de prueba).
  */
 export async function getProgramProgress(workspace: {
   id: string;
-  kapso_connection_status: string;
   stats: { documents: number };
 }): Promise<ProgramProgress> {
   const [design, [counts]] = await Promise.all([
     getDesign(workspace.id),
-    sql<{ preview: boolean; real: boolean }[]>`
+    sql<{ preview: boolean; real: boolean; connected: boolean }[]>`
       SELECT
+        EXISTS (SELECT 1 FROM whatsapp_connections
+                WHERE workspace_id = ${workspace.id}
+                  AND enabled AND last_reply_at IS NOT NULL) AS connected,
         EXISTS (SELECT 1 FROM users_interactions
                 WHERE workspace_id = ${workspace.id}
                   AND client_number = ${WEB_PREVIEW_NUMBER}) AS preview,
@@ -112,7 +116,7 @@ export async function getProgramProgress(workspace: {
       welcome: filled(welcome?.welcome_message) && filled(welcome?.privacy_notice),
     },
     test: counts.preview,
-    connect: workspace.kapso_connection_status === "connected",
+    connect: counts.connected,
     operate: counts.real,
   };
 }
