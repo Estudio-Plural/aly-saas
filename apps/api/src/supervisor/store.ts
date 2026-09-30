@@ -10,6 +10,7 @@ import {
   type Storyboard,
 } from "../config/identity";
 import type {
+  AlertChannel,
   FlagRule,
   IdleConversation,
   SaveAnalysisInput,
@@ -92,11 +93,19 @@ async function getWorkspaceContext(workspaceId: string): Promise<WorkspaceContex
       core_prompt: CorePrompt | null;
       storyboard: Storyboard | null;
       model_preferences: Record<string, string> | null;
+      p_responsible: string | null;
+      p_channel: AlertChannel | null;
+      p_target: string | null;
+      p_hours: number | null;
+      p_active: boolean | null;
     }[]
   >`
-    SELECT w.slug, w.name, c.flag_rules, c.core_prompt, c.storyboard, c.model_preferences
+    SELECT w.slug, w.name, c.flag_rules, c.core_prompt, c.storyboard, c.model_preferences,
+           p.responsible_name AS p_responsible, p.channel AS p_channel,
+           p.channel_target AS p_target, p.response_time_hours AS p_hours, p.active AS p_active
     FROM workspaces w
     LEFT JOIN workspace_configs c ON c.workspace_id = w.id
+    LEFT JOIN alert_protocols p ON p.workspace_id = w.id
     WHERE w.id = ${workspaceId}
   `;
   const row = rows[0];
@@ -111,6 +120,16 @@ async function getWorkspaceContext(workspaceId: string): Promise<WorkspaceContex
     storyboard: { ...DEFAULT_STORYBOARD, ...(row.storyboard ?? {}) },
     model:
       prefs.supervisor ?? prefs.chat ?? process.env.OPENROUTER_MODEL ?? DEFAULT_SUPERVISOR_MODEL,
+    protocol:
+      row.p_active === null
+        ? null
+        : {
+            responsibleName: row.p_responsible,
+            channel: row.p_channel,
+            channelTarget: row.p_target,
+            responseTimeHours: row.p_hours,
+            active: row.p_active,
+          },
   };
 }
 

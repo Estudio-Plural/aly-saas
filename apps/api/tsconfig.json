@@ -9,7 +9,8 @@
     "noEmit": true,
     "esModuleInterop": true,
     "verbatimModuleSyntax": false,
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "paths": { "@aly-saas/operar": ["../../packages/operar/src/index.ts"] }
   },
   "include": ["src", "scripts"]
 }

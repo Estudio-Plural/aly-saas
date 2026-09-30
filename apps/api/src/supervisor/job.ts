@@ -10,11 +10,14 @@
 
 import { callAgent, isLlmConfigured } from "../engine/openrouter";
 import { superviseConversation } from "./agent";
-import { notifierFromEnv } from "./notify";
+import { mailerFromEnv } from "../mailer";
+import { notifierFromEnv, orgNotifier } from "./notify";
 import { sqlSupervisorStore } from "./store";
 import { flagsToText, maxSeverity } from "./verify";
+import { activeProtocol } from "./types";
 import type {
   AlertNotifier,
+  OrgAlertNotifier,
   IdleConversation,
   LlmCall,
   SupervisedAnalysis,
@@ -58,7 +61,10 @@ export function needsSupervision(
 export interface SupervisorDeps {
   store: SupervisorStore;
   llm: LlmCall;
+  /** Aviso al equipo de Plural (siempre). */
   notifier: AlertNotifier;
+  /** Aviso a la organización (solo con protocolo activo). Sin él, no se avisa a la org. */
+  orgNotifier?: OrgAlertNotifier;
   isLlmConfigured: () => boolean;
 }
 
@@ -76,6 +82,8 @@ export interface ConversationResult {
   flags: number;
   discardedFlags: number;
   notified: number;
+  /** Avisos a la organización (solo con protocolo activo). */
+  notifiedOrg: number;
 }
 
 export interface SupervisorReport {
@@ -86,14 +94,19 @@ export interface SupervisorReport {
   failed: number;
   discardedFlags: number;
   notified: number;
+  notifiedOrg: number;
   results: ConversationResult[];
 }
 
-function defaultDeps(): SupervisorDeps {
+async function defaultDeps(): Promise<SupervisorDeps> {
   return {
     store: sqlSupervisorStore,
     llm: ({ model, prompt }) => callAgent({ model, prompt, temperature: 0, maxTokens: 1200 }),
     notifier: notifierFromEnv(),
+    orgNotifier: orgNotifier({
+      mailer: await mailerFromEnv(),
+      telegramToken: process.env.TELEGRAM_ALERTS_BOT_TOKEN || process.env.TELEGRAM_ERROR_BOT_TOKEN,
+    }),
     isLlmConfigured,
   };
 }
@@ -121,6 +134,7 @@ async function superviseOne(
     flags: 0,
     discardedFlags: 0,
     notified: 0,
+    notifiedOrg: 0,
   };
 
   // "Herramientas" del agente: mensajes + reglas + criterio/storyboard
@@ -153,17 +167,25 @@ async function superviseOne(
   }
   result.outcome = "analyzed";
 
-  // Solo después de persistir, y solo alertas HIGH nuevas (sin texto)
+  // Solo después de persistir, y solo alertas HIGH nuevas (sin texto).
+  // A Plural siempre; a la organización solo si su protocolo está activo.
+  const protocol = activeProtocol(ctx.protocol);
   for (const flag of fresh) {
     if (flag.severity !== "HIGH") continue;
-    await deps.notifier.notify({
+    const alert = {
       workspaceSlug: ctx.slug,
       conversationId: conv.conversationId,
       ruleId: flag.ruleId,
       ruleDescription: flag.ruleDescription,
-      severity: "HIGH",
-    });
+      severity: "HIGH" as const,
+      orgProtocolActive: Boolean(protocol),
+    };
+    await deps.notifier.notify(alert);
     result.notified++;
+    if (protocol && deps.orgNotifier) {
+      await deps.orgNotifier.notify(alert, protocol);
+      result.notifiedOrg++;
+    }
   }
   return result;
 }
@@ -176,7 +198,7 @@ let running = false;
  */
 export async function runSupervisor(
   settings: SupervisorSettings = settingsFromEnv(),
-  deps: SupervisorDeps = defaultDeps(),
+  maybeDeps?: SupervisorDeps,
 ): Promise<SupervisorReport> {
   const report: SupervisorReport = {
     ran: false,
@@ -185,9 +207,11 @@ export async function runSupervisor(
     failed: 0,
     discardedFlags: 0,
     notified: 0,
+    notifiedOrg: 0,
     results: [],
   };
   if (running) return { ...report, reason: "already_running" };
+  const deps = maybeDeps ?? (await defaultDeps());
   if (!deps.isLlmConfigured()) return { ...report, reason: "llm_not_configured" };
 
   running = true;
@@ -215,6 +239,7 @@ export async function runSupervisor(
           flags: 0,
           discardedFlags: 0,
           notified: 0,
+          notifiedOrg: 0,
         };
       }
       report.results.push(result);
@@ -222,12 +247,13 @@ export async function runSupervisor(
       if (result.outcome === "failed") report.failed++;
       report.discardedFlags += result.discardedFlags;
       report.notified += result.notified;
+      report.notifiedOrg += result.notifiedOrg;
     }
 
     if (report.selected) {
       console.log(
         `[supervisor] ${report.analyzed}/${report.selected} analizadas, ${report.failed} fallidas, ` +
-          `${report.discardedFlags} flags descartados por evidencia, ${report.notified} alertas HIGH`,
+          `${report.discardedFlags} flags descartados por evidencia, ${report.notified} alertas HIGH (${report.notifiedOrg} avisadas a la organización)`,
       );
     }
     return report;

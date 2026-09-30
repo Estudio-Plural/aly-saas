@@ -7,11 +7,13 @@
 
 import { createApp } from "./app";
 import { startSupervisorInterval } from "./supervisor";
+import { startWeeklyReportInterval } from "./operar";
 
 const port = Number(process.env.API_PORT ?? 8080);
 
 const app = createApp().listen(port);
 startSupervisorInterval();
+startWeeklyReportInterval();
 
 console.log(`🚀 engine escuchando en http://localhost:${port}`);
 

@@ -40,6 +40,37 @@ export interface WorkspaceContext {
   storyboard: Storyboard;
   /** Modelo del analista (model_preferences.supervisor → .chat → env). */
   model: string;
+  /** Protocolo ante riesgo de la organización (null = nunca lo configuró). */
+  protocol?: AlertProtocol | null;
+}
+
+export type AlertChannel = "email" | "telegram" | "whatsapp";
+
+/**
+ * Protocolo ante riesgo (tabla alert_protocols, migración 010). Solo si está
+ * activo la organización recibe alertas; sin protocolo las revisa Plural.
+ */
+export interface AlertProtocol {
+  responsibleName: string | null;
+  channel: AlertChannel | null;
+  channelTarget: string | null;
+  responseTimeHours: number | null;
+  active: boolean;
+}
+
+/** Protocolo utilizable: activo y completo (quién, por dónde, en cuánto tiempo). */
+export type ActiveAlertProtocol = AlertProtocol & {
+  active: true;
+  responsibleName: string;
+  channel: AlertChannel;
+  channelTarget: string;
+  responseTimeHours: number;
+};
+
+export function activeProtocol(p: AlertProtocol | null | undefined): ActiveAlertProtocol | null {
+  if (!p || !p.active) return null;
+  if (!p.responsibleName || !p.channel || !p.channelTarget || !p.responseTimeHours) return null;
+  return p as ActiveAlertProtocol;
 }
 
 export interface FlagEvidence {
@@ -106,10 +137,18 @@ export interface HighAlert {
   ruleId: string;
   ruleDescription: string;
   severity: "HIGH";
+  /** ¿La organización tiene protocolo activo? (el aviso a Plural lo dice) */
+  orgProtocolActive?: boolean;
 }
 
+/** Aviso al equipo de Plural (siempre, con o sin protocolo). */
 export interface AlertNotifier {
   notify(alert: HighAlert): Promise<void>;
+}
+
+/** Aviso a la organización: solo si su protocolo está activo. Mismo contenido sin texto. */
+export interface OrgAlertNotifier {
+  notify(alert: HighAlert, protocol: ActiveAlertProtocol): Promise<void>;
 }
 
 /** Una llamada al LLM: prompt → texto crudo. */

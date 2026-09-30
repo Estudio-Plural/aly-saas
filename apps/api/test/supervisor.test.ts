@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { DEFAULT_CORE_PROMPT, DEFAULT_STORYBOARD } from "../src/config/identity";
 import type {
   AlertNotifier,
+  AlertProtocol,
+  OrgAlertNotifier,
   FlagRule,
   HighAlert,
   IdleConversation,
@@ -29,7 +31,9 @@ mock.module("../src/db", () => ({
 
 const { needsSupervision, runSupervisor } = await import("../src/supervisor/job");
 const { verifyAnalysis, fragmentInMessage } = await import("../src/supervisor/verify");
-const { formatAlertMessage, telegramNotifier } = await import("../src/supervisor/notify");
+const { formatAlertMessage, formatOrgAlertMessage, orgNotifier, telegramNotifier } = await import(
+  "../src/supervisor/notify"
+);
 const { createApp } = await import("../src/app");
 
 // ── Fixtures ──────────────────────────────────────────────────────────────
@@ -71,6 +75,7 @@ class MemoryStore implements SupervisorStore {
   analyzedThrough = new Map<string, Date>();
   saves: SaveAnalysisInput[] = [];
   refuseSaves = false;
+  protocols = new Map<string, AlertProtocol>();
 
   add(workspaceId: string, convId: string, list: SupervisorMessage[], analyzedThrough?: Date) {
     this.messages.set(`${workspaceId}/${convId}`, list);
@@ -97,7 +102,8 @@ class MemoryStore implements SupervisorStore {
     return this.messages.get(`${workspaceId}/${conversationId}`) ?? [];
   }
   async getWorkspaceContext(workspaceId: string) {
-    return workspaceId === "ws-borrado" ? null : ctx(workspaceId);
+    if (workspaceId === "ws-borrado") return null;
+    return { ...ctx(workspaceId), protocol: this.protocols.get(workspaceId) ?? null };
   }
   async saveAnalysis(input: SaveAnalysisInput) {
     if (this.refuseSaves) return false;
@@ -365,7 +371,7 @@ describe("notificación de alertas HIGH", () => {
     const report = await runSupervisor(settings, { ...deps(), notifier: both });
     expect(report.notified).toBe(1);
     expect(Object.keys(alerts[0]!).sort()).toEqual(
-      ["conversationId", "ruleDescription", "ruleId", "severity", "workspaceSlug"].sort(),
+      ["conversationId", "orgProtocolActive", "ruleDescription", "ruleId", "severity", "workspaceSlug"].sort(),
     );
     expect(alerts[0]).toMatchObject({ workspaceSlug: "slug-ws1", conversationId: "conv-menor", ruleId: "riesgo", severity: "HIGH" });
 
@@ -458,5 +464,114 @@ describe("POST /internal/supervise", () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual(fakeReport);
     expect(runs).toBe(1);
+  });
+});
+
+// ── Protocolo ante riesgo ─────────────────────────────────────────────────
+describe("protocolo ante riesgo", () => {
+  const PROTOCOLO: AlertProtocol = {
+    responsibleName: "Coordinación psicosocial",
+    channel: "email",
+    channelTarget: "coordinacion@org.test",
+    responseTimeHours: 4,
+    active: true,
+  };
+
+  let orgAlerts: { alert: HighAlert; channel: string }[] = [];
+  const captureOrg: OrgAlertNotifier = {
+    notify: async (alert, protocol) => {
+      orgAlerts.push({ alert, channel: protocol.channel });
+    },
+  };
+
+  function conversacionDeRiesgo(ws: string) {
+    store.add(ws, "conv-riesgo", msgs("conv-riesgo", 45, [SENSITIVE, "te escucho"]));
+    llmReplies[SENSITIVE] = {
+      summary: "s",
+      flags: [{ rule_id: "riesgo", detail: "d", evidencia: [{ mensaje: 0, fragmento: "pienso en lastimarme" }] }],
+    };
+  }
+
+  beforeEach(() => {
+    orgAlerts = [];
+  });
+
+  test("sin protocolo: avisa a Plural y NO a la organización", async () => {
+    conversacionDeRiesgo("ws1");
+    const report = await runSupervisor(settings, { ...deps(), orgNotifier: captureOrg });
+    expect(report.notified).toBe(1);
+    expect(report.notifiedOrg).toBe(0);
+    expect(alerts).toHaveLength(1);
+    expect(alerts[0]!.orgProtocolActive).toBe(false);
+    expect(orgAlerts).toHaveLength(0);
+    expect(formatAlertMessage(alerts[0]!)).toContain("la revisa el equipo de Plural");
+  });
+
+  test("protocolo inactivo o incompleto: igual que sin protocolo", async () => {
+    conversacionDeRiesgo("ws1");
+    store.protocols.set("ws1", { ...PROTOCOLO, active: false });
+    conversacionDeRiesgo("ws2");
+    store.protocols.set("ws2", { ...PROTOCOLO, channelTarget: null });
+    const report = await runSupervisor(settings, { ...deps(), orgNotifier: captureOrg });
+    expect(report.notified).toBe(2);
+    expect(report.notifiedOrg).toBe(0);
+    expect(orgAlerts).toHaveLength(0);
+  });
+
+  test("protocolo activo: avisa a Plural y a la organización, sin texto de mensajes", async () => {
+    conversacionDeRiesgo("ws1");
+    store.protocols.set("ws1", PROTOCOLO);
+    const report = await runSupervisor(settings, { ...deps(), orgNotifier: captureOrg });
+    expect(report.notified).toBe(1);
+    expect(report.notifiedOrg).toBe(1);
+    expect(alerts[0]!.orgProtocolActive).toBe(true);
+    expect(orgAlerts).toHaveLength(1);
+    expect(orgAlerts[0]!.channel).toBe("email");
+
+    const text = formatOrgAlertMessage(orgAlerts[0]!.alert, { ...PROTOCOLO, active: true } as never);
+    expect(text).toContain("Coordinación psicosocial");
+    expect(text).toContain("4 h");
+    for (const leak of ["lastimarme", "Falsa", "calle"]) expect(text).not.toContain(leak);
+  });
+
+  test("canales: correo por el mailer, Telegram al chat del protocolo, WhatsApp no rompe", async () => {
+    const mails: { to: string[]; text: string }[] = [];
+    const telegramBodies: string[] = [];
+    const fakeFetch = (async (_url: string, init?: RequestInit) => {
+      telegramBodies.push(String(init?.body));
+      return new Response("{}", { status: 200 });
+    }) as unknown as typeof fetch;
+    const notifier = orgNotifier({
+      mailer: { send: async (m) => void mails.push({ to: m.to, text: m.text }) },
+      telegramToken: "TOKEN",
+      fetchImpl: fakeFetch,
+    });
+    const alert: HighAlert = {
+      workspaceSlug: "apapachar",
+      conversationId: "c-1",
+      ruleId: "riesgo",
+      ruleDescription: "La persona menciona autolesión o riesgo",
+      severity: "HIGH",
+    };
+    const active = { ...PROTOCOLO, active: true } as never as Parameters<typeof notifier.notify>[1];
+    await notifier.notify(alert, active);
+    await notifier.notify(alert, { ...active, channel: "telegram", channelTarget: "-100123" });
+    await notifier.notify(alert, { ...active, channel: "whatsapp", channelTarget: "+570000" });
+    expect(mails).toHaveLength(1);
+    expect(mails[0]!.to).toEqual(["coordinacion@org.test"]);
+    expect(telegramBodies).toHaveLength(1);
+    expect(JSON.parse(telegramBodies[0]!).chat_id).toBe("-100123");
+  });
+
+  test("correo sin SMTP: no lanza (el análisis y el aviso a Plural siguen)", async () => {
+    const notifier = orgNotifier({ mailer: null });
+    const alert: HighAlert = {
+      workspaceSlug: "x",
+      conversationId: "c",
+      ruleId: "r",
+      ruleDescription: "d",
+      severity: "HIGH",
+    };
+    await expect(notifier.notify(alert, { ...PROTOCOLO, active: true } as never)).resolves.toBeUndefined();
   });
 });
