@@ -8,6 +8,7 @@ import type { BotConfig } from "../src/config";
 
 const IDENTITY = "Sos Aly, la asistente del programa Apapáchar.";
 const HISTORY = "Usuario: hola\nAly: hola, ¿cómo estás?";
+const ROUTES = "Rutas de ayuda del programa: *Línea 141* — 141";
 const PROTOCOL = "Protocolo: derivar a la línea 106 y avisar a una persona del equipo.";
 
 const config = {
@@ -24,6 +25,7 @@ const config = {
   capabilities: { sensitive_safety: true, context_gathering: { on: false, slots: [] }, org_identity: false },
   themeCategories: [],
   identity: IDENTITY,
+  helpRoutes: ROUTES,
 } as unknown as BotConfig;
 
 // Respuestas del LLM falso por modelo; el agente sensible devuelve su prompt
@@ -89,6 +91,22 @@ describe("turno sensible", () => {
     expect(res.answer).toContain(HISTORY);
     expect(res.answer).toContain(PROTOCOL);
     expect(res.chunks).toHaveLength(1);
+  });
+
+  test("el prompt sensible lleva las rutas de ayuda del programa", async () => {
+    const res = await processQuestion(input);
+    expect(res.answer).toContain(ROUTES);
+  });
+
+  test("sin rutas compiladas: instrucción de no inventar números", async () => {
+    const original = config.helpRoutes;
+    (config as { helpRoutes: string }).helpRoutes = "";
+    try {
+      const res = await processQuestion(input);
+      expect(res.answer).toContain("sin inventar números");
+    } finally {
+      (config as { helpRoutes: string }).helpRoutes = original;
+    }
   });
 
   test("busca el protocolo en todos los documentos, no solo en los ruteados", async () => {

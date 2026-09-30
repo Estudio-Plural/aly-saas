@@ -13,6 +13,7 @@
 
 import { sql } from "../db";
 import { embedQuery } from "./embeddings";
+import { formatContext } from "./context";
 
 const MAX_CONTEXT_CHARS = 16000;
 const TOP_K = 8;
@@ -141,9 +142,7 @@ async function tryVectorRetrieve(
     ];
     if (!chunks.length) return { context: "", chunks: [] };
 
-    let context = chunks
-      .map((c) => `[${c.documentName}]\n${c.text}`)
-      .join("\n\n---\n\n");
+    let context = formatContext(chunks);
     if (context.length > MAX_CONTEXT_CHARS) {
       context = context.slice(0, MAX_CONTEXT_CHARS) + "\n\n[... contexto truncado ...]";
     }
@@ -192,9 +191,7 @@ async function retrieveFullText(
       text: r.text_content,
     }));
 
-    let context = chunks
-      .map((c) => `[${c.documentName}]\n${c.text}`)
-      .join("\n\n---\n\n");
+    let context = formatContext(chunks);
 
     if (context.length > MAX_CONTEXT_CHARS) {
       context = context.slice(0, MAX_CONTEXT_CHARS) + "\n\n[... contexto truncado ...]";

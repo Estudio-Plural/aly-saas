@@ -50,6 +50,11 @@ export interface BotConfig {
   themeCategories: string[];
   /** Bloque de identidad (prompt núcleo + storyboard) para los agentes de cara al usuario. */
   identity: string;
+  /**
+   * Rutas de ayuda compiladas para el turno SENSITIVE (migración 012). Sin
+   * rutas: instrucción de no inventar números y remitir al territorio.
+   */
+  helpRoutes: string;
 }
 
 /**

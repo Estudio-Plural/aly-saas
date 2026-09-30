@@ -19,6 +19,12 @@ import {
   type CorePrompt,
   type Storyboard,
 } from "./identity";
+import {
+  compileBoundaries,
+  compileHelpRoutes,
+  type Boundaries,
+  type HelpRoute,
+} from "./guardrails";
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -37,6 +43,8 @@ interface ConfigRow {
   theme_categories: string[] | null;
   core_prompt: CorePrompt | null;
   storyboard: Storyboard | null;
+  boundaries: Boundaries | null;
+  help_routes: HelpRoute[] | null;
   assistant_name: string;
   workspace_name: string;
 }
@@ -116,6 +124,7 @@ export async function resolveBotConfig(
   const rows = await sql<ConfigRow[]>`
     SELECT c.prompts, c.model_preferences, c.capabilities, c.programs,
            c.theme_categories, c.core_prompt, c.storyboard,
+           c.boundaries, c.help_routes,
            w.assistant_name, w.name AS workspace_name
     FROM workspaces w
     LEFT JOIN workspace_configs c ON c.workspace_id = w.id
@@ -132,14 +141,17 @@ export async function resolveBotConfig(
     themeCategories: row?.theme_categories?.length
       ? row.theme_categories
       : DEFAULT_THEME_CATEGORIES,
+    // Las reglas de seguridad van SIEMPRE, aunque el workspace no exista.
     identity: row
       ? compileIdentity(
           row.assistant_name,
           row.workspace_name,
           row.core_prompt ?? DEFAULT_CORE_PROMPT,
           row.storyboard ?? DEFAULT_STORYBOARD,
+          row.boundaries,
         )
-      : "",
+      : compileBoundaries(null),
+    helpRoutes: compileHelpRoutes(row?.help_routes),
   };
 
   cache.set(cacheKey, { config, expiresAt: Date.now() + CACHE_TTL_MS });

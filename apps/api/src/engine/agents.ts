@@ -7,6 +7,7 @@
 
 import type { BotConfig } from "../config";
 import { callAgent } from "./openrouter";
+import { NO_HELP_ROUTES_BLOCK } from "../config/guardrails";
 import { INTENTS, PARAMS, TRIAGE_LABELS, applyLanguagePostfix, type IntentType } from "./params";
 
 export interface IntentClassification {
@@ -286,6 +287,8 @@ export async function sensitiveAgent(
     let prompt = config.prompts.sensitive
       .replace("{user_input}", query)
       .replace("{context}", context);
+    // Rutas de ayuda: siempre presentes (sin rutas → no inventar números).
+    prompt += "\n\n" + (config.helpRoutes || NO_HELP_ROUTES_BLOCK);
     prompt = historyString + "\n\n" + prompt;
     prompt = applyLanguagePostfix(prompt, language);
     prompt = withIdentity(prompt, config);
