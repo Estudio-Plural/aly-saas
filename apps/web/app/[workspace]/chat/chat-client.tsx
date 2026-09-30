@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { SendIcon, RotateCcwIcon, FileTextIcon, DownloadIcon } from "lucide-react";
 import { toast } from "sonner";
+import { ProbarNav } from "./probar-nav";
 import { extractVariable } from "@/lib/extract-variable";
 import { uid } from "@/lib/utils";
 import {
@@ -385,9 +386,7 @@ export function ChatClient({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Prueba tu asistente
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Probar</h1>
           <p className="text-neutral-700 mt-1">
             Habla con {assistantName} como lo haría una persona por WhatsApp. Esto es
             una prueba: no se envía nada a nadie.
@@ -403,6 +402,8 @@ export function ChatClient({
           {isResetting ? "Reiniciando…" : "Reiniciar conversación"}
         </Button>
       </div>
+
+      <ProbarNav workspaceSlug={workspaceSlug} />
 
       {/* Chat Interface */}
       <div className="max-w-3xl mx-auto">

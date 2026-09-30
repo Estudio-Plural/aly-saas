@@ -22,7 +22,7 @@ function Check({ done }: { done: boolean }) {
 
 const PATH_LABELS: Record<string, string> = {
   ...Object.fromEntries(DESIGN_STEPS.map((step) => [step.path, step.label])),
-  chat: "Probar",
+  "chat/casos": "Probar",
   whatsapp: "Conectar WhatsApp",
   operar: "Operar",
 };
@@ -56,8 +56,8 @@ export default async function FirstStepsPage({
     {
       title: "Probar",
       done: progress.test,
-      href: `${base}/chat`,
-      description: `Conversa con ${assistant} como si fueras una persona del programa.`,
+      href: `${base}/chat/casos`,
+      description: `Corre los casos difíciles (crisis, privacidad, pedidos que no puede cumplir) y conversa con ${assistant} como una persona del programa.`,
     },
     {
       title: "Conectar WhatsApp",

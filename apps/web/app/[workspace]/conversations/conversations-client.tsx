@@ -28,6 +28,7 @@ import {
   TargetIcon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { OperarNav } from "../operar/operar-nav";
 import { TRANSCRIPCIONES_SOLO_PLURAL } from "@/lib/workspaces";
 import type {
   ChatMessage,
@@ -188,6 +189,8 @@ export function ConversationsClient({
           Todo lo que {assistantName} habló con tus usuarios, con resumen y alertas
         </p>
       </div>
+
+      <OperarNav workspaceSlug={workspaceSlug} />
 
       <FlagRulesCard
         workspaceSlug={workspaceSlug}

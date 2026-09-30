@@ -193,7 +193,7 @@ export function isDesignDone(progress: ProgramProgress): boolean {
 export function nextStepPath(progress: ProgramProgress): string | null {
   const pendingDesign = DESIGN_STEPS.find((step) => !progress.design[step.key]);
   if (pendingDesign) return pendingDesign.path;
-  if (!progress.test) return "chat";
+  if (!progress.test) return "chat/casos";
   if (!progress.connect) return "whatsapp";
   if (!progress.operate) return "operar";
   return null;

@@ -36,6 +36,7 @@ const CONV_B = `conv-b-${R}`;
 let WS_A = "";
 let WS_B = "";
 let DOC_B = "";
+let CASO_B = "";
 
 function headersDe(email: string, opts: { ts?: number; sig?: string } = {}): Headers {
   const ts = String(opts.ts ?? Date.now());
@@ -60,7 +61,9 @@ async function snapshotB() {
   const cd = await sql`SELECT conversation_id, summary, reviewed_at, reviewed_by FROM conversations_data WHERE workspace_id = ${WS_B}`;
   const protocolo = await sql`SELECT * FROM alert_protocols WHERE workspace_id = ${WS_B}`;
   const wa = await sql`SELECT phone_number_id, token_env, checklist FROM whatsapp_connections WHERE workspace_id = ${WS_B}`;
-  return JSON.stringify({ ws, docs, msgs, cfg, flows, miembros, cd, protocolo, wa });
+  const casos = await sql`SELECT id, mensaje FROM casos_propios WHERE workspace_id = ${WS_B} ORDER BY id`;
+  const corridas = await sql`SELECT corrida_en FROM casos_corridas WHERE workspace_id = ${WS_B}`;
+  return JSON.stringify({ ws, docs, msgs, cfg, flows, miembros, cd, protocolo, wa, casos, corridas });
 }
 
 beforeAll(async () => {
@@ -76,6 +79,8 @@ beforeAll(async () => {
   }
   const [d] = await sql`INSERT INTO documents (workspace_id, name, storage_path, text_content, routing_hint) VALUES (${WS_B}, 'secreto-b.txt', '/nonexistent', 'texto secreto de B', 'original') RETURNING id`;
   DOC_B = d.id;
+  const [caso] = await sql`INSERT INTO casos_propios (workspace_id, mensaje, creado_por) VALUES (${WS_B}, 'caso de B', 'test') RETURNING id`;
+  CASO_B = caso.id;
   await sql`INSERT INTO users_interactions (workspace_id, conversation_id, client_number, role, message) VALUES
     (${WS_B}, ${CONV_B}, '+573001112233', 'user', 'MENSAJE PRIVADO DE UNA PERSONA'),
     (${WS_B}, ${CONV_B}, '+573001112233', 'assistant', 'respuesta del asistente')`;
@@ -95,7 +100,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await sql`DELETE FROM workspaces WHERE org_id IN (${ORG_A}, ${ORG_B})`;
   await sql`DELETE FROM orgs WHERE id IN (${ORG_A}, ${ORG_B})`;
-  await sql.end();
+  // Sin sql.end(): la conexión es global (lib/db) y la comparten los demás archivos de test.
 });
 
 // ---------------------------------------------------------------- firma de la puerta
@@ -148,6 +153,7 @@ const CUERPOS: Record<string, unknown> = {
   "workspaces/[slug]/flags": { rules: [{ id: "9", description: "Regla inyectada", severity: "low" }] },
   "workspaces/[slug]/onboarding": { steps: [{ id: "1", type: "message", content: "inyectado" }] },
   "workspaces/[slug]/whatsapp": { phoneNumberId: "1234567890", displayNumber: "+57 300", tokenEnv: "META_TOKEN_INYECTADO" },
+  "workspaces/[slug]/casos": { mensaje: "Caso inyectado" },
   "workspaces/[slug]/design": { help_routes: [{ id: "1", name: "Ruta inyectada", contact: "123" }] },
   "workspaces/[slug]/operar/protocolo": {
     responsibleName: "Intruso", channel: "email", channelTarget: "intruso@x.test", responseTimeHours: 1, active: true,
@@ -181,6 +187,7 @@ function paramsB(ruta: string): Record<string, string> {
     else if (ruta.includes("conversations")) p.id = CONV_B;
     else if (ruta.startsWith("admin/orgs")) p.id = ORG_B;
     else if (ruta.startsWith("admin/workspaces")) p.id = WS_B;
+    else if (ruta.includes("casos")) p.id = CASO_B;
     else p.id = "cualquiera";
   }
   return p;

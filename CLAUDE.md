@@ -11,9 +11,14 @@ análisis de conversaciones). **Navegación por ciclo de vida (desde 2026-09,
 Fase 1):** Primeros pasos (`/[workspace]`, checklist con un solo «Siguiente
 paso») → **Diseñar** (Tu programa `/programa` · Qué no hace `/limites` · Rutas
 de ayuda `/rutas` · Material `/knowledge` · Bienvenida y consentimiento
-`/bienvenida`) → **Probar** (`/chat`) → **Conectar WhatsApp** (`/whatsapp`) →
-**Operar** (`/conversations`) + Ajustes. Cada sección tiene check de «hecho»
-con estado real (`getProgramProgress` en `lib/data/design.ts`). Crear programa
+`/bienvenida`) → **Probar** (pestañas Chat de prueba `/chat` · Casos difíciles
+`/chat/casos`) → **Conectar WhatsApp** (`/whatsapp`) → **Operar** (Cifras
+`/operar` · Conversaciones `/conversations` · Protocolo ante riesgo
+`/operar/protocolo`) + Ajustes. Cada sección tiene check de «hecho» con estado
+real (`getProgramProgress` en `lib/data/design.ts`): Probar = la última corrida
+de casos difíciles sin ⚠ de seguridad; Conectar = conexión 013 activa (mensaje
+real recibido y respondido, `whatsapp_connections.last_reply_at`); Operar = hay
+una conversación real. Crear programa
 pide 2 campos (nombre del programa y del asistente); el slug se genera solo.
 `/identity` y `/onboarding` redirigen (el guion paso a paso ya no existe).
 No agregar configuración técnica visible al usuario.
@@ -112,9 +117,9 @@ systemd, `enabled`, sobreviven reboots):
   caddy `:8093` con basic auth (usuario `equipo`) → `:3000`.
 - **Migraciones:** correrlas a mano con
   `psql "<DATABASE_URL de apps/web/.env.local>" -f supabase/migrations/XXX.sql`
-  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS; la 010
-  (supervisor) NO — aplicarla ANTES de mergear a main (el inbox y el
-  "Reiniciar" del preview ya leen/escriben sus columnas; aly-web recarga solo).
+  (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS; de la
+  010 a la 014 NO — aplicarlas en orden ANTES de mergear a main (aly-web recarga
+  solo y las páginas ya leen sus tablas). Son idempotentes.
 
 ## Canal WhatsApp (Meta Cloud API directo, desde 2026-09-30)
 
@@ -200,6 +205,35 @@ systemd, `enabled`, sobreviven reboots):
   mergea); el envío real por WhatsApp queda para la integración Kapso.
 - RLS habilitado en todas las tablas (las queries locales lo bypassean por ser
   superuser; las policies usan `current_setting('app.workspace_id')`).
+
+## Probar: banco de casos difíciles (Fase 2, migración 014)
+
+- `/[workspace]/chat/casos`: 8 casos FIJOS en código (`lib/casos.ts`: crisis, pide
+  un teléfono, fuera del material, fuera del programa, pide que le avisen/agenden,
+  ¿es privado?, saludo suelto, ofensivo) + hasta 20 propios (`casos_propios`).
+- «Correr los casos» (`POST /api/workspaces/[slug]/casos/correr`) corre cada caso
+  contra el engine con `ephemeral: true` (sin historial, sin guardar en
+  `users_interactions`, config fresca sin la cache de 5 min) y aplica chequeos EN
+  CÓDIGO (no LLM), cada uno con ✓/⚠ y una línea de por qué: teléfono que no está en
+  las rutas (regex), nombra un archivo, promete avisar/agendar, dice que es privado,
+  rutas de ayuda en el caso de crisis (seguridad) y más de una oferta (calidad).
+  Negaciones («no puedo agendar», «no es privado») no cuentan.
+- Estimado de costo antes de correr (N casos × modelo, precios de referencia en
+  `lib/casos.ts`; copia de `DEFAULT_MODELS` del engine + `model_preferences`).
+- Se guarda solo la última corrida (`casos_corridas`, `seguridad_ok`).
+- Desarrollo sin LLM: `CASOS_RESPUESTAS_SIMULADAS=1` (nunca en producción) usa
+  respuestas simuladas de `lib/casos-simulados.ts`; la UI lo dice.
+- Tests: `apps/web/tests/casos.test.ts` (chequeos con respuestas sintéticas) y
+  `casos-corrida.test.ts` (engine mockeado, contra la base de prueba).
+
+## Rutas de ayuda deterministas (engine)
+
+- Como Aly (`LangchainRAGService._sensitiveAgent`): el turno SENSITIVE pide una
+  etiqueta de severidad en la primera línea (`SEVERITY_TAG_INSTRUCTION`), el código
+  la quita y, salvo CONTENCIÓN, **anexa** `helpRoutesMessage` (las rutas del
+  programa, `config/guardrails.ts`). Sin etiqueta, vacío o error → también se anexa
+  (fail-safe). Sin rutas cargadas no se anexa nada. El prompt le dice al modelo que
+  NO escriba números.
 
 ## Acceso, organizaciones y aislamiento (desde Fase 0, migración 011)
 
@@ -299,8 +333,8 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 ## Convenciones
 
-- UI en español con **tú** (no voseo, desde 2026-09; quedan pantallas viejas con
-  voseo por migrar). Vocabulario «programa» / «asistente», sin jerga. El
+- UI en español con **tú** (no voseo, desde 2026-09; queda voseo en la landing y
+  en prompts internos de `lib/enrichment.ts`/`extract`). Vocabulario «programa» / «asistente», sin jerga. El
   asistente también tutea (bloque de identidad). Toasts con `sonner`; confirmaciones con
   `ConfirmDialog` (nunca `alert`/`confirm`).
 - **Estética estilo Chatbase** (pedido de Daniel): light, neutral, primary negro

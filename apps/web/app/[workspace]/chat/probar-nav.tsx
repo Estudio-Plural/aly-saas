@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** Pestañas de Operar: Cifras | Conversaciones | Protocolo ante riesgo (las mismas del menú). */
-export function OperarNav({ workspaceSlug }: { workspaceSlug: string }) {
+/** Pestañas de Probar: Chat de prueba | Casos difíciles. */
+export function ProbarNav({ workspaceSlug }: { workspaceSlug: string }) {
   const pathname = usePathname();
   const tabs = [
-    { href: `/${workspaceSlug}/operar`, label: "Cifras" },
-    { href: `/${workspaceSlug}/conversations`, label: "Conversaciones" },
-    { href: `/${workspaceSlug}/operar/protocolo`, label: "Protocolo ante riesgo" },
+    { href: `/${workspaceSlug}/chat`, label: "Chat de prueba" },
+    { href: `/${workspaceSlug}/chat/casos`, label: "Casos difíciles" },
   ];
   return (
-    <nav className="flex gap-1 border-b border-neutral-200" aria-label="Secciones de Operar">
+    <nav className="flex gap-1 border-b border-neutral-200" aria-label="Secciones de Probar">
       {tabs.map((tab) => {
         const active = pathname === tab.href;
         return (

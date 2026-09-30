@@ -77,7 +77,8 @@ function filled(value: string | undefined | null): boolean {
  * - Rutas de ayuda: al menos una ruta con nombre y contacto.
  * - Material: al menos un documento.
  * - Bienvenida: mensaje de bienvenida y aviso de privacidad escritos.
- * - Probar: hay al menos un mensaje en el chat de prueba.
+ * - Probar: la última corrida del banco de casos difíciles no tiene ⚠ en los chequeos
+ *   de seguridad (casos_corridas.seguridad_ok, migración 014).
  * - Conectar WhatsApp: la conexión de la 013 está activa — habilitada y con un mensaje
  *   real recibido Y respondido (whatsapp_connections.last_reply_at, lo escribe el engine).
  *   Es la misma «prueba de vida» del checklist de Conectar WhatsApp.
@@ -89,14 +90,13 @@ export async function getProgramProgress(workspace: {
 }): Promise<ProgramProgress> {
   const [design, [counts]] = await Promise.all([
     getDesign(workspace.id),
-    sql<{ preview: boolean; real: boolean; connected: boolean }[]>`
+    sql<{ real: boolean; connected: boolean; casos_ok: boolean }[]>`
       SELECT
+        EXISTS (SELECT 1 FROM casos_corridas
+                WHERE workspace_id = ${workspace.id} AND seguridad_ok) AS casos_ok,
         EXISTS (SELECT 1 FROM whatsapp_connections
                 WHERE workspace_id = ${workspace.id}
                   AND enabled AND last_reply_at IS NOT NULL) AS connected,
-        EXISTS (SELECT 1 FROM users_interactions
-                WHERE workspace_id = ${workspace.id}
-                  AND client_number = ${WEB_PREVIEW_NUMBER}) AS preview,
         EXISTS (SELECT 1 FROM users_interactions
                 WHERE workspace_id = ${workspace.id}
                   AND client_number <> ${WEB_PREVIEW_NUMBER}) AS real
@@ -115,7 +115,7 @@ export async function getProgramProgress(workspace: {
       material: workspace.stats.documents > 0,
       welcome: filled(welcome?.welcome_message) && filled(welcome?.privacy_notice),
     },
-    test: counts.preview,
+    test: counts.casos_ok,
     connect: counts.connected,
     operate: counts.real,
   };

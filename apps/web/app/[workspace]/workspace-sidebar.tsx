@@ -86,7 +86,13 @@ export function WorkspaceSidebar({
     ...sections.flatMap((s) => (s.href ? [{ name: s.title, href: s.href }] : s.items)),
     { name: "Ajustes", href: `${base}/settings` },
   ];
-  const current = allItems.find((item) => item.href === pathname)?.name ?? "Menú";
+  const current =
+    allItems.find((item) => item.href === pathname)?.name ??
+    allItems.find((item) => item.href !== base && pathname.startsWith(`${item.href}/`))?.name ??
+    "Menú";
+
+  // Una sección con pestañas (Probar: chat y casos) queda activa en sus subpáginas.
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const linkClass = (active: boolean) =>
     `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
@@ -111,8 +117,8 @@ export function WorkspaceSidebar({
           <Link
             key={section.title}
             href={section.href}
-            className={`${linkClass(pathname === section.href)} font-medium`}
-            aria-current={pathname === section.href ? "page" : undefined}
+            className={`${linkClass(isActive(section.href))} font-medium`}
+            aria-current={isActive(section.href) ? "page" : undefined}
           >
             <span className="w-4 text-center text-xs text-neutral-500">{index + 1}</span>
             <span className="flex-1">{section.title}</span>
