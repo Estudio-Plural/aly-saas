@@ -11,8 +11,8 @@ import { LockIcon, PlusIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 import { uid } from "@/lib/utils";
 import {
-  CONSENT_QUESTION,
-  CONSENT_REJECTED_MESSAGE,
+  PREGUNTA_CONSENTIMIENTO,
+  DESPEDIDA_RECHAZO,
   toVariableName,
   type ProfileQuestion,
   type Welcome,
@@ -200,7 +200,7 @@ export function WelcomeClient({
           Estas reglas son fijas para proteger a las personas y a tu organización.
         </p>
         <div className="mt-4 whitespace-pre-line rounded-lg bg-neutral-100 p-3 text-sm text-neutral-800">
-          {CONSENT_QUESTION}
+          {PREGUNTA_CONSENTIMIENTO}
         </div>
         <ul className="mt-4 space-y-2 text-sm text-neutral-800">
           <li>
@@ -208,15 +208,15 @@ export function WelcomeClient({
             «sí, acepto» o «estoy de acuerdo».
           </li>
           <li>
-            <span className="font-medium">Rechaza</span> solo si responde «2» o un «no»
-            explícito.
+            <span className="font-medium">Rechaza</span> solo si responde «2» o un mensaje
+            que empieza con «no».
           </li>
           <li>
             <span className="font-medium">Cualquier otra respuesta</span> repite la pregunta.
           </li>
           <li>
             <span className="font-medium">Al rechazar</span> no se guarda ningún dato y
-            recibe: «{CONSENT_REJECTED_MESSAGE}»
+            recibe: «{DESPEDIDA_RECHAZO}»
           </li>
         </ul>
       </Card>

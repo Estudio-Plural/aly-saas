@@ -165,11 +165,14 @@ systemd, `enabled`, sobreviven reboots):
     sin rutas, instrucción de no inventar números y remitir al territorio.
   - `welcome`: `{"welcome_message", "privacy_notice" (EXACTO), "privacy_policy_url",
     "profile_questions": [{"id", "question", "variable", "options": []}]}`.
-    Reglas de aceptación FIJAS en `evaluateConsent()` (`lib/design.ts`): acepta
-    «1», «sí», «acepto», «sí, acepto», «estoy de acuerdo»; rechaza SOLO «2» o
-    un mensaje que empieza con «no»; otra cosa repite la pregunta; al rechazar
-    no se guarda nada. El chat de prueba ya lo corre (`welcomeToSteps`); el
-    canal de WhatsApp debe usar la misma función del lado servidor.
+    Reglas de aceptación FIJAS (las exactas de Aly) en UN solo lugar:
+    `packages/consentimiento` (alias `@aly-saas/consentimiento` en web y api):
+    acepta «1», «si», «acepto», «si acepto», «si, acepto», «estoy de acuerdo»
+    (sin tildes, minúsculas, sin espacios en los extremos; «acepto!» NO acepta);
+    rechaza SOLO «2» o un mensaje que empieza con la palabra «no»; otra cosa
+    repite la pregunta; al rechazar no se guarda nada. La usan el chat de prueba
+    (`welcomeToSteps` + `evaluarConsentimiento`) y el canal de WhatsApp
+    (`whatsapp/onboarding.ts`). No dupliques la regla.
   - El contexto de retrieval del engine ya no lleva nombres de archivo
     (`engine/context.ts`): el modelo no puede citarlos.
 - Prompt núcleo y storyboard viven en `workspace_configs.core_prompt` /

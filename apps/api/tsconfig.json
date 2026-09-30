@@ -10,7 +10,10 @@
     "esModuleInterop": true,
     "verbatimModuleSyntax": false,
     "allowImportingTsExtensions": true,
-    "paths": { "@aly-saas/operar": ["../../packages/operar/src/index.ts"] }
+    "paths": {
+      "@aly-saas/operar": ["../../packages/operar/src/index.ts"],
+      "@aly-saas/consentimiento": ["../../packages/consentimiento/src/index.ts"]
+    }
   },
   "include": ["src", "scripts"]
 }

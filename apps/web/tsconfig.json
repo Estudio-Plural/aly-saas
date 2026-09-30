@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@aly-saas/operar": ["../../packages/operar/src/index.ts"]
+      "@aly-saas/operar": ["../../packages/operar/src/index.ts"],
+      "@aly-saas/consentimiento": ["../../packages/consentimiento/src/index.ts"]
     }
   },
   "include": [

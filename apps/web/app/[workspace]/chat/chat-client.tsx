@@ -16,9 +16,9 @@ import {
   type StoryboardAttachment,
 } from "@/lib/workspaces";
 import {
-  CONSENT_QUESTION,
-  CONSENT_REJECTED_MESSAGE,
-  evaluateConsent,
+  PREGUNTA_CONSENTIMIENTO,
+  DESPEDIDA_RECHAZO,
+  evaluarConsentimiento,
   matchOption,
   type PreviewStep,
 } from "@/lib/design";
@@ -301,23 +301,23 @@ export function ChatClient({
     setMessages((prev) => [...prev, localMessage(text, "user")]);
 
     if (mode === "onboarding" && flowSteps[flowIndexRef.current]?.type === "consent") {
-      const decision = evaluateConsent(text);
-      if (decision === "accept") {
+      const decision = evaluarConsentimiento(text);
+      if (decision === "acepta") {
         pendingConsentRef.current = false;
         const buffered = bufferRef.current;
         bufferRef.current = [];
         await persistMessages([...buffered, { role: "user", text }]);
         await advanceFlow(flowIndexRef.current + 1);
-      } else if (decision === "reject") {
+      } else if (decision === "rechaza") {
         // No se guarda ningún dato: el buffer se descarta.
         bufferRef.current = [];
-        setMessages((prev) => [...prev, localMessage(CONSENT_REJECTED_MESSAGE, "assistant")]);
+        setMessages((prev) => [...prev, localMessage(DESPEDIDA_RECHAZO, "assistant")]);
         setMode("ended");
       } else {
         setIsTyping(true);
         await sleep(500);
         setIsTyping(false);
-        setMessages((prev) => [...prev, localMessage(CONSENT_QUESTION, "assistant")]);
+        setMessages((prev) => [...prev, localMessage(PREGUNTA_CONSENTIMIENTO, "assistant")]);
       }
       return;
     }

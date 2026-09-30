@@ -4,6 +4,8 @@
 // el JSONB de workspace_configs. Las reglas de SEGURIDAD viven en código (acá
 // y en el engine), nunca en la DB: no se pueden quitar.
 
+import { PREGUNTA_CONSENTIMIENTO } from "@aly-saas/consentimiento";
+
 // ─── Qué no hace el asistente (workspace_configs.boundaries) ─────────────────
 
 export type BoundaryRule = { id: string; text: string };
@@ -141,51 +143,13 @@ export type Welcome = {
   profile_questions: ProfileQuestion[];
 };
 
-/** Pregunta de aceptación que se muestra después del aviso (fija). */
-export const CONSENT_QUESTION = "¿Aceptas continuar?\n\n1️⃣ Sí, acepto\n2️⃣ No acepto";
-
-/** Despedida al rechazar (fija). */
-export const CONSENT_REJECTED_MESSAGE =
-  "Entendido. No guardamos ningún dato tuyo. Si cambias de opinión, puedes escribirnos de nuevo cuando quieras.";
-
-/** Respuestas que cuentan como aceptación (ya normalizadas). */
-export const CONSENT_ACCEPT_ANSWERS = [
-  "1",
-  "si",
-  "acepto",
-  "si acepto",
-  "si, acepto",
-  "estoy de acuerdo",
-  "de acuerdo",
-  "si, estoy de acuerdo",
-  "si estoy de acuerdo",
-];
-
-function normalizeAnswer(text: string): string {
-  return text
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // acentos
-    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{20E3}]/gu, "") // emojis (1️⃣)
-    .replace(/[.!¡¿?]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Reglas de aceptación FIJAS del consentimiento:
- * - acepta: «1», «sí», «acepto», «sí, acepto», «estoy de acuerdo»…
- * - rechaza: SOLO «2» o un mensaje que empieza con la palabra «no»
- * - cualquier otra cosa: se repite la pregunta
- * El canal de WhatsApp (servidor) y el chat de prueba usan esta misma función.
- */
-export function evaluateConsent(text: string): "accept" | "reject" | "repeat" {
-  const m = normalizeAnswer(text);
-  if (CONSENT_ACCEPT_ANSWERS.includes(m)) return "accept";
-  if (m === "2" || /^no\b/.test(m)) return "reject";
-  return "repeat";
-}
+// Consentimiento: la regla, la pregunta y la despedida viven en
+// packages/consentimiento (la misma que usa el canal de WhatsApp del engine).
+export {
+  PREGUNTA_CONSENTIMIENTO,
+  DESPEDIDA_RECHAZO,
+  evaluarConsentimiento,
+} from "@aly-saas/consentimiento";
 
 /** Nombre de dato seguro a partir de un texto libre. */
 export function toVariableName(text: string): string {
@@ -270,7 +234,7 @@ export function welcomeToSteps(welcome: Welcome): PreviewStep[] {
   return [
     { id: "welcome", type: "message", content: welcome.welcome_message },
     { id: "privacy", type: "message", content: notice },
-    { id: "consent", type: "consent", content: CONSENT_QUESTION },
+    { id: "consent", type: "consent", content: PREGUNTA_CONSENTIMIENTO },
     ...welcome.profile_questions.map(
       (q): PreviewStep => ({
         id: q.id,

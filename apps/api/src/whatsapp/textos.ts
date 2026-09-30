@@ -28,6 +28,8 @@
 // publicada ni nombra un responsable de tratamiento. Antes de abrir un número a
 // participantes reales, el programa tiene que cargar el suyo.
 
+import { DESPEDIDA_RECHAZO, PREGUNTA_CONSENTIMIENTO } from "@aly-saas/consentimiento";
+
 export type PreguntaPerfil = { id: string; pregunta: string; opciones: string[] };
 
 export type TextosCanal = {
@@ -50,9 +52,8 @@ export function textosPorDefecto(asistente = "Aly", organizacion = "el programa"
     avisoPrivacidad:
       "Antes de empezar: guardo lo que conversamos para darte continuidad y para que el equipo del programa pueda mejorar el acompañamiento. No compartimos tus mensajes fuera del programa.",
     politicaUrl: null,
-    preguntaConsentimiento: "¿Aceptas continuar?\n\n1️⃣ Sí, acepto\n2️⃣ No acepto",
-    despedidaRechazo:
-      "Entiendo. No guardé nada de lo que escribiste y aquí terminamos.\n\nSi cambias de opinión, escríbeme cuando quieras.",
+    preguntaConsentimiento: PREGUNTA_CONSENTIMIENTO,
+    despedidaRechazo: DESPEDIDA_RECHAZO,
     cierreOnboarding: "¡Gracias! Ya podemos empezar.\n\n¿En qué te ayudo hoy?",
     transicionPerfil:
       "Antes de seguir, unas preguntas rápidas para acompañarte mejor. Son opcionales: si prefieres no responder, escribe *saltar*.",

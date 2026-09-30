@@ -20,6 +20,7 @@
 //  * El consentimiento es de la persona, no de la sesión: no rota con los 70 min.
 
 import type { TextosCanal } from "./textos";
+import { esAceptacion, esRechazo, normalizarRespuesta } from "@aly-saas/consentimiento";
 
 /**
  * Ventana de inactividad tras la cual empieza una conversación nueva. Mismo
@@ -30,30 +31,10 @@ export const VENTANA_SESION_MINUTOS = 70;
 
 export type EstadoOnboarding = "nuevo" | "esperando_privacidad" | `perfil:${number}` | "listo";
 
-export function normalizar(mensaje: string): string {
-  return mensaje
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
-
-export function esAceptacion(mensaje: string): boolean {
-  const m = normalizar(mensaje);
-  return (
-    m === "1" ||
-    m === "acepto" ||
-    m === "si" ||
-    m === "si acepto" ||
-    m === "si, acepto" ||
-    m === "estoy de acuerdo"
-  );
-}
-
-export function esRechazo(mensaje: string): boolean {
-  const m = normalizar(mensaje);
-  return m === "2" || /^no\b/.test(m);
-}
+// La regla de consentimiento es UNA y compartida con el chat de prueba del panel:
+// vive en packages/consentimiento. Aquí solo se reexporta.
+export { esAceptacion, esRechazo } from "@aly-saas/consentimiento";
+export const normalizar = normalizarRespuesta;
 
 export function esSalida(mensaje: string): boolean {
   return /^(salir|exit|sair)$/i.test(mensaje.trim());
