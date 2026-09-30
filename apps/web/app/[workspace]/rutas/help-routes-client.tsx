@@ -96,7 +96,7 @@ export function HelpRoutesClient({
       <div className="flex gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
         <InfoIcon className="mt-0.5 h-4 w-4 flex-shrink-0" />
         <p>
-          El asistente solo da las rutas que pongas acá. Si está vacío, pide a la
+          El asistente solo da las rutas que pongas aquí. Si está vacío, pide a la
           persona buscar ayuda en su territorio sin inventar números.
         </p>
       </div>

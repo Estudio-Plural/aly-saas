@@ -190,7 +190,7 @@ export function ProtocoloClient({
         </div>
         {form.channel === "telegram" && (
           <p className="text-xs text-neutral-600 -mt-3">
-            Agrega el bot de alertas de Plural a tu grupo y pega acá el id del chat. Si no sabes cómo,
+            Agrega el bot de alertas de Plural a tu grupo y pega aquí el id del chat. Si no sabes cómo,
             escríbenos a hola@estudio-plural.co.
           </p>
         )}

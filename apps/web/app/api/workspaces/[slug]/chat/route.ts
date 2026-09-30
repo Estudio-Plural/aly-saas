@@ -181,7 +181,7 @@ export async function POST(request: Request, { params }: Params) {
     console.error("[chat] Error llamando al LLM:", error);
     return NextResponse.json(
       {
-        error: "No se pudo obtener respuesta del asistente. Revisá la clave de OpenRouter y la conexión.",
+        error: "No se pudo obtener respuesta del asistente. Revisa la clave de OpenRouter y la conexión.",
         conversationId,
         messages: [userMessage],
       },

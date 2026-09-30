@@ -230,7 +230,7 @@ function VistaPlural({
       <Card className="p-6 border border-neutral-200 shadow-sm">
         <h2 className="text-lg font-semibold text-neutral-900">Datos del número</h2>
         <p className="text-sm text-neutral-600 mb-4">
-          El token nunca se escribe acá: se carga en el entorno del engine y acá va solo el nombre de la variable.
+          El token nunca se escribe aquí: se carga en el entorno del engine y aquí va solo el nombre de la variable.
         </p>
         <form
           className="space-y-4"

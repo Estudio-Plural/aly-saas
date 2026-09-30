@@ -130,7 +130,7 @@ export function OperarClient({
           <ActivityIcon className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
           <p className="font-semibold text-neutral-900 mb-1">Todavía no hay conversaciones reales</p>
           <p className="text-sm text-neutral-600 max-w-md mx-auto">
-            Cuando conectes WhatsApp aparecen acá; mientras tanto, prueba tu asistente.
+            Cuando conectes WhatsApp aparecen aquí; mientras tanto, prueba tu asistente.
           </p>
           <div className="mt-5 flex justify-center gap-2">
             <Button asChild>

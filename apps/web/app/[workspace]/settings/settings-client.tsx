@@ -36,7 +36,7 @@ export function SettingsClient({
 
   const handleSave = async () => {
     if (!workspace.name.trim() || !workspace.assistant_name.trim()) {
-      toast.error("El nombre del workspace y del asistente no pueden estar vacíos");
+      toast.error("El nombre del programa y del asistente no pueden estar vacíos");
       return;
     }
     setIsSaving(true);
@@ -76,10 +76,10 @@ export function SettingsClient({
       const res = await fetch(`/api/workspaces/${savedSlug}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
-        toast.error(data.error ?? "No se pudo eliminar el workspace");
+        toast.error(data.error ?? "No se pudo eliminar el programa");
         return;
       }
-      toast.success(`Workspace "${workspace.name}" eliminado`);
+      toast.success(`Programa «${workspace.name}» eliminado`);
       router.push("/dashboard");
       router.refresh();
     } catch {
@@ -93,10 +93,10 @@ export function SettingsClient({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Configuración General
+            Ajustes
           </h1>
           <p className="text-neutral-600 mt-1">
-            Gestioná los datos básicos de tu asistente
+            Los datos básicos de tu programa y tu asistente
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -115,18 +115,18 @@ export function SettingsClient({
       </div>
 
       <div className="space-y-6">
-          {/* Información del Workspace */}
+          {/* Datos del programa */}
           <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-xl">Información del Workspace</CardTitle>
+              <CardTitle className="text-xl">Datos del programa</CardTitle>
               <CardDescription className="text-base">
-                El nombre y slug identifican tu workspace en la plataforma
+                El nombre y la dirección identifican tu programa en Plural
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-3">
                 <Label htmlFor="name" className="text-sm font-medium text-neutral-900">
-                  Nombre del Workspace
+                  Nombre del programa
                 </Label>
                 <Input
                   id="name"
@@ -135,16 +135,16 @@ export function SettingsClient({
                     const newName = e.target.value;
                     updateField({ name: newName, slug: slugify(newName) });
                   }}
-                  placeholder="Mi Empresa"
+                  placeholder="Cuidar a quien cuida"
                   className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
                 <p className="text-xs text-neutral-600">
-                  Este nombre se muestra en el dashboard y notificaciones
+                  Así aparece en tu lista de programas y en los avisos
                 </p>
               </div>
 
               <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4">
-                <p className="text-xs font-medium text-neutral-600 mb-1">URL de tu workspace</p>
+                <p className="text-xs font-medium text-neutral-600 mb-1">Dirección de tu programa</p>
                 <p className="text-sm font-mono text-neutral-900">
                   app.plural.com/<span className="font-semibold text-neutral-900">{workspace.slug}</span>
                 </p>
@@ -160,7 +160,7 @@ export function SettingsClient({
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-xl">Configuración del Asistente</CardTitle>
               <CardDescription className="text-base">
-                Personalizá cómo se presenta tu asistente de IA
+                Cómo se presenta tu asistente
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -176,7 +176,7 @@ export function SettingsClient({
                   className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
                 <p className="text-xs text-neutral-600">
-                  Este nombre aparece en las respuestas del bot y en el chat
+                  Así se presenta en WhatsApp y en el chat de prueba
                 </p>
               </div>
 
@@ -253,13 +253,13 @@ export function SettingsClient({
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-xl text-red-600">Zona de Peligro</CardTitle>
               <CardDescription className="text-base">
-                Acciones irreversibles para tu workspace
+                Acciones que no se pueden deshacer
               </CardDescription>
             </CardHeader>
             <CardContent>
               <ConfirmDialog
-                title="¿Eliminar workspace?"
-                description={`Vas a eliminar "${workspace.name}" con sus documentos y conversaciones. Esta acción no se puede deshacer.`}
+                title="¿Eliminar programa?"
+                description={`Vas a eliminar «${workspace.name}» con sus documentos y conversaciones. Esta acción no se puede deshacer.`}
                 confirmLabel="Eliminar"
                 onConfirm={handleDelete}
               >
@@ -268,7 +268,7 @@ export function SettingsClient({
                   className="h-11 px-6 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-colors"
                 >
                   <TrashIcon className="mr-2 h-4 w-4" />
-                  Eliminar Workspace
+                  Eliminar programa
                 </Button>
               </ConfirmDialog>
             </CardContent>

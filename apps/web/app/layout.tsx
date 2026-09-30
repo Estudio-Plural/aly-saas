@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Plural Conversational System",
   description:
-    "Creá asistentes de WhatsApp con IA personalizados para tu negocio. Multi-tenant, sin código.",
+    "Crea asistentes de WhatsApp con IA para tus programas. Sin código.",
 };
 
 export default function RootLayout({
