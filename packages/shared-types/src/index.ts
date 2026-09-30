@@ -116,3 +116,45 @@ export interface OnboardingSession {
   created_at: string;
   updated_at: string;
 }
+
+// ============================================================================
+// Canal WhatsApp — Meta Cloud API directo (migración 013)
+// ============================================================================
+
+/** Pasos del checklist que marca Plural a mano (no se pueden verificar desde acá). */
+export type WhatsappPasoManual = "app_publicada" | "waba_suscrita" | "numero_registrado";
+
+export interface WhatsappChecklistPaso {
+  hecho: boolean;
+  at: string | null;
+  por: string | null;
+}
+
+export interface WhatsappConnection {
+  workspace_id: string;
+  phone_number_id: string | null;
+  display_number: string | null;
+  waba_id: string | null;
+  /** NOMBRE de la variable de entorno del engine con el token (META_TOKEN_*), nunca el token. */
+  token_env: string | null;
+  checklist: Partial<Record<WhatsappPasoManual, WhatsappChecklistPaso>>;
+  enabled: boolean;
+  last_inbound_at: string | null;
+  last_reply_at: string | null;
+  last_error: string | null;
+  last_error_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WaSession {
+  id: number;
+  workspace_id: string;
+  identidad: string;
+  sender_kind: "phone" | "bsuid";
+  conversation_id: string;
+  onboarding_state: string;
+  consent: "pendiente" | "aceptado";
+  consent_at: string | null;
+  last_at: string;
+}
