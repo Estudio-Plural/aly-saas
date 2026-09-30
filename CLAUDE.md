@@ -63,7 +63,9 @@ cd apps/web && npx next dev           # http://localhost:3000
 - **El chat usa el engine real** (`apps/api`, pipeline portado de Aly-legacy,
   config-driven por `workspace_configs`): la ruta de chat le pega a
   `POST /api/rag/doQuestion` vía `lib/engine.ts` (`ENGINE_URL`, default
-  `http://localhost:8080`). Si el engine no responde, cae al camino legacy de
+  `http://localhost:8080`) con `X-Engine-Token: ENGINE_TOKEN` (mismo valor en web
+  y api; el engine está cerrado por defecto: todo salvo `/health`, el webhook de
+  Meta y `/internal/*` exige el token). Si el engine no responde, cae al camino legacy de
   una sola llamada (`lib/llm.ts`) — el chat nunca se queda mudo.
 - El engine persiste el par user+assistant en `users_interactions` por su
   cuenta; la ruta de chat NO debe volver a guardarlos cuando responde el engine.

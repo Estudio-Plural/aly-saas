@@ -10,7 +10,7 @@
 // texto plano de documents; el slot-filling (collectContext) queda pendiente
 // detrás de context_gathering.
 
-import { resolveBotConfig, type BotConfig } from "../config";
+import { invalidateBotConfig, resolveBotConfig, type BotConfig } from "../config";
 import * as agents from "./agents";
 import { formatHistory, getHistory, saveHistory } from "./history";
 import { INTENTS, type IntentType } from "./params";
@@ -22,6 +22,12 @@ export interface QuestionInput {
   language: string; // es | en | auto
   conversationId: string;
   workspaceId: string;
+  /**
+   * Turno efímero (banco de casos difíciles del panel): sin historial y sin
+   * persistir nada en users_interactions — no es una conversación real.
+   * Además lee la config fresca (sin la cache de 5 min): prueba lo último guardado.
+   */
+  ephemeral?: boolean;
 }
 
 export interface QueryResponse {
@@ -36,12 +42,11 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
   console.log(`\n🚀 processQuestion ws=${workspaceId} lang=${language} q="${question}"`);
 
   // ── prepare: config del workspace + historia ──────────────────────────────
+  if (input.ephemeral) invalidateBotConfig(workspaceId);
   const config = await resolveBotConfig(workspaceId, language);
-  const history = await getHistory(
-    workspaceId,
-    conversationId,
-    config.prompts.factualNoContextFallback,
-  );
+  const history = input.ephemeral
+    ? []
+    : await getHistory(workspaceId, conversationId, config.prompts.factualNoContextFallback);
   const historyString = formatHistory(history);
 
   // ── normalize (reescribe el mensaje) ──────────────────────────────────────
@@ -80,10 +85,7 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
     config.prompts.orgProfile.trim()
   ) {
     return finish(
-      workspaceId,
-      conversationId,
-      userNumber,
-      question,
+    input,
       await agents.identityAgent(standalone, language, config),
       INTENTS.IDENTITY,
       confidence,
@@ -98,10 +100,7 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
   // smalltalk: social/conversacional, sin retrieval
   if (intent === INTENTS.SMALLTALK) {
     return finish(
-      workspaceId,
-      conversationId,
-      userNumber,
-      question,
+    input,
       await agents.smalltalkAgent(standalone, language, historyString, config),
       INTENTS.SMALLTALK,
       confidence,
@@ -122,10 +121,7 @@ export async function processQuestion(input: QuestionInput): Promise<QueryRespon
   }
 
   return finish(
-    workspaceId,
-    conversationId,
-    userNumber,
-    question,
+    input,
     answer,
     intent,
     confidence,
@@ -154,10 +150,7 @@ async function sensitiveTurn(
     console.error("❌ SENSITIVE retrieval failed, answering without context:", error);
   }
   return finish(
-    workspaceId,
-    conversationId,
-    userNumber,
-    question,
+    input,
     await agents.sensitiveAgent(question, context, language, historyString, config),
     INTENTS.SENSITIVE,
     confidence,
@@ -178,16 +171,16 @@ async function selectDocuments(
 }
 
 async function finish(
-  workspaceId: string,
-  conversationId: string,
-  userNumber: string,
-  question: string,
+  input: QuestionInput,
   answer: string,
   intent: IntentType,
   confidence: number,
   chunks: ChunkSource[],
 ): Promise<QueryResponse> {
-  await saveHistory(workspaceId, conversationId, userNumber, question, answer);
+  const { workspaceId, conversationId, userNumber, question } = input;
+  if (!input.ephemeral) {
+    await saveHistory(workspaceId, conversationId, userNumber, question, answer);
+  }
   console.log(`✅ processQuestion completed (intent: ${intent})`);
   return { answer, intent, confidence, chunks };
 }

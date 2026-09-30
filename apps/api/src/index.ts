@@ -2,8 +2,8 @@
 // multi-tenant (la UI de Next le pega a POST /api/rag/doQuestion) y el
 // disparador interno del supervisor de conversaciones.
 //
-// Fase 0 local: sin auth en el chat (se agrega bearer + workspace ownership
-// en Fase 3). /internal/* sí exige SUPERVISOR_TOKEN.
+// Autenticación (app.ts): todo exige ENGINE_TOKEN (X-Engine-Token, lo manda el
+// panel) salvo /health, el webhook de Meta (firma) y /internal/* (SUPERVISOR_TOKEN).
 
 import { createApp } from "./app";
 import { startSupervisorInterval } from "./supervisor";

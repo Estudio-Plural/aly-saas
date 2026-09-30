@@ -6,6 +6,16 @@
 const ENGINE_URL = process.env.ENGINE_URL ?? "http://localhost:8080";
 const ENGINE_TIMEOUT_MS = 60_000;
 
+/**
+ * El engine exige `X-Engine-Token` (ENGINE_TOKEN, el mismo valor en web y api) en todo
+ * lo que no es el webhook de Meta. Sin token el engine responde 401/503 y el chat cae
+ * al camino de respaldo (lib/llm.ts).
+ */
+function engineHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  const token = process.env.ENGINE_TOKEN;
+  return token ? { ...extra, "X-Engine-Token": token } : extra;
+}
+
 export interface EngineResponse {
   answer: string;
   intent: string;
@@ -24,12 +34,15 @@ export async function askEngine(params: {
   userNumber: string;
   question: string;
   language?: string;
+  /** Banco de casos difíciles: sin historial, sin persistir, config fresca. */
+  ephemeral?: boolean;
 }): Promise<EngineResponse | null> {
   try {
     const res = await fetch(`${ENGINE_URL}/api/rag/doQuestion`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: engineHeaders({ "Content-Type": "application/json" }),
       body: JSON.stringify({
+        ephemeral: params.ephemeral === true,
         userQuestion: params.question,
         userNumber: params.userNumber,
         conversationId: params.conversationId,
@@ -67,6 +80,7 @@ export async function getEngineWhatsappEstado(workspaceId: string): Promise<{
 } | null> {
   try {
     const res = await fetch(`${ENGINE_URL}/api/whatsapp/estado/${encodeURIComponent(workspaceId)}`, {
+      headers: engineHeaders(),
       signal: AbortSignal.timeout(3_000),
       cache: "no-store",
     });

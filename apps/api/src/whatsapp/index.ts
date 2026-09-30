@@ -39,6 +39,7 @@ export const whatsappRoutes = new Elysia()
       // EXACTOS que Meta firmó (sin esto no se puede verificar la firma).
       parse: async ({ request }) => await request.text(),
     },
-  )
-  // Para el panel: qué ve el engine de su propio entorno (booleanos, nunca secretos).
-  .get("/api/whatsapp/estado/:workspaceId", ({ params }) => canal.estadoEntorno(params.workspaceId));
+  );
+// El estado del entorno para el panel (GET /api/whatsapp/estado/:workspaceId) vive en
+// app.ts, detrás de ENGINE_TOKEN: acá solo queda el webhook, que se autentica con la
+// firma de Meta.
