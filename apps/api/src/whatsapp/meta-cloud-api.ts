@@ -8,6 +8,8 @@
 // BSUID in `to`", doc de Meta; probado contra Graph el 2026-08-28).
 
 export const GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v23.0";
+/** Solo para desarrollo local: apuntar a un Graph falso (nunca en producción). */
+const GRAPH_BASE_URL = process.env.META_GRAPH_BASE_URL || "https://graph.facebook.com";
 
 /** WhatsApp corta en 4096 caracteres; se deja margen. */
 export const LIMITE_TEXTO = 4000;
@@ -43,7 +45,7 @@ export const sendWhatsAppText: EnviarTexto = async (opts) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), opts.timeoutMs ?? 15_000);
   try {
-    const res = await fetch(`https://graph.facebook.com/${GRAPH_VERSION}/${phoneNumberId}/messages`, {
+    const res = await fetch(`${GRAPH_BASE_URL}/${GRAPH_VERSION}/${phoneNumberId}/messages`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
