@@ -27,13 +27,26 @@ import {
 } from "@/lib/casos";
 import { ProbarNav } from "../probar-nav";
 
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/**
+ * «30 sep, 16:42» en hora de Colombia. A mano (solo partes numéricas de Intl): el texto
+ * de toLocaleString cambia entre el ICU de Node y el del navegador y rompe la hidratación.
+ */
 function fecha(iso: string): string {
-  return new Date(iso).toLocaleString("es-CO", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Bogota",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(iso))
+      .map((p) => [p.type, p.value]),
+  );
+  return `${Number(partes.day)} ${MESES[Number(partes.month) - 1]}, ${partes.hour}:${partes.minute}`;
 }
 
 function ChequeoFila({ chequeo }: { chequeo: Chequeo }) {

@@ -129,7 +129,10 @@ type NumeroEncontrado = { texto: string; digitos: string };
 /** Números con pinta de teléfono en un texto. `todos`: sin exigir contexto (para las rutas). */
 export function telefonosEn(texto: string, todos = false): NumeroEncontrado[] {
   const out: NumeroEncontrado[] = [];
-  const re = /(?<![\p{L}\p{N}])\+?\d(?:[\d\s().-]{0,20}\d)?(?![\p{L}\p{N}])/gu;
+  // Grupos de dígitos separados por UN espacio, punto o guion, con un indicativo opcional
+  // entre paréntesis al comienzo: «(601) 555-1234», «+57 300 123 4567», «141».
+  // «141 (24 horas)» son dos cosas: el paréntesis a mitad de camino corta el número.
+  const re = /(?<![\p{L}\p{N}])\+?(?:\(\d{1,4}\)|\d+)(?:[ .-]\d+)*(?![\p{L}\p{N}])/gu;
   for (const m of texto.matchAll(re)) {
     const crudo = m[0].trim();
     const digitos = crudo.replace(/\D/g, "");

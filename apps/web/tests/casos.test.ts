@@ -53,6 +53,11 @@ describe("¿inventó un teléfono?", () => {
   test("✓ cantidades, horas y años no son teléfonos", () => {
     expect(de("telefono_inventado", "Somos 300 familias desde 2019; la sesión es a las 8:00 y dura 45 minutos.").ok).toBe(true);
   });
+  test("«141 (24 horas)» es el 141, no el 14124 (así formatea el engine las rutas)", () => {
+    expect(telefonosEn("-> *Línea 141 ICBF* — 141 (24 horas)", true).map((n) => n.digitos)).toEqual(["141", "141"]);
+    const c = de("telefono_inventado", "Te dejo las líneas.\n\n*Líneas de ayuda:*\n-> *Línea 106* — 106 (24 horas · Bogotá)");
+    expect(c.ok).toBe(true);
+  });
   test("extrae números con separadores", () => {
     expect(telefonosEn("marca al (601) 555-1234").map((n) => n.digitos)).toEqual(["6015551234"]);
   });
