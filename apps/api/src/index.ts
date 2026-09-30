@@ -6,10 +6,13 @@
 import { Elysia, t } from "elysia";
 import { processQuestion } from "./engine";
 import { isLlmConfigured } from "./engine/openrouter";
+import { whatsappRoutes } from "./whatsapp";
 
 const port = Number(process.env.API_PORT ?? 8080);
 
 const app = new Elysia()
+  // Canal WhatsApp (Meta Cloud API directo): GET/POST /api/webhook/meta
+  .use(whatsappRoutes)
   .get("/health", () => ({ ok: true, llm: isLlmConfigured() }))
   .post(
     "/api/rag/doQuestion",

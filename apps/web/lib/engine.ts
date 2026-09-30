@@ -53,3 +53,26 @@ export async function askEngine(params: {
     return null;
   }
 }
+
+/**
+ * Lo que el engine ve de su propio entorno para el canal WhatsApp (si el token
+ * nombrado existe, si hay app secret y verify token). Solo booleanos y el
+ * nombre de la variable: nunca secretos. null si el engine no responde.
+ */
+export async function getEngineWhatsappEstado(workspaceId: string): Promise<{
+  tokenEnv: string | null;
+  tokenCargado: boolean;
+  firmaConfigurada: boolean;
+  verifyTokenConfigurado: boolean;
+} | null> {
+  try {
+    const res = await fetch(`${ENGINE_URL}/api/whatsapp/estado/${encodeURIComponent(workspaceId)}`, {
+      signal: AbortSignal.timeout(3_000),
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}

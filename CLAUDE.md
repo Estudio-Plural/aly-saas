@@ -112,6 +112,29 @@ systemd, `enabled`, sobreviven reboots):
   `psql "<DATABASE_URL de apps/web/.env.local>" -f supabase/migrations/XXX.sql`
   (el `db-setup.sh` asume el Mac). La 009 ya está aplicada en la VPS.
 
+## Canal WhatsApp (Meta Cloud API directo, desde 2026-09-30)
+
+- Vive en el engine: `apps/api/src/whatsapp/` (`GET/POST /api/webhook/meta`,
+  `GET /api/whatsapp/estado/:workspaceId` para el panel). Portado de Aly
+  (`atender.ts`, `metaSession.ts`, `MetaOnboarding.ts`) y Tranqui (`post.ts`).
+  Sin Kapso: `KAPSO_INTEGRATION.md` queda obsoleto.
+- Migración **013**: `whatsapp_connections` (por workspace; el token NO se
+  guarda, solo el nombre de la variable `META_TOKEN_*` del engine),
+  `wa_sessions`, `wa_processed_messages`, `wa_webhook_state`, `users_data.profile`.
+- Invariantes (tests en `apps/api/test/whatsapp-*.test.ts`): firma HMAC sobre
+  bytes crudos; reparto por `phone_number_id`; fila por persona; idempotencia
+  por wamid (se libera si el turno falla antes de generar; si falla el envío,
+  el reintento reenvía lo ya generado); reglas del gate EXACTAS de Aly; al
+  rechazar no se guarda nada; sesión nueva a los 70 min; `salir` cierra.
+- Textos del onboarding: `workspace_configs.welcome` (lo define la 012 de
+  Diseñar; lectura tolerante con defaults en `whatsapp/textos.ts`).
+- Panel `/[workspace]/whatsapp`: checklist con estado real; «Activo» solo tras
+  un mensaje real recibido y respondido. Vista cliente vs Plural por
+  `acceso.esPlural` (`lib/auth.ts`, dominio en `PLURAL_DOMAINS`); Plural puede
+  ver la vista cliente con `?vista=cliente`. Runbook: `docs/whatsapp-conectar-numero.md`.
+- Env del engine: `META_VERIFY_TOKEN`, `META_APP_SECRET[_*]`, `META_TOKEN_*`
+  (ver `apps/api/.env.example`).
+
 ## Base de datos
 
 - **Postgres local** `aly_saas` (user `daniel`, `postgresql://localhost:5432/aly_saas`).
@@ -236,7 +259,7 @@ Ver `apps/web/.env.example`. La clave de OpenRouter vino de
 
 | Real | Simulado / pendiente |
 |---|---|
-| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview**, **RAG vectorial (pgvector + embeddings OpenRouter, con fallback a texto plano)**, identidad + storyboard editables e inyectados en los prompts, **materiales del storyboard (imagen/PDF/video/audio) que el asistente envía en el chat preview**, **landing pública en `/`** | Conexión WhatsApp/Kapso (teatro persistido en DB; incluye el envío de materiales por WhatsApp), billing, análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
+| CRUD workspaces, settings (rename propaga al chat), uploads + descarga, extracción de texto de PDF/TXT/MD/CSV **+ metadatos automáticos por LLM**, onboarding persistido, chat con LLM en streaming + markdown + historial, inbox de Conversaciones (`/[workspace]/conversations`), **flagging system definido por el usuario + análisis LLM real al cerrar conversaciones del preview**, **RAG vectorial (pgvector + embeddings OpenRouter, con fallback a texto plano)**, identidad + storyboard editables e inyectados en los prompts, **materiales del storyboard (imagen/PDF/video/audio) que el asistente envía en el chat preview**, **landing pública en `/`** | Envío de materiales por WhatsApp (el canal Meta directo es real pero solo manda texto; los `[[adjunto:id]]` se omiten), billing, análisis de conversaciones de WhatsApp reales (solo las del preview web se analizan; las seed de 003/004 traen análisis pre-cargado) |
 
 ## Convenciones
 
