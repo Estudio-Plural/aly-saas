@@ -65,7 +65,7 @@ export function DashboardClient({
       setIsCreateOpen(false);
       setNewWorkspace({ name: "", slug: "", assistant_name: "Aly" });
       toast.success(`Asistente "${data.workspace.name}" creado`);
-      router.refresh();
+      router.push(`/${data.workspace.slug}/identity`);
     } catch {
       toast.error("Error de conexión al crear el asistente");
     } finally {
@@ -74,7 +74,7 @@ export function DashboardClient({
   };
 
   const handleOpenWorkspace = (slug: string) => {
-    router.push(`/${slug}/settings`);
+    router.push(`/${slug}/identity`);
   };
 
   return (

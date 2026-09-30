@@ -1,16 +1,26 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getWorkspaceBySlug, setWhatsappConnection } from "@/lib/data/workspaces";
+import {
+  getWorkspaceBySlug,
+  saveWhatsappContactNumber,
+  setWhatsappConnection,
+} from "@/lib/data/workspaces";
 
 type Params = { params: Promise<{ slug: string }> };
 
 const connectSchema = z.object({
-  phoneNumber: z.string().trim().min(5).max(30),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(5)
+    .max(30)
+    .regex(/^\+?[0-9\s().-]+$/),
 });
 
 /**
- * Conexión de WhatsApp. La integración real con Kapso es post-funding;
- * por ahora se persiste el estado de conexión en la DB (sobrevive reloads).
+ * La conexión directa con WhatsApp (Kapso) todavía no existe. El POST solo
+ * guarda el número de la organización como contacto para avisarle cuando esté
+ * lista; NO marca la conexión como activa.
  */
 export async function POST(request: Request, { params }: Params) {
   const { slug } = await params;
@@ -20,10 +30,7 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Número inválido" }, { status: 400 });
   }
 
-  const workspace = await setWhatsappConnection(slug, {
-    status: "connected",
-    phoneNumber: parsed.data.phoneNumber,
-  });
+  const workspace = await saveWhatsappContactNumber(slug, parsed.data.phoneNumber);
   if (!workspace) {
     return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
   }

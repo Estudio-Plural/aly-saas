@@ -557,7 +557,7 @@ export function OnboardingClient({
         return;
       }
       setSavedSnapshot(JSON.stringify(allSteps));
-      toast.success("Flujo guardado: ya corre en la Vista Previa del Chat");
+      toast.success("Flujo guardado: ya corre en «Probar»");
     } catch {
       toast.error("Error de conexión al guardar el flujo");
     } finally {

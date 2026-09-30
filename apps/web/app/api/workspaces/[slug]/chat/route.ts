@@ -114,10 +114,13 @@ export async function POST(request: Request, { params }: Params) {
   ]);
 
   if (!isLlmConfigured()) {
+    console.warn(
+      "[chat] OPENROUTER_API_KEY no configurada (apps/web/.env.local): el chat de prueba no tiene LLM."
+    );
     const [reply] = await appendMessages(workspace.id, conversationId, [
       {
         role: "assistant",
-        text: "(Falta configurar OPENROUTER_API_KEY en apps/web/.env.local para respuestas reales del asistente.)",
+        text: "El asistente todavía no está activado. Escríbenos a hola@plural-estudio.co.",
       },
     ]);
     return NextResponse.json({ conversationId, messages: [userMessage, reply] });

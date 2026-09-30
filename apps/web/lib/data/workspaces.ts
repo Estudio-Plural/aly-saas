@@ -146,6 +146,25 @@ export async function deleteWorkspace(slug: string): Promise<string | null> {
   return rows.length ? rows[0].id : null;
 }
 
+/**
+ * Guarda el número de WhatsApp de la organización como dato de contacto
+ * mientras la conexión directa (Kapso) no existe. NO marca la conexión como
+ * activa: el estado queda en 'pending'.
+ */
+export async function saveWhatsappContactNumber(
+  slug: string,
+  phoneNumber: string
+): Promise<Workspace | null> {
+  const rows = await sql`
+    UPDATE workspaces
+    SET kapso_connection_status = 'pending', whatsapp_phone_number = ${phoneNumber}
+    WHERE slug = ${slug} RETURNING id
+  `;
+  if (!rows.length) return null;
+  const updated = await sql<WorkspaceRow[]>`${workspaceSelect()} WHERE w.id = ${rows[0].id}`;
+  return toWorkspace(updated[0]);
+}
+
 export async function setWhatsappConnection(
   slug: string,
   connection: { status: "connected"; phoneNumber: string } | { status: "pending" }

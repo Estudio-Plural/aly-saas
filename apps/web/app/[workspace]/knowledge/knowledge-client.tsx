@@ -438,7 +438,7 @@ export function KnowledgeClient({
             </p>
             <p className="text-sm text-neutral-700 leading-relaxed">
               El texto de tus documentos (PDF, TXT, MD, CSV) se extrae y se suma al
-              contexto del asistente: probalo en la Vista Previa del Chat. Cada
+              contexto del asistente: pruébalo en «Probar». Cada
               documento recibe automáticamente un <strong>&ldquo;cuándo consultarlo&rdquo;</strong>{" "}
               que podés editar: el asistente lo usa para decidir qué documentos leer
               según cada pregunta. Los DOC se guardan y quedan listos para el

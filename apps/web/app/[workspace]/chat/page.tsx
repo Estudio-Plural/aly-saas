@@ -27,13 +27,20 @@ export default async function ChatPage({
     ? await getConversationMessages(workspace.id, conversationId)
     : [];
 
+  const llmConfigured = isLlmConfigured();
+  if (!llmConfigured) {
+    console.warn(
+      "[chat] OPENROUTER_API_KEY no configurada (apps/web/.env.local): el chat de prueba no tiene LLM."
+    );
+  }
+
   return (
     <ChatClient
       workspaceSlug={workspace.slug}
       assistantName={workspace.assistant_name}
       flowSteps={flowSteps}
       initialMessages={messages}
-      llmConfigured={isLlmConfigured()}
+      llmConfigured={llmConfigured}
       storyboardAttachments={listStoryboardAttachments(storyboard).map(
         ({ attachment }) => attachment
       )}

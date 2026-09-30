@@ -50,6 +50,8 @@ function formatWhen(iso: string): string {
 function severityBadge(severity: string | null) {
   if (!severity) return null;
   const upper = severity.toUpperCase();
+  const label =
+    SEVERITY_LABELS[severity.toLowerCase() as FlagSeverity] ?? severity;
   const styles =
     upper === "HIGH"
       ? "bg-red-100 text-red-700 border-red-200"
@@ -59,7 +61,7 @@ function severityBadge(severity: string | null) {
   return (
     <Badge variant="outline" className={`${styles} gap-1`}>
       <AlertTriangleIcon className="h-3 w-3" />
-      {upper}
+      {label}
     </Badge>
   );
 }
@@ -139,7 +141,7 @@ export function ConversationsClient({
           </p>
           <p className="text-sm text-neutral-600 max-w-md mx-auto">
             Cuando conectes WhatsApp, las conversaciones de tus usuarios van a aparecer
-            acá. Mientras tanto, podés generar una desde la Vista Previa del Chat.
+            acá. Mientras tanto, puedes generar una desde «Probar».
           </p>
         </Card>
       ) : (

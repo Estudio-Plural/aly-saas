@@ -20,7 +20,7 @@ export function WorkspaceSidebar({ workspace }: { workspace: string }) {
     { name: "Identidad", href: `/${workspace}/identity`, icon: FingerprintIcon },
     { name: "Conocimiento", href: `/${workspace}/knowledge`, icon: FileTextIcon },
     { name: "Programa", href: `/${workspace}/onboarding`, icon: WorkflowIcon },
-    { name: "Chat", href: `/${workspace}/chat`, icon: BotIcon },
+    { name: "Probar", href: `/${workspace}/chat`, icon: BotIcon },
     { name: "Conversaciones", href: `/${workspace}/conversations`, icon: MessagesSquareIcon },
     { name: "WhatsApp", href: `/${workspace}/whatsapp`, icon: PhoneIcon },
   ];

@@ -342,10 +342,11 @@ export function ChatClient({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Vista Previa del Chat
+            Prueba tu asistente
           </h1>
           <p className="text-neutral-700 mt-1">
-            Probá tu asistente con tu flujo de onboarding y tu base de conocimiento
+            Habla con {assistantName} como lo haría una persona por WhatsApp. Esto es
+            una prueba: no se envía nada a nadie.
           </p>
         </div>
         <Button
@@ -500,8 +501,8 @@ export function ChatClient({
             </div>
             <p className="text-xs text-neutral-600 mt-3 px-1">
               {llmConfigured
-                ? "Presioná Enter para enviar • La conversación se guarda en tu workspace"
-                : "Presioná Enter para enviar • Configurá OPENROUTER_API_KEY para respuestas reales del asistente"}
+                ? "Presiona Enter para enviar • La conversación se guarda en tu workspace"
+                : "El asistente todavía no está activado. Escríbenos a hola@plural-estudio.co."}
             </p>
           </div>
         </Card>

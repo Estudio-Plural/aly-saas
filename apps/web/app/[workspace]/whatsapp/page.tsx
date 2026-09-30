@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getWorkspaceBySlug } from "@/lib/data/workspaces";
-import { getWhatsappStats } from "@/lib/data/whatsapp";
 import { WhatsAppClient } from "./whatsapp-client";
 
 export const dynamic = "force-dynamic";
@@ -14,17 +13,13 @@ export default async function WhatsAppPage({
   const workspace = await getWorkspaceBySlug(workspaceSlug);
   if (!workspace) redirect("/dashboard");
 
-  const stats = await getWhatsappStats(workspace.id);
-
+  // La conexión directa (Kapso) todavía no existe: no hay bandera ni cliente
+  // real que consultar. La pantalla muestra siempre el estado "en preparación"
+  // y solo guarda el número de la organización como dato de contacto.
   return (
     <WhatsAppClient
       workspaceSlug={workspace.slug}
-      initialStatus={
-        workspace.kapso_connection_status === "connected" ? "connected" : "disconnected"
-      }
       initialPhoneNumber={workspace.whatsapp_phone_number}
-      connectedSince={workspace.updated_at}
-      stats={stats}
     />
   );
 }

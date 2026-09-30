@@ -244,12 +244,6 @@ export function SettingsClient({
                       : "Free"}
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  className="h-11 px-6 border-neutral-300 hover:bg-neutral-50 transition-colors"
-                >
-                  Mejorar Plan
-                </Button>
               </div>
             </CardContent>
           </Card>
