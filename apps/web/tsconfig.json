@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@aly-saas/operar": ["../../packages/operar/src/index.ts"]
     }
   },
   "include": [

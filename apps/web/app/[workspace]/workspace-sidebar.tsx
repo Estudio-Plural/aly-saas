@@ -10,6 +10,7 @@ import {
   BotIcon,
   PhoneIcon,
   MessagesSquareIcon,
+  ActivityIcon,
 } from "lucide-react";
 
 export function WorkspaceSidebar({ workspace }: { workspace: string }) {
@@ -22,6 +23,7 @@ export function WorkspaceSidebar({ workspace }: { workspace: string }) {
     { name: "Programa", href: `/${workspace}/onboarding`, icon: WorkflowIcon },
     { name: "Probar", href: `/${workspace}/chat`, icon: BotIcon },
     { name: "Conversaciones", href: `/${workspace}/conversations`, icon: MessagesSquareIcon },
+    { name: "Operar", href: `/${workspace}/operar`, icon: ActivityIcon },
     { name: "WhatsApp", href: `/${workspace}/whatsapp`, icon: PhoneIcon },
   ];
 
@@ -30,7 +32,7 @@ export function WorkspaceSidebar({ workspace }: { workspace: string }) {
       <nav className="space-y-1">
         {navigation.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href;
+          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link
               key={item.name}

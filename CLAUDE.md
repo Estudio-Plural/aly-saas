@@ -181,6 +181,21 @@ systemd, `enabled`, sobreviven reboots):
   **sin texto de mensajes** (usuarios menores). El inbox muestra pendientes vs
   revisadas (`POST|DELETE .../conversations/[id]/review` → `reviewed_at/by`).
   Nunca contacta al usuario ni cierra casos. Tests: `cd apps/api && bun test`.
+- **Operar** (fase 4, `/[workspace]/operar`, migración 010): cifras agregadas
+  **sin PII** (personas, conversaciones, conversan vs. solo saludan, mediana de
+  mensajes por persona, momentos del storyboard, temas que se repiten en ≥ 2
+  conversaciones, día y hora, conteo de situaciones sensibles, tiempo de
+  respuesta), con base declarada y filtro de período; excluye el chat de prueba
+  (`web-preview`). El cálculo vive en `packages/operar` (TS puro, alias
+  `@aly-saas/operar` en los tsconfig de web y api): el panel, el correo y el
+  Excel usan el mismo código. **Protocolo ante riesgo** (`/operar/protocolo`,
+  tabla `alert_protocols`): sin protocolo activo la org no recibe alertas (el
+  supervisor igual avisa a Plural); con protocolo, `orgNotifier` avisa por
+  correo/Telegram (WhatsApp pendiente Kapso), siempre sin texto de mensajes.
+  **Reporte semanal** (engine `src/operar/`): `POST /internal/weekly-report`
+  (mismo `SUPERVISOR_TOKEN`) o `WEEKLY_REPORT_INTERVAL_MINUTES`; idempotente por
+  semana en `weekly_reports`; con `SMTP_*` y miembros con
+  `workspace_users.email` manda correo + Excel; si no, se descarga desde Operar.
 - `lib/embeddings.ts` — indexado vectorial al subir: chunking (~1500 chars,
   overlap 200) + embeddings vía OpenRouter → filas en
   `vector_aly.aly_general_knowledge`; limpieza al borrar el doc. Fail-silent
