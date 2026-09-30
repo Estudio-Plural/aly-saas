@@ -53,12 +53,24 @@ mock.module("../src/engine/openrouter", () => ({
   },
 }));
 
-mock.module("../src/config", () => ({ resolveBotConfig: async () => config }));
+let invalidated = 0;
+mock.module("../src/config", () => ({
+  resolveBotConfig: async () => config,
+  invalidateBotConfig: () => {
+    invalidated++;
+  },
+}));
 
+const historyCalls = { get: 0, save: 0 };
 mock.module("../src/engine/history", () => ({
-  getHistory: async () => [],
+  getHistory: async () => {
+    historyCalls.get++;
+    return [];
+  },
   formatHistory: () => HISTORY,
-  saveHistory: async () => {},
+  saveHistory: async () => {
+    historyCalls.save++;
+  },
 }));
 
 mock.module("../src/engine/retrieval", () => ({
@@ -192,5 +204,18 @@ describe("rutas de ayuda deterministas (como Aly)", () => {
   test("el prompt pide la etiqueta de severidad", async () => {
     const res = await processQuestion(input);
     expect(res.answer).toContain("ALTA SEVERIDAD o CONTENCIÓN");
+  });
+});
+
+describe("turno efímero (banco de casos difíciles)", () => {
+  test("no lee historial, no guarda nada y usa la config fresca", async () => {
+    historyCalls.get = 0;
+    historyCalls.save = 0;
+    invalidated = 0;
+    await processQuestion({ ...input, ephemeral: true });
+    expect(historyCalls).toEqual({ get: 0, save: 0 });
+    expect(invalidated).toBe(1);
+    await processQuestion(input);
+    expect(historyCalls).toEqual({ get: 1, save: 1 });
   });
 });
