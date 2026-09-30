@@ -12,6 +12,7 @@ set -euo pipefail
 
 ssh archetype-vps 'bash -s' <<'REMOTE'
 set -euo pipefail
+trap 'echo "   !! se cortó en la línea $LINENO (comando: $BASH_COMMAND)"' ERR
 cd /root/aly-saas
 WEB_ENV=apps/web/.env.local
 API_ENV=apps/api/.env
@@ -27,7 +28,7 @@ if systemctl is-active --quiet cloudflared-aly-saas; then
   echo "   Apágalo: systemctl disable --now cloudflared-aly-saas"; exit 1
 fi
 
-DB_URL=$(grep -E '^DATABASE_URL=' "$WEB_ENV" | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//')
+DB_URL=$({ grep -E '^DATABASE_URL=' "$WEB_ENV" || true; } | head -1 | cut -d= -f2- | sed 's/^"//; s/"$//')
 [ -n "$DB_URL" ] || { echo "   !! no encontré DATABASE_URL en $WEB_ENV"; exit 1; }
 
 echo "==> 1. Respaldo de la base"
@@ -48,9 +49,10 @@ echo "==> 3. Variables nuevas (solo las que falten; no se imprime ningún valor)
 agregar() { # archivo clave valor
   grep -q "^$2=" "$1" || { printf '%s=%s\n' "$2" "$3" >> "$1"; echo "   + $2 en $1"; }
 }
-ENGINE_TOKEN=$(grep -hE '^ENGINE_TOKEN=' "$API_ENV" "$WEB_ENV" 2>/dev/null | head -1 | cut -d= -f2-)
+# `|| true`: con pipefail, un grep sin resultado (la primera vez no hay token) cortaba el script.
+ENGINE_TOKEN=$({ grep -hE '^ENGINE_TOKEN=' "$API_ENV" "$WEB_ENV" 2>/dev/null || true; } | head -1 | cut -d= -f2-)
 [ -n "$ENGINE_TOKEN" ] || ENGINE_TOKEN=$(openssl rand -hex 32)
-GATE_SECRET=$(grep -E '^GATE_SECRET=' /root/plural-suite/gate/.env | cut -d= -f2-)
+GATE_SECRET=$({ grep -E '^GATE_SECRET=' /root/plural-suite/gate/.env || true; } | cut -d= -f2-)
 [ -n "$GATE_SECRET" ] || { echo "   !! no encontré GATE_SECRET en la puerta"; exit 1; }
 agregar "$WEB_ENV" ENGINE_TOKEN "$ENGINE_TOKEN"
 agregar "$API_ENV" ENGINE_TOKEN "$ENGINE_TOKEN"
