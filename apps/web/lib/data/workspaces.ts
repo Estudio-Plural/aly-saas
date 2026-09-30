@@ -1,6 +1,12 @@
-// Queries de workspaces — solo servidor.
+// Queries de workspaces (programas) — solo servidor.
+//
+// AISLAMIENTO: toda función que resuelve un workspace recibe el `Acceso` del usuario y filtra
+// por sus organizaciones (la conexión local es superuser: el RLS no protege nada). Un slug de
+// otra organización se comporta igual que uno inexistente (null → 404), para no revelar que
+// existe. Las funciones de los demás módulos de lib/data reciben un `workspaceId` que SOLO
+// debe salir de acá (getWorkspaceBySlug con el acceso de la request).
 import { sql } from "@/lib/db";
-import { DEMO_USER_ID } from "@/lib/constants";
+import { orgsVisibles, puedeVerOrg, SinPermisoError, type Acceso } from "@/lib/auth";
 import type { Workspace } from "@/lib/workspaces";
 
 type WorkspaceRow = {
@@ -16,6 +22,8 @@ type WorkspaceRow = {
   documents_count: number;
   conversations_count: number;
   users_count: number;
+  org_id: string;
+  org_name: string;
 };
 
 function toWorkspace(row: WorkspaceRow): Workspace {
@@ -34,6 +42,8 @@ function toWorkspace(row: WorkspaceRow): Workspace {
       conversations: row.conversations_count,
       users: row.users_count,
     },
+    org_id: row.org_id,
+    org_name: row.org_name,
   };
 }
 
@@ -42,20 +52,46 @@ const workspaceSelect = () => sql`
   SELECT
     w.id, w.slug, w.name, w.assistant_name, w.subscription_status,
     w.created_at, w.updated_at, w.whatsapp_phone_number, w.kapso_connection_status,
+    w.org_id, o.nombre AS org_name,
     (SELECT count(*)::int FROM documents d WHERE d.workspace_id = w.id) AS documents_count,
     (SELECT count(DISTINCT ui.conversation_id)::int FROM users_interactions ui WHERE ui.workspace_id = w.id) AS conversations_count,
     (SELECT count(*)::int FROM users_data ud WHERE ud.workspace_id = w.id) AS users_count
   FROM workspaces w
+  JOIN orgs o ON o.id = w.org_id
 `;
 
-export async function listWorkspaces(): Promise<Workspace[]> {
-  const rows = await sql<WorkspaceRow[]>`${workspaceSelect()} ORDER BY w.created_at ASC`;
+/** Condición SQL sobre `w.org_id`: las organizaciones que el usuario puede ver. */
+function filtroOrg(acceso: Acceso) {
+  const ids = orgsVisibles(acceso);
+  return ids === null ? sql`TRUE` : sql`w.org_id = ANY(${ids}::text[])`;
+}
+
+/** Programas visibles para el usuario; `orgId` filtra además por una organización. */
+export async function listWorkspaces(acceso: Acceso, orgId?: string): Promise<Workspace[]> {
+  const rows = await sql<WorkspaceRow[]>`
+    ${workspaceSelect()}
+    WHERE ${filtroOrg(acceso)} ${orgId ? sql`AND w.org_id = ${orgId}` : sql``}
+    ORDER BY o.nombre ASC, w.created_at ASC
+  `;
   return rows.map(toWorkspace);
 }
 
-export async function getWorkspaceBySlug(slug: string): Promise<Workspace | null> {
-  const rows = await sql<WorkspaceRow[]>`${workspaceSelect()} WHERE w.slug = ${slug} LIMIT 1`;
+/** El workspace solo si es de una organización del usuario; si no, null (→ 404). */
+export async function getWorkspaceBySlug(slug: string, acceso: Acceso): Promise<Workspace | null> {
+  const rows = await sql<WorkspaceRow[]>`
+    ${workspaceSelect()} WHERE w.slug = ${slug} AND ${filtroOrg(acceso)} LIMIT 1
+  `;
   return rows.length ? toWorkspace(rows[0]) : null;
+}
+
+/** Slug libre a partir del pedido: si está tomado (por cualquiera), agrega -2, -3… */
+async function slugLibre(base: string): Promise<string> {
+  const taken = await sql<{ slug: string }[]>`
+    SELECT slug FROM workspaces WHERE slug = ${base} OR slug LIKE ${base + "-%"}
+  `;
+  const usados = new Set(taken.map((t) => t.slug));
+  if (!usados.has(base)) return base;
+  for (let i = 2; ; i++) if (!usados.has(`${base}-${i}`)) return `${base}-${i}`;
 }
 
 export class SlugTakenError extends Error {
@@ -92,18 +128,21 @@ const DEFAULT_FLAG_RULES = [
   },
 ];
 
-export async function createWorkspace(input: {
-  name: string;
-  slug: string;
-  assistant_name: string;
-}): Promise<Workspace> {
-  const existing = await sql`SELECT 1 FROM workspaces WHERE slug = ${input.slug}`;
-  if (existing.length) throw new SlugTakenError(input.slug);
+/**
+ * Crea el programa en `input.org_id`, que debe ser una organización del usuario.
+ * Si el slug está tomado se usa el siguiente libre (un 409 revelaría que existe en otra org).
+ */
+export async function createWorkspace(
+  input: { name: string; slug: string; assistant_name: string; org_id: string },
+  acceso: Acceso
+): Promise<Workspace> {
+  if (!puedeVerOrg(acceso, input.org_id)) throw new SinPermisoError();
+  const slug = await slugLibre(input.slug);
 
   const [row] = await sql.begin(async (tx) => {
     const [ws] = await tx`
-      INSERT INTO workspaces (slug, name, assistant_name, owner_user_id, subscription_status)
-      VALUES (${input.slug}, ${input.name}, ${input.assistant_name}, ${DEMO_USER_ID}, 'trial')
+      INSERT INTO workspaces (slug, name, assistant_name, owner_user_id, subscription_status, org_id)
+      VALUES (${slug}, ${input.name}, ${input.assistant_name}, ${acceso.email}, 'trial', ${input.org_id})
       RETURNING id
     `;
     await tx`
@@ -123,16 +162,17 @@ export async function createWorkspace(input: {
 
 export async function updateWorkspace(
   currentSlug: string,
-  input: { name: string; slug: string; assistant_name: string }
+  input: { name: string; slug: string; assistant_name: string },
+  acceso: Acceso
 ): Promise<Workspace | null> {
   if (input.slug !== currentSlug) {
     const taken = await sql`SELECT 1 FROM workspaces WHERE slug = ${input.slug}`;
     if (taken.length) throw new SlugTakenError(input.slug);
   }
   const rows = await sql`
-    UPDATE workspaces
+    UPDATE workspaces w
     SET name = ${input.name}, slug = ${input.slug}, assistant_name = ${input.assistant_name}
-    WHERE slug = ${currentSlug}
+    WHERE w.slug = ${currentSlug} AND ${filtroOrg(acceso)}
     RETURNING id
   `;
   if (!rows.length) return null;
@@ -140,10 +180,26 @@ export async function updateWorkspace(
   return toWorkspace(updated[0]);
 }
 
-/** Borra el workspace (cascade en DB) y devuelve su id para limpiar uploads. */
-export async function deleteWorkspace(slug: string): Promise<string | null> {
-  const rows = await sql`DELETE FROM workspaces WHERE slug = ${slug} RETURNING id`;
+/**
+ * Borra el workspace (cascade en DB) y devuelve su id para limpiar uploads.
+ * El permiso de borrar (admin de la org o Plural) lo revisa la ruta; acá solo se filtra.
+ */
+export async function deleteWorkspace(slug: string, acceso: Acceso): Promise<string | null> {
+  const rows = await sql`
+    DELETE FROM workspaces w WHERE w.slug = ${slug} AND ${filtroOrg(acceso)} RETURNING id
+  `;
   return rows.length ? rows[0].id : null;
+}
+
+/** Mueve un programa a otra organización. Solo el equipo Plural (admin). */
+export async function assignWorkspaceOrg(
+  workspaceId: string,
+  orgId: string,
+  acceso: Acceso
+): Promise<boolean> {
+  if (!acceso.esPlural) throw new SinPermisoError();
+  const rows = await sql`UPDATE workspaces SET org_id = ${orgId} WHERE id = ${workspaceId} RETURNING id`;
+  return rows.length > 0;
 }
 
 /**
@@ -153,12 +209,13 @@ export async function deleteWorkspace(slug: string): Promise<string | null> {
  */
 export async function saveWhatsappContactNumber(
   slug: string,
-  phoneNumber: string
+  phoneNumber: string,
+  acceso: Acceso
 ): Promise<Workspace | null> {
   const rows = await sql`
-    UPDATE workspaces
+    UPDATE workspaces w
     SET kapso_connection_status = 'pending', whatsapp_phone_number = ${phoneNumber}
-    WHERE slug = ${slug} RETURNING id
+    WHERE w.slug = ${slug} AND ${filtroOrg(acceso)} RETURNING id
   `;
   if (!rows.length) return null;
   const updated = await sql<WorkspaceRow[]>`${workspaceSelect()} WHERE w.id = ${rows[0].id}`;
@@ -167,19 +224,20 @@ export async function saveWhatsappContactNumber(
 
 export async function setWhatsappConnection(
   slug: string,
-  connection: { status: "connected"; phoneNumber: string } | { status: "pending" }
+  connection: { status: "connected"; phoneNumber: string } | { status: "pending" },
+  acceso: Acceso
 ): Promise<Workspace | null> {
   const rows =
     connection.status === "connected"
       ? await sql`
-          UPDATE workspaces
+          UPDATE workspaces w
           SET kapso_connection_status = 'connected', whatsapp_phone_number = ${connection.phoneNumber}
-          WHERE slug = ${slug} RETURNING id
+          WHERE w.slug = ${slug} AND ${filtroOrg(acceso)} RETURNING id
         `
       : await sql`
-          UPDATE workspaces
+          UPDATE workspaces w
           SET kapso_connection_status = 'pending', whatsapp_phone_number = NULL
-          WHERE slug = ${slug} RETURNING id
+          WHERE w.slug = ${slug} AND ${filtroOrg(acceso)} RETURNING id
         `;
   if (!rows.length) return null;
   const updated = await sql<WorkspaceRow[]>`${workspaceSelect()} WHERE w.id = ${rows[0].id}`;

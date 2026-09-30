@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import {
   getOpenConversationId,
   getConversationMessages,
@@ -25,12 +25,11 @@ type Params = { params: Promise<{ slug: string }> };
 
 const HISTORY_LIMIT = 20;
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const conversationId = await getOpenConversationId(workspace.id);
   const messages = conversationId
@@ -63,10 +62,9 @@ const postSchema = z.discriminatedUnion("type", [
 
 export async function POST(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const body = await request.json().catch(() => null);
   const parsed = postSchema.safeParse(body);
@@ -196,12 +194,11 @@ export async function POST(request: Request, { params }: Params) {
  * Reinicia la conversación del preview: la cierra y la analiza contra las
  * reglas de alerta del workspace (summary/keywords/flags van al inbox).
  */
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const conversationId = await getOpenConversationId(workspace.id);
   const messages = conversationId

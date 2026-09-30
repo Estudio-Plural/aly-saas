@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import {
   getCorePrompt,
   getStoryboard,
@@ -10,12 +10,11 @@ import {
 
 type Params = { params: Promise<{ slug: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
   const [corePrompt, storyboard] = await Promise.all([
     getCorePrompt(workspace.id),
     getStoryboard(workspace.id),
@@ -48,10 +47,9 @@ const putSchema = z
 
 export async function PUT(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const body = await request.json().catch(() => null);
   const parsed = putSchema.safeParse(body);

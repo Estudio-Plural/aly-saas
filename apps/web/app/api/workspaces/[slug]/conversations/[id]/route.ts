@@ -1,14 +1,20 @@
 import { NextResponse } from "next/server";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
+import { puedeVerTranscripciones } from "@/lib/auth";
 import { getConversationMessages } from "@/lib/data/chat";
+import { TRANSCRIPCIONES_SOLO_PLURAL } from "@/lib/workspaces";
 
 type Params = { params: Promise<{ slug: string; id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug, id } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
+
+  // El texto de los mensajes es de las personas: solo lo ve el equipo de Plural.
+  if (!puedeVerTranscripciones(r.acceso)) {
+    return NextResponse.json({ error: TRANSCRIPCIONES_SOLO_PLURAL }, { status: 403 });
   }
 
   const messages = await getConversationMessages(workspace.id, decodeURIComponent(id));

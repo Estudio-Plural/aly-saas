@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import { addStoryboardAttachment } from "@/lib/data/program";
 import { saveUpload } from "@/lib/uploads";
 import { STORYBOARD_MOMENT_LABELS, type StoryboardMomentKey } from "@/lib/workspaces";
@@ -19,10 +19,9 @@ const ALLOWED_EXTENSIONS = [
 /** Sube un material a un momento del storyboard (queda disponible para el asistente). */
 export async function POST(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const formData = await request.formData().catch(() => null);
   const moment = formData?.get("moment");

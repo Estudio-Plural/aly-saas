@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { workspaceDePagina } from "@/lib/sesion";
+import { puedeVerTranscripciones } from "@/lib/auth";
 import { listConversations } from "@/lib/data/conversations";
 import { getFlagRules } from "@/lib/data/flags";
 import { ConversationsClient } from "./conversations-client";
@@ -12,11 +12,10 @@ export default async function ConversationsPage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const workspace = await getWorkspaceBySlug(workspaceSlug);
-  if (!workspace) redirect("/dashboard");
+  const { acceso, workspace } = await workspaceDePagina(workspaceSlug);
 
   const [conversations, flagRules] = await Promise.all([
-    listConversations(workspace.id),
+    listConversations(workspace.id, { verTranscripciones: puedeVerTranscripciones(acceso) }),
     getFlagRules(workspace.id),
   ]);
 
@@ -26,6 +25,7 @@ export default async function ConversationsPage({
       assistantName={workspace.assistant_name}
       conversations={conversations}
       initialFlagRules={flagRules}
+      canSeeTranscripts={puedeVerTranscripciones(acceso)}
     />
   );
 }

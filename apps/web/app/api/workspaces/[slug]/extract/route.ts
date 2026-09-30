@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import { chatCompletion, getChatModel, isLlmConfigured } from "@/lib/llm";
 
 type Params = { params: Promise<{ slug: string }> };
@@ -18,10 +18,9 @@ const schema = z.object({
 
 export async function POST(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const body = await request.json().catch(() => null);
   const parsed = schema.safeParse(body);

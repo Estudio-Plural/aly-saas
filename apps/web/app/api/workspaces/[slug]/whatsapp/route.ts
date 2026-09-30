@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  getWorkspaceBySlug,
-  saveWhatsappContactNumber,
-  setWhatsappConnection,
-} from "@/lib/data/workspaces";
+import { saveWhatsappContactNumber, setWhatsappConnection } from "@/lib/data/workspaces";
+import { noEncontrado, resolverWorkspace } from "@/lib/api-acceso";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -24,34 +21,33 @@ const connectSchema = z.object({
  */
 export async function POST(request: Request, { params }: Params) {
   const { slug } = await params;
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
   const body = await request.json().catch(() => null);
   const parsed = connectSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Número inválido" }, { status: 400 });
   }
 
-  const workspace = await saveWhatsappContactNumber(slug, parsed.data.phoneNumber);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const workspace = await saveWhatsappContactNumber(slug, parsed.data.phoneNumber, r.acceso);
+  if (!workspace) return noEncontrado();
   return NextResponse.json({ workspace });
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await setWhatsappConnection(slug, { status: "pending" });
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const workspace = await setWhatsappConnection(slug, { status: "pending" }, r.acceso);
+  if (!workspace) return noEncontrado();
   return NextResponse.json({ workspace });
 }
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
   return NextResponse.json({
     status: workspace.kapso_connection_status,
     phoneNumber: workspace.whatsapp_phone_number,

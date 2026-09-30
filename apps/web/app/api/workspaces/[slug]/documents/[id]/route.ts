@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { resolverWorkspace } from "@/lib/api-acceso";
 import {
   getDocumentWithPath,
   deleteDocument,
@@ -18,10 +18,9 @@ const patchSchema = z.object({
 /** Edita el "cuándo consultarlo" del documento (string vacío lo borra). */
 export async function PATCH(request: Request, { params }: Params) {
   const { slug, id } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const body = await request.json().catch(() => null);
   const parsed = patchSchema.safeParse(body);
@@ -41,12 +40,11 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 /** Descarga el archivo original. */
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { slug, id } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const doc = await getDocumentWithPath(workspace.id, id);
   if (!doc) {
@@ -69,12 +67,11 @@ export async function GET(_request: Request, { params }: Params) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { slug, id } = await params;
-  const workspace = await getWorkspaceBySlug(slug);
-  if (!workspace) {
-    return NextResponse.json({ error: "Workspace no encontrado" }, { status: 404 });
-  }
+  const r = await resolverWorkspace(request, slug);
+  if (!r.ok) return r.respuesta;
+  const { workspace } = r;
 
   const deleted = await deleteDocument(workspace.id, id);
   if (!deleted) {

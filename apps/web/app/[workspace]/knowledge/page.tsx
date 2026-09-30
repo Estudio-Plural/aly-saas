@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getWorkspaceBySlug } from "@/lib/data/workspaces";
+import { workspaceDePagina } from "@/lib/sesion";
 import { listDocuments } from "@/lib/data/documents";
 import { KnowledgeClient } from "./knowledge-client";
 
@@ -11,8 +10,7 @@ export default async function KnowledgePage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const workspace = await getWorkspaceBySlug(workspaceSlug);
-  if (!workspace) redirect("/dashboard");
+  const { workspace } = await workspaceDePagina(workspaceSlug);
 
   const documents = await listDocuments(workspace.id);
   return (
