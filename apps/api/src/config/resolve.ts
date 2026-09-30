@@ -22,6 +22,7 @@ import {
 import {
   compileBoundaries,
   compileHelpRoutes,
+  helpRoutesMessage,
   type Boundaries,
   type HelpRoute,
 } from "./guardrails";
@@ -152,6 +153,7 @@ export async function resolveBotConfig(
         )
       : compileBoundaries(null),
     helpRoutes: compileHelpRoutes(row?.help_routes),
+    helpRoutesMessage: helpRoutesMessage(row?.help_routes),
   };
 
   cache.set(cacheKey, { config, expiresAt: Date.now() + CACHE_TTL_MS });

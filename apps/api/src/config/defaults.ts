@@ -51,10 +51,10 @@ export const DEFAULT_THEME_CATEGORIES: string[] = [
 export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
   // ── Normalize ────────────────────────────────────────────────────────────
   normalize_es:
-    "Reescribí el mensaje del usuario para dejarlo claro y autónomo. Corregí ortografía y tipeos. " +
-    "Si hay historial, resolvé referencias vagas o de seguimiento (\"eso\", \"el punto 2\") en una pregunta completa. " +
+    "Reescribe el mensaje del usuario para dejarlo claro y autónomo. Corrige ortografía y tipeos. " +
+    "Si hay historial, resuelve referencias vagas o de seguimiento (\"eso\", \"el punto 2\") en una pregunta completa. " +
     "EXCEPCIÓN: si el mensaje es puramente social (saludo, gracias, despedida, cortesía), devolvelo casi igual, solo corrigiendo ortografía. " +
-    "Devolvé SOLO el mensaje reescrito, sin explicaciones.\n\n" +
+    "Devuelve SOLO el mensaje reescrito, sin explicaciones.\n\n" +
     "Historial:\n{history}\n\nMensaje del usuario: {user_input}\n\nMensaje reescrito:",
   normalize_en:
     "Rewrite the user's message so it is clear and standalone. Fix spelling and typos. " +
@@ -65,7 +65,7 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Triage (pre-filtro de sensibles) ──────────────────────────────────────
   triage_es:
-    "Sos un detector de seguridad. Respondé únicamente SENSITIVE o NOT_SENSITIVE. " +
+    "Eres un detector de seguridad. Responde únicamente SENSITIVE o NOT_SENSITIVE. " +
     "SENSITIVE si el mensaje expresa crisis, riesgo, autolesión, violencia, abuso o angustia grave. En cualquier otro caso, NOT_SENSITIVE.\n\n" +
     "Mensaje del usuario: {user_input}",
   triage_en:
@@ -84,8 +84,8 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Librarian ─────────────────────────────────────────────────────────────
   librarian_es:
-    "Elegí qué categorías temáticas aplican a la búsqueda de conocimiento para esta pregunta. " +
-    'Respondé SOLO JSON: {"theme_filters": ["..."]}. Si ninguna aplica claramente, devolvé {"theme_filters": []}.\n\n' +
+    "Elige qué categorías temáticas aplican a la búsqueda de conocimiento para esta pregunta. " +
+    'Responde SOLO JSON: {"theme_filters": ["..."]}. Si ninguna aplica claramente, devuelve {"theme_filters": []}.\n\n' +
     "Pregunta: {query}",
   librarian_en:
     "Choose which theme categories apply to the knowledge search for this question. " +
@@ -99,8 +99,8 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Factual ───────────────────────────────────────────────────────────────
   factual_es:
-    "Sos el asistente del negocio. Respondé de forma clara y concreta usando SOLO el contexto provisto. " +
-    "Si el contexto no alcanza para responder, decilo con honestidad y ofrecé derivar la consulta a una persona del equipo. " +
+    "Eres el asistente del negocio. Responde de forma clara y concreta usando SOLO el contexto provisto. " +
+    "Si el contexto no alcanza para responder, dilo con honestidad y ofrece derivar la consulta a una persona del equipo. " +
     "No inventes datos que no estén en el contexto.\n\n" +
     "Contexto:\n{context}\n\nPregunta: {query}",
   factual_en:
@@ -111,8 +111,8 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Plan ──────────────────────────────────────────────────────────────────
   plan_es:
-    "Producí un plan breve y estructurado en base a la pregunta y al contexto provisto. " +
-    "Usá pasos claros y numerados. Mantené el foco en lo accionable.\n\n" +
+    "Produce un plan breve y estructurado en base a la pregunta y al contexto provisto. " +
+    "Usa pasos claros y numerados. Mantén el foco en lo accionable.\n\n" +
     "Contexto:\n{context}\n\nPedido: {query}",
   plan_en:
     "Produce a short, structured plan based on the question and the provided context. " +
@@ -121,7 +121,7 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Ideate ────────────────────────────────────────────────────────────────
   ideate_es:
-    "Ofrecé 3-5 ideas o alternativas creativas y concretas en base a la pregunta y al contexto. " +
+    "Ofrece 3-5 ideas o alternativas creativas y concretas en base a la pregunta y al contexto. " +
     "Que cada idea sea breve y distinta de las demás.\n\n" +
     "Contexto:\n{context}\n\nPedido: {query}",
   ideate_en:
@@ -131,8 +131,8 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Sensitive ─────────────────────────────────────────────────────────────
   sensitive_es:
-    "Respondé con empatía y calidez a una situación de riesgo o angustia. Validá lo que la persona siente, " +
-    "no minimices, y apoyate en el contexto provisto si trae orientación específica. Sugerí buscar ayuda de una persona de confianza o un profesional cuando corresponda.\n\n" +
+    "Responde con empatía y calidez a una situación de riesgo o angustia. Valida lo que la persona siente, " +
+    "no minimices, y apóyate en el contexto provisto si trae orientación específica. Sugiere buscar ayuda de una persona de confianza o un profesional cuando corresponda.\n\n" +
     "Contexto:\n{context}\n\nMensaje de la persona: {user_input}",
   sensitive_en:
     "Respond with empathy and warmth to a situation of risk or distress. Validate the person's feelings, " +
@@ -141,8 +141,8 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Smalltalk ─────────────────────────────────────────────────────────────
   smalltalk_es:
-    "Respondé de forma breve, cálida y natural a un mensaje social (saludo, agradecimiento, cortesía). " +
-    "Ofrecé seguir ayudando sin sonar robótico.\n\n" +
+    "Responde de forma breve, cálida y natural a un mensaje social (saludo, agradecimiento, cortesía). " +
+    "Ofrece seguir ayudando sin sonar robótico.\n\n" +
     "Mensaje: {query}",
   smalltalk_en:
     "Reply briefly, warmly and naturally to a social message (greeting, thanks, courtesy). " +
@@ -151,11 +151,11 @@ export const DEFAULT_RAW_PROMPTS: Required<Omit<RawPromptStore, "system">> = {
 
   // ── Fallbacks / perfil ────────────────────────────────────────────────────
   factual_no_context_fallback_es:
-    "No tengo información específica sobre eso todavía. ¿Querés que derive tu consulta a una persona del equipo?",
+    "No tengo información específica sobre eso todavía. ¿Quieres que derive tu consulta a una persona del equipo?",
   factual_no_context_fallback_en:
     "I don't have specific information about that yet. Would you like me to route your query to a team member?",
   sensitive_message:
-    "Lamento que estés pasando por esto. No estás solo/a. Si sentís que estás en peligro, buscá ayuda de una persona de confianza o de un profesional lo antes posible.",
+    "Lamento que estés pasando por esto. No estás solo/a. Si sientes que estás en peligro, busca ayuda de una persona de confianza o de un profesional lo antes posible.",
   org_profile_es: "",
   org_profile_en: "",
 };

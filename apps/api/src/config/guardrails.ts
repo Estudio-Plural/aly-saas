@@ -95,17 +95,48 @@ function routeLine(route: HelpRoute): string {
   return `- ${parts.join(" · ")}`;
 }
 
-/** Bloque de rutas de ayuda para el turno SENSITIVE. */
+/**
+ * Bloque de rutas de ayuda para el PROMPT del turno SENSITIVE: le dice al modelo
+ * qué rutas existen para que acompañe la derivación, pero NO que las copie. Los
+ * números los agrega el código al final (`helpRoutesMessage`), como en Aly: tener
+ * las líneas solo en el prompt está medido como insuficiente (0 de 11 respuestas
+ * las incluyeron en el benchmark de Apapáchar).
+ */
 export function compileHelpRoutes(routes: HelpRoute[] | null | undefined): string {
-  const valid = (routes ?? []).filter(
-    (route) => route?.name?.trim() && route?.contact?.trim(),
-  );
+  const valid = validRoutes(routes);
   if (!valid.length) return NO_HELP_ROUTES_BLOCK;
   return (
-    `Rutas de ayuda del programa (son las ÚNICAS que puedes dar; cópialas tal cual, sin cambiar números):\n` +
+    `Rutas de ayuda del programa (solo para que sepas cuáles existen):\n` +
     valid.map(routeLine).join("\n") +
-    `\nSi la persona puede estar en riesgo, dale la ruta que corresponda a su situación y a su territorio. ` +
-    `Si hay rutas distintas por territorio y no sabes el suyo, da las que aplican a todos o pregúntale su territorio en una frase. ` +
-    `No agregues rutas que no estén en esta lista.`
+    `\nNO escribas teléfonos, líneas ni instituciones en tu respuesta: el sistema agrega ` +
+    `las rutas de ayuda completas al final del mensaje. Puedes decir que abajo quedan las ` +
+    `líneas de ayuda. No inventes ninguna otra.`
   );
 }
+
+function validRoutes(routes: HelpRoute[] | null | undefined): HelpRoute[] {
+  return (routes ?? []).filter((route) => route?.name?.trim() && route?.contact?.trim());
+}
+
+/**
+ * Bloque de rutas de ayuda que se ANEXA en código a la respuesta sensible (lo lee
+ * la persona). "" si el programa no tiene rutas: entonces no se anexa nada y el
+ * prompt ya prohíbe inventar números.
+ */
+export function helpRoutesMessage(routes: HelpRoute[] | null | undefined): string {
+  const valid = validRoutes(routes);
+  if (!valid.length) return "";
+  const line = (r: HelpRoute) => {
+    const extra = [r.hours?.trim(), r.territory?.trim()].filter(Boolean).join(" · ");
+    return `-> *${r.name.trim()}* — ${r.contact.trim()}${extra ? ` (${extra})` : ""}`;
+  };
+  return `*Líneas de ayuda:*\n${valid.map(line).join("\n")}`;
+}
+
+/** Instrucción de la etiqueta de severidad (el sistema la quita antes de enviar). */
+export const SEVERITY_TAG_INSTRUCTION =
+  `La PRIMERA línea de tu respuesta debe ser exactamente ALTA SEVERIDAD o CONTENCIÓN, sin nada más ` +
+  `en esa línea. ALTA SEVERIDAD: riesgo para la vida o la integridad de alguien (autolesión, ` +
+  `violencia, abuso, peligro inminente). CONTENCIÓN: malestar, cansancio o tensión sin daño ` +
+  `inminente. El sistema quita esa línea antes de enviar: la persona nunca la ve. Nunca respondas ` +
+  `solo con la etiqueta: el mensaje completo va debajo.`;

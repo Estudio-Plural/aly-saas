@@ -7,7 +7,7 @@
 
 import type { BotConfig } from "../config";
 import { callAgent } from "./openrouter";
-import { NO_HELP_ROUTES_BLOCK } from "../config/guardrails";
+import { NO_HELP_ROUTES_BLOCK, SEVERITY_TAG_INSTRUCTION } from "../config/guardrails";
 import { INTENTS, PARAMS, TRIAGE_LABELS, applyLanguagePostfix, type IntentType } from "./params";
 
 export interface IntentClassification {
@@ -275,6 +275,15 @@ export async function smalltalkAgent(
 }
 
 // ── SENSITIVE (RAG-grounded como en el legacy, con historia e identidad) ───
+//
+// Rutas de ayuda DETERMINISTAS (como Aly, LangchainRAGService._sensitiveAgent):
+// el modelo pone una etiqueta de severidad en la primera línea (el código la
+// quita) y, salvo que sea CONTENCIÓN, el código ANEXA el bloque de rutas del
+// programa. Dirección fail-safe: una respuesta sin etiqueta (deriva del modelo)
+// también lleva las rutas — una lista de más en un mensaje de contención es
+// ruido; una lista de menos ante un riesgo real es el defecto que esto corrige.
+// Todos los caminos degradados (vacío, solo etiqueta, error) llevan también el
+// bloque, pegado al fallback.
 export async function sensitiveAgent(
   query: string,
   context: string,
@@ -283,12 +292,15 @@ export async function sensitiveAgent(
   config: BotConfig,
 ): Promise<string> {
   console.log("🛡️ SENSITIVE agent...");
+  const routes = config.helpRoutesMessage ?? "";
+  const fallback = () => withRoutes(config.prompts.sensitiveFallback, routes);
   try {
     let prompt = config.prompts.sensitive
       .replace("{user_input}", query)
       .replace("{context}", context);
     // Rutas de ayuda: siempre presentes (sin rutas → no inventar números).
     prompt += "\n\n" + (config.helpRoutes || NO_HELP_ROUTES_BLOCK);
+    prompt += "\n\n" + SEVERITY_TAG_INSTRUCTION;
     prompt = historyString + "\n\n" + prompt;
     prompt = applyLanguagePostfix(prompt, language);
     prompt = withIdentity(prompt, config);
@@ -298,12 +310,22 @@ export async function sensitiveAgent(
       temperature: PARAMS.sensitive.temperature,
       maxTokens: PARAMS.sensitive.maxTokens,
     });
-    if (!answer) return config.prompts.sensitiveFallback;
-    return stripSeverityLabel(answer);
+    if (!answer?.trim()) return fallback();
+    const { severity, text } = extractSeverity(answer);
+    console.log(`🛡️ SENSITIVE severity: ${severity ?? "sin etiqueta"}`);
+    // Solo la etiqueta, sin cuerpo: el fallback completo (con rutas).
+    if (!text.trim()) return fallback();
+    if (severity === "contencion") return text;
+    return withRoutes(text, routes);
   } catch (error) {
     console.error("❌ SENSITIVE failed, using fallback:", error);
-    return config.prompts.sensitiveFallback;
+    return fallback();
   }
+}
+
+/** Anexa el bloque de rutas (si el programa tiene). Se anexa aunque el modelo haya escrito números. */
+export function withRoutes(text: string, routes: string): string {
+  return routes ? `${text.trimEnd()}\n\n${routes}` : text;
 }
 
 // ── IDENTITY (perfil estático de la organización) ─────────────────────────
@@ -361,14 +383,22 @@ function parseLibrarianJson(text: string): { theme_filters?: string[] } {
 
 // Quita una primera línea que sea SOLO una etiqueta de severidad que el modelo
 // sensible a veces filtra ("🔴 ALTA SEVERIDAD", "Clasificación interna: ...").
-function stripSeverityLabel(text: string): string {
-  const labelOnly =
-    /^\s*(?:clasificaci[oó]n\s+interna\s*:?\s*)?(?:🔴|🟡)?\s*(?:alta\s+severidad|contenci[oó]n|high\s+severity|containment)\s*:?\s*$/i;
-  const lines = text.split("\n");
+/**
+ * Etiqueta de severidad de la primera línea no vacía («ALTA SEVERIDAD»,
+ * «CONTENCIÓN», con o sin emoji o prefijo). La devuelve y la quita del texto.
+ */
+export function extractSeverity(answer: string): {
+  severity: "alto" | "contencion" | null;
+  text: string;
+} {
+  const label =
+    /^\s*(?:clasificaci[oó]n\s+interna\s*:?\s*)?(?:🔴|🟡)?\s*\**\s*(alta\s+severidad|alto|contenci[oó]n|high\s+severity|containment)\s*\**\s*:?\s*$/i;
+  const lines = answer.split("\n");
   let i = 0;
   while (i < lines.length && lines[i].trim() === "") i++;
-  if (i < lines.length && labelOnly.test(lines[i])) {
-    return lines.slice(i + 1).join("\n").trimStart();
-  }
-  return text;
+  const m = i < lines.length ? label.exec(lines[i]) : null;
+  if (!m) return { severity: null, text: answer };
+  const w = m[1].toLowerCase();
+  const severity = w.startsWith("alt") || w.startsWith("high") ? "alto" : "contencion";
+  return { severity, text: lines.slice(i + 1).join("\n").trimStart() };
 }

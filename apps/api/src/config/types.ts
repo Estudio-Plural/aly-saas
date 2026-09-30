@@ -55,6 +55,11 @@ export interface BotConfig {
    * rutas: instrucción de no inventar números y remitir al territorio.
    */
   helpRoutes: string;
+  /**
+   * Bloque de rutas de ayuda que el código ANEXA a la respuesta sensible cuando
+   * no es de contención (como Aly). "" = el programa no tiene rutas.
+   */
+  helpRoutesMessage?: string;
 }
 
 /**

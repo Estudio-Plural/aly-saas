@@ -9,6 +9,7 @@ import type { BotConfig } from "../src/config";
 const IDENTITY = "Sos Aly, la asistente del programa Apapáchar.";
 const HISTORY = "Usuario: hola\nAly: hola, ¿cómo estás?";
 const ROUTES = "Rutas de ayuda del programa: *Línea 141* — 141";
+const ROUTES_MSG = "*Líneas de ayuda:*\n-> *Línea 141* — 141";
 const PROTOCOL = "Protocolo: derivar a la línea 106 y avisar a una persona del equipo.";
 
 const config = {
@@ -26,6 +27,7 @@ const config = {
   themeCategories: [],
   identity: IDENTITY,
   helpRoutes: ROUTES,
+  helpRoutesMessage: ROUTES_MSG,
 } as unknown as BotConfig;
 
 // Respuestas del LLM falso por modelo; el agente sensible devuelve su prompt
@@ -33,6 +35,8 @@ const config = {
 let triageAnswer = "SENSITIVE";
 let intentAnswer = '{"intent":"FACTUAL","confidence":0.9}';
 let retrievalFails = false;
+// null = el agente sensible devuelve su prompt; string = respuesta simulada; Error = falla.
+let sensitiveAnswer: string | Error | null = null;
 const retrieveCalls: unknown[][] = [];
 
 mock.module("../src/engine/openrouter", () => ({
@@ -41,7 +45,10 @@ mock.module("../src/engine/openrouter", () => ({
     if (model === "normalize") return "me quiero morir";
     if (model === "triage") return triageAnswer;
     if (model === "intent") return intentAnswer;
-    if (model === "sensitive") return prompt;
+    if (model === "sensitive") {
+      if (sensitiveAnswer instanceof Error) throw sensitiveAnswer;
+      return sensitiveAnswer ?? prompt;
+    }
     return "";
   },
 }));
@@ -80,7 +87,9 @@ beforeEach(() => {
   triageAnswer = "SENSITIVE";
   intentAnswer = '{"intent":"FACTUAL","confidence":0.9}';
   retrievalFails = false;
+  sensitiveAnswer = null;
   retrieveCalls.length = 0;
+  (config as { helpRoutesMessage: string }).helpRoutesMessage = ROUTES_MSG;
 });
 
 describe("turno sensible", () => {
@@ -133,5 +142,55 @@ describe("turno sensible", () => {
     expect(res.answer).toContain(IDENTITY);
     expect(res.answer).not.toContain(PROTOCOL);
     expect(res.chunks).toEqual([]);
+  });
+});
+
+describe("rutas de ayuda deterministas (como Aly)", () => {
+  test("ALTA SEVERIDAD: quita la etiqueta y anexa las rutas del programa en código", async () => {
+    sensitiveAnswer = "ALTA SEVERIDAD\nLo que cuentas es muy serio y no estás sola.";
+    const res = await processQuestion(input);
+    expect(res.answer).toBe("Lo que cuentas es muy serio y no estás sola.\n\n" + ROUTES_MSG);
+  });
+
+  test("CONTENCIÓN: sin bloque de rutas", async () => {
+    sensitiveAnswer = "🟡 CONTENCIÓN\nSuena a una semana agotadora.";
+    const res = await processQuestion(input);
+    expect(res.answer).toBe("Suena a una semana agotadora.");
+  });
+
+  test("sin etiqueta (deriva del modelo): fail-safe, anexa las rutas", async () => {
+    sensitiveAnswer = "Te escucho. ¿Estás en un lugar seguro?";
+    const res = await processQuestion(input);
+    expect(res.answer).toEndWith(ROUTES_MSG);
+  });
+
+  test("si el modelo escribió un número igual, el bloque completo se anexa", async () => {
+    sensitiveAnswer = "ALTO\nLlama a la 141 ya.";
+    const res = await processQuestion(input);
+    expect(res.answer).toBe("Llama a la 141 ya.\n\n" + ROUTES_MSG);
+  });
+
+  test("solo la etiqueta, sin cuerpo: fallback completo con rutas", async () => {
+    sensitiveAnswer = "ALTA SEVERIDAD\n";
+    const res = await processQuestion(input);
+    expect(res.answer).toBe("FALLBACK\n\n" + ROUTES_MSG);
+  });
+
+  test("si el LLM falla: fallback con rutas", async () => {
+    sensitiveAnswer = new Error("OpenRouter 500");
+    const res = await processQuestion(input);
+    expect(res.answer).toBe("FALLBACK\n\n" + ROUTES_MSG);
+  });
+
+  test("programa sin rutas: no se anexa nada (y el prompt prohíbe inventar)", async () => {
+    (config as { helpRoutesMessage: string }).helpRoutesMessage = "";
+    sensitiveAnswer = "ALTA SEVERIDAD\nBusca ayuda en tu territorio.";
+    const res = await processQuestion(input);
+    expect(res.answer).toBe("Busca ayuda en tu territorio.");
+  });
+
+  test("el prompt pide la etiqueta de severidad", async () => {
+    const res = await processQuestion(input);
+    expect(res.answer).toContain("ALTA SEVERIDAD o CONTENCIÓN");
   });
 });

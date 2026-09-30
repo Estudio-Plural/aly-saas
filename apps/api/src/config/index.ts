@@ -21,6 +21,8 @@ export {
   NO_HELP_ROUTES_BLOCK,
   compileBoundaries,
   compileHelpRoutes,
+  helpRoutesMessage,
+  SEVERITY_TAG_INSTRUCTION,
   type Boundaries,
   type BoundaryRule,
   type HelpRoute,

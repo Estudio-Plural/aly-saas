@@ -7,6 +7,7 @@ import {
   SAFETY_RULES,
   compileBoundaries,
   compileHelpRoutes,
+  helpRoutesMessage,
 } from "../src/config/guardrails";
 import { compileIdentity } from "../src/config/identity";
 
@@ -78,11 +79,27 @@ describe("compileHelpRoutes", () => {
       },
       { id: "2", name: "Línea 155", contact: "155" },
     ]);
-    expect(block).toContain("son las ÚNICAS que puedes dar");
+    expect(block).toContain("NO escribas teléfonos");
     expect(block).toContain(
       "- *Línea 106* — 106 · horario: 24 horas · cuándo usarla: Crisis emocional · territorio: Bogotá",
     );
     expect(block).toContain("- *Línea 155* — 155 · territorio: todos");
+  });
+});
+
+describe("helpRoutesMessage (bloque que el código anexa)", () => {
+  test("sin rutas válidas: vacío (no se anexa nada)", () => {
+    expect(helpRoutesMessage(null)).toBe("");
+    expect(helpRoutesMessage([{ id: "x", name: "Línea", contact: " " }])).toBe("");
+  });
+
+  test("copia nombre y contacto tal cual, con horario y territorio", () => {
+    expect(
+      helpRoutesMessage([
+        { id: "1", name: "Línea 106", contact: "106", hours: "24 horas", territory: "Bogotá" },
+        { id: "2", name: "Línea 155", contact: "155" },
+      ]),
+    ).toBe("*Líneas de ayuda:*\n-> *Línea 106* — 106 (24 horas · Bogotá)\n-> *Línea 155* — 155");
   });
 });
 
