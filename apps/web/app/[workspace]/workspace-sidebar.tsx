@@ -11,19 +11,25 @@ import {
   SettingsIcon,
   XIcon,
 } from "lucide-react";
-import {
-  DESIGN_STEPS,
-  isDesignDone,
-  type ProgramProgress,
-} from "@/lib/design";
+import { DESIGN_STEPS, isDesignDone, type ProgramProgress } from "@/lib/design";
 
-type NavItem = { name: string; href: string; done?: boolean };
-type NavSection = { title: string; done: boolean; href?: string; items: NavItem[] };
+type NavItem = { name: string; href: string };
+type NavSection = {
+  title: string;
+  done: boolean;
+  /** Sección sin subpasos: el título es el enlace. */
+  href?: string;
+  /** Prefijo que la marca activa (si difiere de href). */
+  activeHref?: string;
+  /** Sección con subpasos: a dónde lleva el título. */
+  titleHref?: string;
+  items: NavItem[];
+};
 
 function Check({ done, className = "" }: { done: boolean; className?: string }) {
   return done ? (
     <CheckCircle2Icon
-      aria-label="Hecho"
+      aria-label="Listo"
       className={`h-4 w-4 flex-shrink-0 text-green-600 ${className}`}
     />
   ) : (
@@ -35,8 +41,8 @@ function Check({ done, className = "" }: { done: boolean; className?: string }) 
 }
 
 /**
- * Menú del programa por ciclo de vida: Diseñar → Probar → Conectar WhatsApp →
- * Operar, cada sección con su check de «hecho» (estado real de la DB). En
+ * Menú del asistente por ciclo de vida: Inicio, Diseñar → Probar → Conectar
+ * WhatsApp → Operar, cada etapa con su check de «listo» (estado real de la DB). En
  * móvil se colapsa detrás del botón «Menú».
  */
 export function WorkspaceSidebar({
@@ -53,17 +59,28 @@ export function WorkspaceSidebar({
   const open = openAt === pathname;
 
   const base = `/${workspace}`;
+  // «Diseñar» lleva al primer paso de diseño pendiente (o a «Tu programa»).
+  const designHref = `${base}/${
+    (DESIGN_STEPS.find((step) => !progress.design[step.key]) ?? DESIGN_STEPS[0]).path
+  }`;
   const sections: NavSection[] = [
     {
       title: "Diseñar",
       done: isDesignDone(progress),
+      titleHref: designHref,
       items: DESIGN_STEPS.map((step) => ({
         name: step.label,
         href: `${base}/${step.path}`,
-        done: progress.design[step.key],
       })),
     },
-    { title: "Probar", done: progress.test, href: `${base}/chat`, items: [] },
+    {
+      title: "Probar",
+      done: progress.test,
+      // Mientras no haya una prueba sin alertas, Probar empieza por las situaciones difíciles.
+      href: `${base}/${progress.test ? "chat" : "chat/casos"}`,
+      activeHref: `${base}/chat`,
+      items: [],
+    },
     {
       title: "Conectar WhatsApp",
       done: progress.connect,
@@ -74,7 +91,7 @@ export function WorkspaceSidebar({
       title: "Operar",
       done: progress.operate,
       items: [
-        { name: "Cifras", href: `${base}/operar` },
+        { name: "Cómo va", href: `${base}/operar` },
         { name: "Conversaciones", href: `${base}/conversations` },
         { name: "Protocolo ante riesgo", href: `${base}/operar/protocolo` },
       ],
@@ -82,8 +99,10 @@ export function WorkspaceSidebar({
   ];
 
   const allItems = [
-    { name: "Primeros pasos", href: base },
-    ...sections.flatMap((s) => (s.href ? [{ name: s.title, href: s.href }] : s.items)),
+    { name: "Inicio", href: base },
+    ...sections.flatMap((s) =>
+      s.href ? [{ name: s.title, href: s.activeHref ?? s.href }] : s.items
+    ),
     { name: "Ajustes", href: `${base}/settings` },
   ];
   const current =
@@ -102,14 +121,14 @@ export function WorkspaceSidebar({
     }`;
 
   const nav = (
-    <nav aria-label="Secciones del programa" className="space-y-5">
+    <nav aria-label="Secciones de tu asistente" className="space-y-5">
       <Link
         href={base}
         className={linkClass(pathname === base)}
         aria-current={pathname === base ? "page" : undefined}
       >
         <CompassIcon className="h-4 w-4 flex-shrink-0" />
-        Primeros pasos
+        Inicio
       </Link>
 
       {sections.map((section, index) =>
@@ -117,8 +136,8 @@ export function WorkspaceSidebar({
           <Link
             key={section.title}
             href={section.href}
-            className={`${linkClass(isActive(section.href))} font-medium`}
-            aria-current={isActive(section.href) ? "page" : undefined}
+            className={`${linkClass(isActive(section.activeHref ?? section.href))} font-medium`}
+            aria-current={isActive(section.activeHref ?? section.href) ? "page" : undefined}
           >
             <span className="w-4 text-center text-xs text-neutral-500">{index + 1}</span>
             <span className="flex-1">{section.title}</span>
@@ -126,11 +145,22 @@ export function WorkspaceSidebar({
           </Link>
         ) : (
           <div key={section.title}>
-            <div className="flex items-center gap-2.5 px-3 pb-1 text-sm font-medium text-neutral-900">
-              <span className="w-4 text-center text-xs text-neutral-500">{index + 1}</span>
-              <span className="flex-1">{section.title}</span>
-              <Check done={section.done} />
-            </div>
+            {section.titleHref ? (
+              <Link
+                href={section.titleHref}
+                className="flex items-center gap-2.5 rounded-lg px-3 pb-1 pt-1 text-sm font-medium text-neutral-900 hover:bg-neutral-100"
+              >
+                <span className="w-4 text-center text-xs text-neutral-500">{index + 1}</span>
+                <span className="flex-1">{section.title}</span>
+                <Check done={section.done} />
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2.5 px-3 pb-1 text-sm font-medium text-neutral-900">
+                <span className="w-4 text-center text-xs text-neutral-500">{index + 1}</span>
+                <span className="flex-1">{section.title}</span>
+                <Check done={section.done} />
+              </div>
+            )}
             <ul className="ml-[1.4rem] space-y-0.5 border-l border-neutral-200 pl-2">
               {section.items.map((item) => (
                 <li key={item.href}>
@@ -140,7 +170,6 @@ export function WorkspaceSidebar({
                     aria-current={pathname === item.href ? "page" : undefined}
                   >
                     <span className="flex-1">{item.name}</span>
-                    {item.done !== undefined && <Check done={item.done} />}
                   </Link>
                 </li>
               ))}

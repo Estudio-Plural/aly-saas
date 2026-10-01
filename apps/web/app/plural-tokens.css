@@ -1,0 +1,109 @@
+/* ===================================================================
+   PLURAL — tokens compartidos de la suite AI
+   -------------------------------------------------------------------
+   Fuente: hoja de estilo de Nicolás (Ui_Style sheet.pdf, sep 2026).
+   Copia canónica en plural.ai/design-system/. Cada app lleva una copia
+   idéntica — si cambias algo acá, corre ./sync.sh para propagarlo.
+
+   Uso: <html data-product="monitor | transcribe | archetypes">
+   Proporción de color por pantalla: 60% neutro claro · 20% neutros
+   oscuros · 15% color principal · 5% color secundario.
+   =================================================================== */
+
+:root {
+  /* ---- Base (común a las tres) ---- */
+  --pl-bg: #fafafa;          /* Blanco niebla — fondo principal */
+  --pl-surface: #ffffff;     /* cards, popovers */
+  --pl-text: #1a1a1a;        /* Negro carbón — texto principal */
+  /* #808080 de la hoja da 3.8:1 sobre --pl-bg (no pasa AA en texto chico).
+     Se mantiene para íconos/placeholders; el texto secundario usa uno más oscuro. */
+  --pl-gray: #808080;
+  --pl-text-2: #6b6b6b;      /* texto secundario — 5.1:1 */
+  --pl-line: #cccccc;        /* Gris claro — bordes / separaciones */
+  --pl-line-soft: #e6e6e6;
+  --pl-off: #cdcac7;         /* botones deshabilitados */
+
+  /* ---- Estados (reservados: solo cuando significan algo) ---- */
+  --pl-ok: #2f7d4f;
+  --pl-warn: #a86411;
+  --pl-error: #c23a3a;
+
+  /* ---- Paleta de datos (común a la suite) ----
+     Para representar categorías en gráficas, NO para identidad de producto.
+     Tonos medios: ≥3:1 en fondo oscuro y ~3:1 en claro. Archetypes la replica
+     en api/transform.py (BRAND_PALETTE) — mantener en sync. */
+  --pl-chart-1: #9380c8; --pl-chart-2: #d16f21; --pl-chart-3: #5b96ae; --pl-chart-4: #e13f90;
+  --pl-chart-5: #8c982d; --pl-chart-6: #7365a3; --pl-chart-7: #a7551e; --pl-chart-8: #bb922a;
+
+  /* ---- Tipografía ---- */
+  --pl-font-sans: var(--font-jakarta, "Plus Jakarta Sans"), ui-sans-serif, system-ui, sans-serif;
+  --pl-font-mono: var(--font-roboto-mono, "Roboto Mono"), ui-monospace, monospace;
+  --pl-text-display: 3rem;   /* 48 · semibold */
+  --pl-text-h1: 2.25rem;     /* 36 */
+  --pl-text-h2: 1.75rem;     /* 28 */
+  --pl-text-h3: 1.25rem;     /* 20 */
+  --pl-text-body: 1rem;      /* 16 */
+  --pl-text-small: 0.875rem; /* 14 */
+}
+
+/* ---- Duplas por producto ----------------------------------------
+   p = color principal, s = color secundario. 100/200/500/900 vienen
+   de la hoja; el resto está interpolado en OKLab. 600–800 pasan AA
+   como texto sobre --pl-bg.
+   --pl-action = relleno del botón en hover (texto --pl-text encima). */
+
+[data-product="monitor"] {
+  --pl-p-50: #fbfcdc; --pl-p-100: #f7f8b8; --pl-p-200: #daeb70; --pl-p-300: #d5e957;
+  --pl-p-400: #d1e636; --pl-p-500: #d1e636; --pl-p-600: #687025; --pl-p-700: #5a6122;
+  --pl-p-800: #4c521f; --pl-p-900: #3f431b; --pl-p-950: #1f210a;
+  --pl-s-50: #feebdb; --pl-s-100: #fcd6b6; --pl-s-200: #f8a04d; --pl-s-300: #f7933a;
+  --pl-s-400: #f68522; --pl-s-500: #f68522; --pl-s-600: #92481c; --pl-s-700: #85401b;
+  --pl-s-800: #783819; --pl-s-900: #6b3017; --pl-s-950: #391608;
+  --pl-action: var(--pl-p-500);
+}
+
+[data-product="transcribe"] {
+  --pl-p-50: #e6f7fd; --pl-p-100: #cdeefb; --pl-p-200: #bbe7fa; --pl-p-300: #a1dff9;
+  --pl-p-400: #85d7f7; --pl-p-500: #85d7f7; --pl-p-600: #467488; --pl-p-700: #3d667a;
+  --pl-p-800: #355a6b; --pl-p-900: #2d4d5d; --pl-p-950: #142730;
+  --pl-s-50: #fee6f3; --pl-s-100: #fbcce7; --pl-s-200: #f78ec2; --pl-s-300: #f56cae;
+  --pl-s-400: #f1429a; --pl-s-500: #f1429a; --pl-s-600: #872c55; --pl-s-700: #79294c;
+  --pl-s-800: #6c2543; --pl-s-900: #5e223a; --pl-s-950: #310e1c;
+  --pl-action: var(--pl-p-500);
+}
+
+[data-product="archetypes"] {
+  --pl-p-50: #f4f0f9; --pl-p-100: #e9e1f3; --pl-p-200: #c5addc; --pl-p-300: #ac96d2;
+  --pl-p-400: #9380c8; --pl-p-500: #9380c8; --pl-p-600: #4c4473; --pl-p-700: #423c68;
+  --pl-p-800: #39345d; --pl-p-900: #302c52; --pl-p-950: #16142a;
+  --pl-s-50: #fdfdcf; --pl-s-100: #fcf99a; --pl-s-200: #f7e562; --pl-s-300: #f6dc49;
+  --pl-s-400: #f4d325; --pl-s-500: #f4d325; --pl-s-600: #855426; --pl-s-700: #754423;
+  --pl-s-800: #663320; --pl-s-900: #57231c; --pl-s-950: #2d0f0b;
+  --pl-action: var(--pl-p-200);
+}
+
+/* Alias semánticos — lo que deberían usar los componentes */
+[data-product] {
+  --pl-primary: var(--pl-p-500);
+  --pl-primary-soft: var(--pl-p-100);
+  --pl-primary-ink: var(--pl-p-700);   /* texto/links en color de producto */
+  --pl-secondary: var(--pl-s-500);
+  --pl-secondary-soft: var(--pl-s-100);
+  --pl-secondary-ink: var(--pl-s-700);
+}
+
+/* ---- Marca «Plural IA» (pieza de marca, sep 2026) ---- */
+:root { --pl-ia: #b7136a; }                 /* «IA» sobre claro */
+.dark, [data-theme="dark"] { --pl-ia: #ee82b4; }  /* «IA» sobre oscuro */
+
+/* Lockup «Pl&ral IA»: logotipo + «IA» con la misma línea base y altura de mayúscula.
+   Medidas en em del contenedor (alto del logotipo = 1.05em). En el SVG la línea base
+   está al 90,2 % del alto (la cola del «&» baja de ahí); cap-height de Jakarta ≈ 0,745 em.
+   Uso: <span class="pl-lockup" role="img" aria-label="Plural IA">
+          <svg …logotipo…></svg><span class="pl-ia" aria-hidden="true">IA</span></span> */
+.pl-lockup { display: inline-flex; align-items: flex-start; gap: .168em; line-height: 1; flex: none; }
+.pl-lockup > svg { height: 1.05em; width: 3.474em; flex: none; fill: currentColor; }
+.pl-lockup > .pl-ia {
+  font-family: var(--pl-font-sans); font-size: 1.2713em; font-weight: 700;
+  letter-spacing: -.01em; line-height: 1; margin-top: -.1404em; color: var(--pl-ia);
+}

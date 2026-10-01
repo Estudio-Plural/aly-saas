@@ -8,7 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { OrgDetalle } from "@/lib/data/orgs";
+
+const normalizar = (texto: string) =>
+  texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
 async function llamar(url: string, method: string, body?: unknown): Promise<boolean> {
   try {
@@ -32,9 +43,9 @@ async function llamar(url: string, method: string, body?: unknown): Promise<bool
 type Portal = { url: string; sincronizado: boolean } | null;
 
 /**
- * Admin mínimo del equipo Plural: organizaciones, quién entra y de quién es cada programa.
+ * Admin mínimo del equipo Plural: organizaciones, quién entra y de quién es cada asistente.
  * Con `portal`, las organizaciones y quién entra vienen del portal de Plural IA: acá solo
- * se cambia el rol y de qué organización es cada programa.
+ * se cambia el rol y de qué organización es cada asistente.
  */
 export function AdminClient({
   initialOrgs,
@@ -46,7 +57,17 @@ export function AdminClient({
   const router = useRouter();
   const [nombre, setNombre] = useState("");
   const [creando, setCreando] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
   const orgs = initialOrgs;
+  const q = normalizar(busqueda);
+  // Filtra en el navegador la lista que ya llegó (solo equipo Plural).
+  const visibles = q
+    ? orgs.filter(
+        (o) =>
+          normalizar(o.nombre).includes(q) ||
+          o.miembros.some((m) => normalizar(m.email).includes(q))
+      )
+    : orgs;
 
   const crearOrg = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,8 +85,8 @@ export function AdminClient({
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-neutral-900">Organizaciones</h1>
         <p className="mt-2 text-neutral-600">
-          Quién puede entrar a cada organización y de quién es cada programa. Las cuentas
-          @estudio-plural.co entran siempre y ven todo.
+          Quién entra a cada organización y de qué organización es cada asistente. El equipo de
+          Plural entra siempre y ve todo.
         </p>
       </div>
 
@@ -104,7 +125,25 @@ export function AdminClient({
         </Card>
       )}
 
-      {orgs.map((org) => (
+      <div className="max-w-md">
+        <Label htmlFor="buscar-org" className="sr-only">
+          Buscar
+        </Label>
+        <Input
+          id="buscar-org"
+          type="search"
+          placeholder="Busca una organización o un correo"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          className="h-10 bg-white"
+        />
+      </div>
+
+      {visibles.length === 0 && q && (
+        <p className="text-sm text-neutral-600">Nada coincide con «{busqueda.trim()}».</p>
+      )}
+
+      {visibles.map((org) => (
         <OrgCard
           key={org.id}
           org={org}
@@ -159,16 +198,24 @@ function OrgCard({
 
   const mover = async (workspaceId: string, destino: string) => {
     if (await llamar(`/api/admin/workspaces/${workspaceId}`, "PATCH", { org_id: destino })) {
-      toast.success("Programa movido");
+      toast.success("Asistente movido");
       onChange();
     }
   };
 
+  // Mover un asistente cambia quién lo ve: se confirma antes. Cancelar deja el select como estaba
+  // (el select es controlado por org.id, así que basta con no llamar a la API).
+  const [moviendo, setMoviendo] = useState<{ id: string; nombre: string; destino: string } | null>(
+    null
+  );
+  const nombreDe = (id: string) => orgs.find((o) => o.id === id)?.nombre ?? id;
+
   return (
     <Card className="p-5 space-y-5">
       <div>
-        <h2 className="text-lg font-semibold text-neutral-900">{org.nombre}</h2>
-        <p className="text-xs font-mono text-neutral-500">{org.id}</p>
+        <h2 className="text-lg font-semibold text-neutral-900" title={org.id}>
+          {org.nombre}
+        </h2>
       </div>
 
       <section className="space-y-2">
@@ -196,7 +243,7 @@ function OrgCard({
                         className="h-8 rounded-md border border-neutral-200 bg-white px-2 text-sm"
                       >
                         <option value="miembro">Miembro</option>
-                        <option value="admin">Administra (puede borrar programas)</option>
+                        <option value="admin">Administra (puede borrar asistentes)</option>
                       </select>
                     </span>
                   </>
@@ -210,7 +257,7 @@ function OrgCard({
                     </span>
                     <ConfirmDialog
                       title={`¿Quitar a ${m.email}?`}
-                      description={`Ya no va a poder entrar a los programas de ${org.nombre}.`}
+                      description={`Ya no va a poder entrar a los asistentes de ${org.nombre}.`}
                       confirmLabel="Quitar"
                       onConfirm={() => quitar(m.email)}
                     >
@@ -257,14 +304,14 @@ function OrgCard({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-neutral-700">Programas</h3>
+        <h3 className="text-sm font-semibold text-neutral-700">Asistentes</h3>
         {org.programas.length === 0 ? (
-          <p className="text-sm text-neutral-600">Ninguno.</p>
+          <p className="text-sm text-neutral-600">Todavía no tiene asistentes.</p>
         ) : (
           <ul className="divide-y divide-neutral-100">
             {org.programas.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                <a href={`/${p.slug}/identity`} className="underline underline-offset-2">
+                <a href={`/${p.slug}`} className="underline underline-offset-2">
                   {p.name}
                 </a>
                 <span className="flex items-center gap-2">
@@ -274,7 +321,10 @@ function OrgCard({
                   <select
                     id={`mover-${p.id}`}
                     value={org.id}
-                    onChange={(e) => mover(p.id, e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value !== org.id)
+                        setMoviendo({ id: p.id, nombre: p.name, destino: e.target.value });
+                    }}
                     className="h-8 rounded-md border border-neutral-200 bg-white px-2 text-sm"
                   >
                     {orgs.map((o) => (
@@ -289,6 +339,38 @@ function OrgCard({
           </ul>
         )}
       </section>
+
+      <Dialog open={moviendo !== null} onOpenChange={(open) => !open && setMoviendo(null)}>
+        <DialogContent>
+          {moviendo && (
+            <>
+              <DialogHeader>
+                <DialogTitle>
+                  ¿Mover «{moviendo.nombre}» a {nombreDe(moviendo.destino)}?
+                </DialogTitle>
+                <DialogDescription>
+                  Las personas de {org.nombre} dejarán de verlo y las de{" "}
+                  {nombreDe(moviendo.destino)} podrán verlo y editarlo.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setMoviendo(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => {
+                    const m = moviendo;
+                    setMoviendo(null);
+                    void mover(m.id, m.destino);
+                  }}
+                >
+                  Mover
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

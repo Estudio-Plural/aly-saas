@@ -4,18 +4,18 @@ export const LANDING_COPY = {
     features: "Funciones",
     howItWorks: "Cómo funciona",
     pricing: "Precios",
-    dashboard: "Entrar al dashboard",
+    dashboard: "Entrar",
     createAssistant: "Crear mi asistente",
   },
   hero: {
     eyebrow: "Asistentes de IA para WhatsApp",
     headline: {
-      before: "Convertí tu conocimiento en un ",
+      before: "Convierte tu conocimiento en un ",
       highlight: "programa conversacional",
       after: " que acompaña a cada persona",
     },
     subheadline:
-      "Diseñá flujos de aprendizaje y cambio de comportamiento por WhatsApp sin código. Cada participante interactúa con un asistente que entiende tu protocolo y responde con tus propias fuentes.",
+      "Diseña flujos de aprendizaje y cambio de comportamiento por WhatsApp sin código. Cada participante interactúa con un asistente que entiende tu protocolo y responde con tus propias fuentes.",
     ctaPrimary: "Crear mi asistente",
     ctaSecondary: "Ver cómo funciona",
   },
@@ -24,21 +24,21 @@ export const LANDING_COPY = {
     subtitle: "Así se ve el camino completo, sin tocar una línea de código.",
     items: [
       {
-        title: "Subí tu conocimiento",
+        title: "Sube tu conocimiento",
         description: "Documentos, guías o protocolos. El asistente los indexa y los usa como fuente al responder.",
       },
       {
-        title: "Diseñá el programa",
-        description: "Definí la identidad del asistente y el storyboard: el arco de la conversación en 4 momentos.",
+        title: "Diseña tu asistente",
+        description: "Define qué hace, qué no hace y a dónde deriva en una situación de riesgo. Lo pruebas antes de abrirlo.",
       },
       {
-        title: "Conectá WhatsApp",
-        description: "Cada workspace tiene su número. Los usuarios hablan desde la app que ya usan.",
+        title: "Conecta WhatsApp",
+        description: "Cada asistente tiene su número. Las personas hablan desde la app que ya usan.",
       },
     ],
   },
   features: {
-    title: "Todo lo que necesitás para acompañar a escala",
+    title: "Todo lo que necesitas para acompañar a escala",
     subtitle: "Una plataforma pensada para programas conversacionales serios.",
     items: [
       {
@@ -51,7 +51,7 @@ export const LANDING_COPY = {
       },
       {
         title: "Alertas en lenguaje natural",
-        description: "Decile en tus palabras qué conversaciones querés que te marque como prioritarias.",
+        description: "Dile en tus palabras qué conversaciones quieres que te marque como prioritarias.",
       },
       {
         title: "Multi-tenant",
@@ -69,14 +69,14 @@ export const LANDING_COPY = {
   },
   pricing: {
     title: "Precios simples",
-    subtitle: "Empezá gratis. Escalá cuando tu programa crezca.",
+    subtitle: "Empieza gratis. Crece cuando tu programa crezca.",
     plans: [
       {
         name: "Prueba",
         price: "Gratis",
         period: "14 días",
         description: "Para probar tu primer asistente sin compromiso.",
-        features: ["1 workspace", "Base de conocimiento", "Chat de preview", "Storyboard del programa"],
+        features: ["1 asistente", "Base de conocimiento", "Chat de preview", "Storyboard del programa"],
         cta: "Empezar gratis",
         highlighted: false,
       },
@@ -86,7 +86,7 @@ export const LANDING_COPY = {
         period: "/mes",
         description: "Para equipos que gestionan múltiples programas o clientes.",
         features: [
-          "Workspaces ilimitados",
+          "Asistentes ilimitados",
           "Alertas avanzadas",
           "Integración WhatsApp",
           "Soporte prioritario",
@@ -97,8 +97,8 @@ export const LANDING_COPY = {
     ],
   },
   cta: {
-    title: "Empezá gratis hoy",
-    subtitle: "En minutos tenés tu primer asistente conversacional. Sin tarjeta, sin setup técnico.",
+    title: "Empieza gratis hoy",
+    subtitle: "En minutos tienes tu primer asistente conversacional. Sin tarjeta, sin configuración técnica.",
     cta: "Crear mi asistente",
   },
   footer: {

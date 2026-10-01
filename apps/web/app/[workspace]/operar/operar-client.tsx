@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ActivityIcon, DownloadIcon, ShieldAlertIcon } from "lucide-react";
 import {
   duracionHumana,
+  MESES,
   MIN_CONVERSACIONES_POR_TEMA,
   MUESTRA_MINIMA,
   type Cifras,
@@ -17,6 +18,23 @@ import { OperarNav } from "./operar-nav";
 
 function plural(n: number, uno: string, varios: string) {
   return `${n} ${n === 1 ? uno : varios}`;
+}
+
+/** «22 al 28 de septiembre de 2026» a partir del lunes YYYY-MM-DD de la semana. */
+function semanaLegible(lunes: string): string {
+  const [y, m, d] = lunes.split("-").map(Number);
+  const desde = new Date(Date.UTC(y, m - 1, d));
+  const hasta = new Date(Date.UTC(y, m - 1, d + 6));
+  const mesDesde = MESES[desde.getUTCMonth()];
+  const mesHasta = MESES[hasta.getUTCMonth()];
+  const anioHasta = hasta.getUTCFullYear();
+  if (desde.getUTCFullYear() !== anioHasta) {
+    return `${desde.getUTCDate()} de ${mesDesde} de ${desde.getUTCFullYear()} al ${hasta.getUTCDate()} de ${mesHasta} de ${anioHasta}`;
+  }
+  if (mesDesde !== mesHasta) {
+    return `${desde.getUTCDate()} de ${mesDesde} al ${hasta.getUTCDate()} de ${mesHasta} de ${anioHasta}`;
+  }
+  return `${desde.getUTCDate()} al ${hasta.getUTCDate()} de ${mesHasta} de ${anioHasta}`;
 }
 
 function Cifra({ titulo, valor, base }: { titulo: string; valor: string; base: string }) {
@@ -101,6 +119,8 @@ export function OperarClient({
   cifras,
   protocoloActivo,
   reporte,
+  probado,
+  conectado = false,
 }: {
   workspaceSlug: string;
   assistantName: string;
@@ -109,6 +129,10 @@ export function OperarClient({
   cifras: Cifras;
   protocoloActivo: boolean;
   reporte: EstadoReporte;
+  /** Ya pasó la prueba de casos difíciles: el siguiente paso es conectar WhatsApp. */
+  probado: boolean;
+  /** WhatsApp ya está conectado (mensaje real recibido y respondido). */
+  conectado?: boolean;
 }) {
   const c = cifras;
   const descarga = `/api/workspaces/${workspaceSlug}/operar/resumen-semanal`;
@@ -116,9 +140,9 @@ export function OperarClient({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Operar</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Cómo va tu programa</h1>
         <p className="text-neutral-700 mt-1">
-          Cómo le va a {assistantName} con las personas reales. Solo cifras: sin nombres, números ni
+          Lo que pasa en las conversaciones reales con {assistantName}. Solo números: nunca nombres ni
           mensajes.
         </p>
       </div>
@@ -130,15 +154,32 @@ export function OperarClient({
           <ActivityIcon className="h-12 w-12 text-neutral-300 mx-auto mb-4" />
           <p className="font-semibold text-neutral-900 mb-1">Todavía no hay conversaciones reales</p>
           <p className="text-sm text-neutral-600 max-w-md mx-auto">
-            Cuando conectes WhatsApp aparecen aquí; mientras tanto, prueba tu asistente.
+            {conectado ? (
+              <>
+                {assistantName} ya está en WhatsApp. Comparte el número con las personas de tu
+                programa; cuando le escriban, aquí verás cuántas personas conversan y hasta dónde llegan.
+              </>
+            ) : (
+              <>
+                Aún nadie le ha escrito a {assistantName} por WhatsApp. Cuando pase, aquí verás cuántas
+                personas conversan y hasta dónde llegan.
+              </>
+            )}
           </p>
-          <div className="mt-5 flex justify-center gap-2">
-            <Button asChild>
-              <Link href={`/${workspaceSlug}/chat`}>Probar tu asistente</Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href={`/${workspaceSlug}/whatsapp`}>Conectar WhatsApp</Link>
-            </Button>
+          <div className="mt-5 flex justify-center">
+            {conectado ? (
+              <Button asChild>
+                <Link href={`/${workspaceSlug}/whatsapp`}>Ver el número para compartir</Link>
+              </Button>
+            ) : probado ? (
+              <Button asChild>
+                <Link href={`/${workspaceSlug}/whatsapp`}>Conectar WhatsApp</Link>
+              </Button>
+            ) : (
+              <Button asChild>
+                <Link href={`/${workspaceSlug}/chat/casos`}>Probar tu asistente</Link>
+              </Button>
+            )}
           </div>
         </Card>
       ) : (
@@ -160,20 +201,20 @@ export function OperarClient({
                 </Link>
               ))}
             </div>
-            <Button asChild variant="outline">
-              <a href={descarga} download>
-                <DownloadIcon className="mr-2 h-4 w-4" />
-                Descargar resumen de la semana
-              </a>
-            </Button>
+            <div className="flex flex-col items-start gap-1 sm:items-end">
+              <Button asChild variant="outline">
+                <a href={descarga} download>
+                  <DownloadIcon className="mr-2 h-4 w-4" />
+                  Descargar resumen semanal (Excel)
+                </a>
+              </Button>
+              <p className="text-xs text-neutral-600">
+                Semana del {semanaLegible(reporte.semana)}
+                {reporte.status === "sent" &&
+                  ` · ya se mandó por correo a ${plural(reporte.recipientsCount, "persona", "personas")} de tu equipo`}
+              </p>
+            </div>
           </div>
-
-          {reporte.status === "sent" && (
-            <p className="text-xs text-neutral-600 -mt-3">
-              El resumen de la semana pasada se mandó por correo a{" "}
-              {plural(reporte.recipientsCount, "persona", "personas")} de tu equipo.
-            </p>
-          )}
 
           {c.conversaciones === 0 ? (
             <Card className="p-8 text-center">
@@ -182,7 +223,44 @@ export function OperarClient({
             </Card>
           ) : (
             <>
+              <p className="text-neutral-800">
+                {plural(c.personas, "persona le escribió", "personas le escribieron")} a {assistantName} en{" "}
+                {plural(c.conversaciones, "conversación", "conversaciones")}
+                {c.sensibles.conversaciones > 0
+                  ? `; ${plural(c.sensibles.conversaciones, "tuvo", "tuvieron")} una situación sensible.`
+                  : ". Ninguna tuvo una situación sensible."}
+              </p>
               <section aria-label="¿Llega? ¿Conversa?" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                <Card className="px-4 gap-1">
+                  <p className="text-xs font-medium text-neutral-600">Situaciones sensibles</p>
+                  <p className="text-2xl font-semibold tracking-tight text-neutral-900 tabular-nums">
+                    {c.sensibles.conversaciones}
+                  </p>
+                  <p className="text-xs text-neutral-600">
+                    de {plural(c.sensibles.base, "conversación analizada", "conversaciones analizadas")}
+                  </p>
+                  <p className="mt-1 flex items-start gap-1.5 text-xs text-neutral-700">
+                    <ShieldAlertIcon className="mt-px h-3.5 w-3.5 flex-shrink-0 text-neutral-500" />
+                    {protocoloActivo ? (
+                      <span>Se avisan según tu protocolo.</span>
+                    ) : (
+                      <span>
+                        Las revisa el equipo de Plural.{" "}
+                        <Link href={`/${workspaceSlug}/operar/protocolo`} className="underline">
+                          Definir protocolo
+                        </Link>
+                      </span>
+                    )}
+                  </p>
+                  {c.sensibles.conversaciones > 0 && (
+                    <Link
+                      href={`/${workspaceSlug}/conversations`}
+                      className="mt-1 text-xs font-medium text-neutral-900 underline"
+                    >
+                      Ver alertas →
+                    </Link>
+                  )}
+                </Card>
                 <Cifra
                   titulo="Personas que escribieron"
                   valor={String(c.personas)}
@@ -212,28 +290,7 @@ export function OperarClient({
                   valor={duracionHumana(c.respuesta.medianaSegundos)}
                   base={`mediana, de ${plural(c.respuesta.base, "respuesta", "respuestas")}`}
                 />
-                <Card className="px-4 gap-1">
-                  <p className="text-xs font-medium text-neutral-600">Situaciones sensibles</p>
-                  <p className="text-2xl font-semibold tracking-tight text-neutral-900 tabular-nums">
-                    {c.sensibles.conversaciones}
-                  </p>
-                  <p className="text-xs text-neutral-600">
-                    de {plural(c.sensibles.base, "conversación analizada", "conversaciones analizadas")}
-                  </p>
-                  <p className="mt-1 flex items-start gap-1.5 text-xs text-neutral-700">
-                    <ShieldAlertIcon className="mt-px h-3.5 w-3.5 flex-shrink-0 text-neutral-500" />
-                    {protocoloActivo ? (
-                      <span>Se avisan según tu protocolo.</span>
-                    ) : (
-                      <span>
-                        Las revisa el equipo de Plural.{" "}
-                        <Link href={`/${workspaceSlug}/operar/protocolo`} className="underline">
-                          Definir protocolo
-                        </Link>
-                      </span>
-                    )}
-                  </p>
-                </Card>
+
               </section>
               {c.conversaciones < MUESTRA_MINIMA && (
                 <p className="text-xs text-neutral-600 -mt-3">

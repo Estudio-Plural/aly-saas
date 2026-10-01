@@ -11,7 +11,7 @@ export default async function ProtocoloPage({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const { workspace } = await workspaceDePagina(workspaceSlug);
+  const { acceso, workspace } = await workspaceDePagina(workspaceSlug);
 
   const protocol = (await getAlertProtocol(workspace.id)) ?? EMPTY_PROTOCOL;
   return (
@@ -19,6 +19,7 @@ export default async function ProtocoloPage({
       workspaceSlug={workspace.slug}
       assistantName={workspace.assistant_name}
       initialProtocol={protocol}
+      esPlural={acceso.esPlural}
     />
   );
 }

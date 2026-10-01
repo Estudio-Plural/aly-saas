@@ -1,5 +1,5 @@
 import { workspaceDePagina } from "@/lib/sesion";
-import { getDesign } from "@/lib/data/design";
+import { getDesign, getProgramProgress } from "@/lib/data/design";
 import { welcomeToSteps } from "@/lib/design";
 import { getOpenConversationId, getConversationMessages } from "@/lib/data/chat";
 import { getStoryboard } from "@/lib/data/program";
@@ -16,10 +16,12 @@ export default async function ChatPage({
   const { workspace: workspaceSlug } = await params;
   const { workspace } = await workspaceDePagina(workspaceSlug);
 
-  const [design, conversationId, storyboard] = await Promise.all([
+  // progress es solo lectura: decide si el siguiente paso es Situaciones difíciles o WhatsApp.
+  const [design, conversationId, storyboard, progress] = await Promise.all([
     getDesign(workspace.id),
     getOpenConversationId(workspace.id),
     getStoryboard(workspace.id),
+    getProgramProgress(workspace),
   ]);
   const messages = conversationId
     ? await getConversationMessages(workspace.id, conversationId)
@@ -39,6 +41,7 @@ export default async function ChatPage({
       assistantName={workspace.assistant_name}
       flowSteps={flowSteps}
       initialMessages={messages}
+      testHecho={progress.test}
       storyboardAttachments={listStoryboardAttachments(storyboard).map(
         ({ attachment }) => attachment
       )}

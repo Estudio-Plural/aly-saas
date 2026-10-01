@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SendIcon, RotateCcwIcon, FileTextIcon, DownloadIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ProbarNav } from "./probar-nav";
@@ -30,6 +32,34 @@ type Mode = "onboarding" | "llm" | "ended";
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+/**
+ * «30 sep a las 16:42» en hora de Colombia. A mano (solo partes numéricas de Intl): el
+ * texto de toLocaleString cambia entre el ICU de Node y el del navegador y rompe la hidratación.
+ */
+function fechaInicio(iso: string): string {
+  const partes = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Bogota",
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    })
+      .formatToParts(new Date(iso))
+      .map((p) => [p.type, p.value]),
+  );
+  return `${Number(partes.day)} ${MESES[Number(partes.month) - 1]} a las ${partes.hour}:${partes.minute}`;
+}
+
+/** Para empezar sin pensar qué escribir. */
+const SUGERENCIAS = ["Hola, ¿qué es esto?", "¿Me das un teléfono de ayuda?", "Me siento muy mal"];
+
+/** Con estos mensajes de la persona ya hay suficiente para pasar al siguiente paso. */
+const MENSAJES_PARA_SEGUIR = 4;
 
 function interpolate(content: string, answers: Record<string, string>): string {
   return content.replace(/\{(\w+)\}/g, (match, key) => answers[key] ?? match);
@@ -122,14 +152,18 @@ export function ChatClient({
   assistantName,
   flowSteps,
   initialMessages,
+  testHecho = false,
   storyboardAttachments = [],
 }: {
   workspaceSlug: string;
   assistantName: string;
   flowSteps: PreviewStep[];
   initialMessages: ChatMessage[];
+  /** Las situaciones difíciles ya pasaron: el siguiente paso es WhatsApp. */
+  testHecho?: boolean;
   storyboardAttachments?: StoryboardAttachment[];
 }) {
+  const nombre = assistantName.trim() || "tu asistente";
   const attachmentsById = new Map(
     storyboardAttachments.map((att) => [att.id, att])
   );
@@ -143,6 +177,11 @@ export function ChatClient({
   const [isStreaming, setIsStreaming] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const isBusy = isTyping || isStreaming;
+  // La prueba es compartida por el equipo: si ya tenía mensajes, se avisa desde cuándo.
+  const [inicioPrevio, setInicioPrevio] = useState<string | null>(
+    initialMessages[0]?.timestamp ?? null
+  );
+  const mensajesPersona = messages.filter((m) => m.sender === "user").length;
 
   // Estado del flujo de onboarding (solo cliente; el transcript se persiste)
   const flowIndexRef = useRef(0);
@@ -247,13 +286,13 @@ export function ChatClient({
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "No se pudo obtener respuesta del asistente");
+        toast.error(data?.error ?? `${nombre} no respondió. Intenta de nuevo en unos minutos.`);
         deshacer();
         return;
       }
 
       if (!res.body) {
-        toast.error("El asistente no devolvió respuesta");
+        toast.error(`${nombre} no respondió. Intenta de nuevo en unos minutos.`);
         deshacer();
         return;
       }
@@ -286,7 +325,7 @@ export function ChatClient({
         }
       }
     } catch {
-      toast.error("Error de conexión con el asistente");
+      toast.error("No pudimos enviar el mensaje. Revisa tu conexión e intenta de nuevo.");
       deshacer();
     } finally {
       setIsTyping(false);
@@ -294,10 +333,10 @@ export function ChatClient({
     }
   };
 
-  const handleSendMessage = async () => {
-    const text = inputValue.trim();
+  const handleSendMessage = async (sugerencia?: string) => {
+    const text = (sugerencia ?? inputValue).trim();
     if (!text || isBusy) return;
-    setInputValue("");
+    if (!sugerencia) setInputValue("");
     setMessages((prev) => [...prev, localMessage(text, "user")]);
 
     if (mode === "onboarding" && flowSteps[flowIndexRef.current]?.type === "consent") {
@@ -355,6 +394,7 @@ export function ChatClient({
     try {
       await fetch(`/api/workspaces/${workspaceSlug}/chat`, { method: "DELETE" });
       setMessages([]);
+      setInicioPrevio(null);
       answersRef.current = {};
       flowIndexRef.current = 0;
       pendingConsentRef.current = hasConsentStep;
@@ -365,9 +405,9 @@ export function ChatClient({
       } else {
         setMode("llm");
       }
-      toast.success("Conversación reiniciada");
+      toast.success("Empezaste una prueba nueva");
     } catch {
-      toast.error("No se pudo reiniciar la conversación");
+      toast.error("No pudimos empezar de nuevo. Intenta otra vez.");
     } finally {
       setIsResetting(false);
     }
@@ -382,49 +422,69 @@ export function ChatClient({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Probar</h1>
-          <p className="text-neutral-700 mt-1">
-            Habla con {assistantName} como lo haría una persona por WhatsApp. Esto es
-            una prueba: no se envía nada a nadie.
-          </p>
-        </div>
-        <Button
-          onClick={handleReset}
-          disabled={isResetting || isBusy}
-          variant="outline"
-          className="px-6 py-3 h-auto text-base font-semibold"
-        >
-          <RotateCcwIcon className="mr-2 h-5 w-5" />
-          {isResetting ? "Reiniciando…" : "Reiniciar conversación"}
-        </Button>
-      </div>
+      <ProbarNav workspaceSlug={workspaceSlug} assistantName={assistantName} testHecho={testHecho} />
 
-      <ProbarNav workspaceSlug={workspaceSlug} />
+      <div className="max-w-3xl mx-auto space-y-4">
+        {inicioPrevio && (
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+            <p>
+              Sigues una prueba que empezó el {fechaInicio(inicioPrevio)}. Para empezar de cero, usa
+              «Empezar de nuevo» arriba del chat.
+            </p>
+          </div>
+        )}
 
-      {/* Chat Interface */}
-      <div className="max-w-3xl mx-auto">
-        <Card className="h-[700px] flex flex-col overflow-hidden shadow-lg border border-neutral-200">
-          {/* Chat Header */}
+        <Card className="h-[calc(100dvh-14rem)] min-h-[480px] flex flex-col overflow-hidden shadow-lg border border-neutral-200 py-0 gap-0">
+          {/* Encabezado del chat */}
           <div className="bg-neutral-900 text-white px-6 py-4 flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center flex-shrink-0">
               <span className="text-neutral-900 font-bold text-xl">
                 {assistantName.charAt(0)}
               </span>
             </div>
-            <div>
-              <div className="font-bold text-lg">{assistantName}</div>
-              <div className="text-sm text-neutral-400">Asistente virtual</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-lg truncate">{assistantName}</div>
+              <div className="text-sm text-neutral-400">Vista previa de WhatsApp</div>
             </div>
+            {messages.length > 0 && (
+              <ConfirmDialog
+                title="¿Empezar de nuevo?"
+                description="La prueba nueva arranca desde la bienvenida."
+                confirmLabel="Empezar de nuevo"
+                destructive={false}
+                onConfirm={handleReset}
+              >
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={isResetting || isBusy}
+                  className="flex-shrink-0 text-neutral-300 hover:bg-neutral-800 hover:text-white"
+                >
+                  <RotateCcwIcon className="mr-1.5 h-4 w-4" />
+                  {isResetting ? "Empezando…" : "Empezar de nuevo"}
+                </Button>
+              </ConfirmDialog>
+            )}
           </div>
 
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto bg-neutral-50 p-6 space-y-6">
             {messages.length === 0 && !isTyping && (
-              <div className="text-center text-sm text-neutral-600 pt-10">
-                Escribe un mensaje para empezar la conversación
+              <div className="mx-auto max-w-md pt-8 text-center text-sm text-neutral-600">
+                {flowSteps.length === 0 ? (
+                  <p>
+                    {nombre.charAt(0).toUpperCase() + nombre.slice(1)} todavía no tiene bienvenida
+                    ni aviso de privacidad, así que la prueba empieza directo con la conversación.{" "}
+                    <Link
+                      href={`/${workspaceSlug}/bienvenida`}
+                      className="font-medium text-neutral-900 underline underline-offset-2"
+                    >
+                      Escribir la bienvenida →
+                    </Link>
+                  </p>
+                ) : (
+                  <p>Escribe como lo haría una persona de tu programa.</p>
+                )}
               </div>
             )}
             {messages.map((message) => (
@@ -484,7 +544,7 @@ export function ChatClient({
                         message.sender === "user" ? "text-right" : "text-left"
                       }`}
                     >
-                      {new Date(message.timestamp).toLocaleTimeString("es", {
+                      {new Date(message.timestamp).toLocaleTimeString("es-CO", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
@@ -525,6 +585,20 @@ export function ChatClient({
 
           {/* Input Area */}
           <div className="bg-white border-t-2 border-neutral-200 p-5">
+            {mode === "llm" && mensajesPersona === 0 && !isBusy && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {SUGERENCIAS.map((texto) => (
+                  <button
+                    key={texto}
+                    type="button"
+                    onClick={() => handleSendMessage(texto)}
+                    className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 transition-colors hover:border-neutral-400 hover:bg-neutral-50"
+                  >
+                    {texto}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex gap-3">
               <Input
                 value={inputValue}
@@ -532,14 +606,14 @@ export function ChatClient({
                 onKeyDown={handleKeyPress}
                 placeholder={
                   mode === "ended"
-                    ? "La persona no aceptó. Reinicia la conversación para probar de nuevo."
+                    ? "La persona no aceptó. Empieza de nuevo para probar otra vez."
                     : "Escribe un mensaje…"
                 }
                 disabled={isBusy || mode === "ended"}
                 className="flex-1 h-12 px-5 border-2 border-neutral-300 rounded-xl focus:border-neutral-400 focus:ring-2 focus:ring-neutral-900/10 text-base"
               />
               <Button
-                onClick={handleSendMessage}
+                onClick={() => handleSendMessage()}
                 disabled={!inputValue.trim() || isBusy || mode === "ended"}
                 aria-label="Enviar mensaje"
                 className="h-12 px-6 bg-neutral-900 hover:bg-neutral-800 rounded-xl"
@@ -548,41 +622,23 @@ export function ChatClient({
               </Button>
             </div>
             <p className="text-xs text-neutral-600 mt-3 px-1">
-              Presiona Enter para enviar. La conversación de prueba se guarda en tu programa.
+              Es una prueba: no le llega a nadie.
             </p>
           </div>
         </Card>
-      </div>
 
-      {/* Info Card */}
-      <Card className="bg-neutral-50 border-neutral-200 p-4">
-        <div className="flex gap-3">
-          <div className="text-neutral-700">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
-            </svg>
+        {mensajesPersona >= MENSAJES_PARA_SEGUIR && (
+          <div className="flex justify-end">
+            <Button asChild variant="outline">
+              <Link href={testHecho ? `/${workspaceSlug}/whatsapp` : `/${workspaceSlug}/chat/casos`}>
+                {testHecho
+                  ? "¿Se ve bien? Siguiente: conectar WhatsApp →"
+                  : "¿Se ve bien? Siguiente: revisar situaciones difíciles →"}
+              </Link>
+            </Button>
           </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-neutral-900 mb-1">
-              Acerca de esta vista previa
-            </h3>
-            <p className="text-sm text-neutral-700">
-              Cada conversación nueva arranca con tu bienvenida y el aviso de
-              privacidad, igual que en WhatsApp. Después responde el asistente con tu
-              material, sus límites y tus rutas de ayuda.
-            </p>
-          </div>
-        </div>
-      </Card>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { workspaceDePagina } from "@/lib/sesion";
-import { getDesign } from "@/lib/data/design";
+import { getDesign, getProgramProgress } from "@/lib/data/design";
+import { nextAfterDesignStep } from "@/lib/design";
 import { ProgramClient } from "./program-client";
 
 export const dynamic = "force-dynamic";
@@ -13,13 +14,19 @@ export default async function ProgramPage({
   const { workspace: workspaceSlug } = await params;
   const { workspace } = await workspaceDePagina(workspaceSlug);
 
-  const design = await getDesign(workspace.id);
+  const [design, progress] = await Promise.all([
+    getDesign(workspace.id),
+    getProgramProgress(workspace),
+  ]);
+  const next = nextAfterDesignStep("program", progress);
   return (
     <ProgramClient
       workspaceSlug={workspace.slug}
       assistantName={workspace.assistant_name}
       initialCore={design.core_prompt ?? {}}
       initialStoryboard={design.storyboard ?? {}}
+      initiallySaved={Object.keys(design.core_prompt ?? {}).length > 0}
+      next={{ label: next.label, href: `/${workspace.slug}/${next.path}` }}
     />
   );
 }

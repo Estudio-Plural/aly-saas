@@ -92,11 +92,11 @@ export function calcularChecklist(
   let tokenEvidencia = "Falta el nombre de la variable del token";
   let tokenHecho = false;
   if (c?.tokenEnv) {
-    if (!entorno) tokenEvidencia = `No pudimos consultar el engine para confirmar ${c.tokenEnv}`;
+    if (!entorno) tokenEvidencia = `No pudimos consultar el servidor del asistente para confirmar ${c.tokenEnv}`;
     else if (entorno.tokenCargado) {
       tokenHecho = true;
-      tokenEvidencia = `${c.tokenEnv} está en el entorno del engine`;
-    } else tokenEvidencia = `${c.tokenEnv} no está en el entorno del engine`;
+      tokenEvidencia = `${c.tokenEnv} está en el servidor del asistente`;
+    } else tokenEvidencia = `${c.tokenEnv} no está en el servidor del asistente`;
   }
 
   const firmaOk = entorno?.firmaConfigurada ?? false;
@@ -107,7 +107,7 @@ export function calcularChecklist(
       ? `Verificado el ${fechaCorta(webhookVerificadoAt)} (no pudimos confirmar el app secret)`
       : firmaOk
         ? `Verificado el ${fechaCorta(webhookVerificadoAt)}`
-        : "Verificado, pero falta META_APP_SECRET en el engine: los mensajes se rechazan";
+        : "Verificado, pero falta META_APP_SECRET en el servidor del asistente: los mensajes se rechazan";
 
   const vida = !!c?.lastReplyAt;
   const vidaEvidencia = vida
@@ -120,8 +120,8 @@ export function calcularChecklist(
     ...manuales,
     {
       id: "token_cargado",
-      titulo: "Token cargado en el engine",
-      detalle: "El token de Graph vive en el entorno del engine (variable META_TOKEN_*). Acá solo se guarda su nombre.",
+      titulo: "Token cargado en el servidor del asistente",
+      detalle: "El token de Graph vive en el servidor del asistente (variable META_TOKEN_*). Aquí solo se guarda su nombre.",
       modo: "automatico",
       hecho: tokenHecho,
       evidencia: tokenEvidencia,
@@ -129,7 +129,7 @@ export function calcularChecklist(
     {
       id: "webhook_verificado",
       titulo: "Webhook verificado",
-      detalle: "Meta llamó a la URL con el verify token y el engine respondió el challenge.",
+      detalle: "Meta llamó a la URL con el verify token y el servidor del asistente respondió el challenge.",
       modo: "automatico",
       hecho: webhookHecho,
       evidencia: webhookEvidencia,
@@ -161,4 +161,13 @@ export const ETIQUETA_ESTADO: Record<EstadoConexion, string> = {
   esperando_mensaje: "Esperando el primer mensaje",
   activo: "Activo",
   pausado: "Pausado",
+};
+
+/** Lo que ve la organización: sin pasos técnicos. */
+export const ETIQUETA_ESTADO_CLIENTE: Record<EstadoConexion, string> = {
+  sin_configurar: "Sin conectar",
+  en_configuracion: "Conectando",
+  esperando_mensaje: "Falta un mensaje de prueba",
+  activo: "Activo",
+  pausado: "En pausa",
 };

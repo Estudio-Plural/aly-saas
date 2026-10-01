@@ -1,7 +1,8 @@
-// Corre el banco de casos difíciles contra el engine (efímero) y guarda la corrida.
+// Prueba las situaciones difíciles contra el engine (efímero) y guarda la corrida.
 import { NextResponse } from "next/server";
 import { resolverWorkspace } from "@/lib/api-acceso";
 import { correrCasos } from "@/lib/data/casos";
+import { NO_DISPONIBLE } from "@/lib/casos";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -15,7 +16,7 @@ export async function POST(request: Request, { params }: Params) {
   const corrida = await correrCasos(r.workspace, r.acceso.email);
   if (corrida.resultados.every((res) => res.error)) {
     return NextResponse.json(
-      { error: "El asistente no respondió ningún caso. Revisa que el engine esté encendido.", corrida },
+      { error: NO_DISPONIBLE, corrida },
       { status: 502 },
     );
   }

@@ -1,4 +1,4 @@
-export const metadata = { title: "Sin acceso" };
+export const metadata = { title: "Tu sesión terminó" };
 
 // Llega acá quien no trae una identidad válida de la puerta de Plural IA (sesión vencida,
 // o la app corriendo sin la puerta delante).
@@ -7,10 +7,10 @@ export default function SinAccesoPage() {
     <div className="min-h-screen flex items-center justify-center bg-neutral-50 px-4">
       <div className="max-w-md w-full text-center space-y-4">
         <h1 className="text-2xl font-semibold tracking-tight text-neutral-900">
-          No pudimos confirmar quién eres
+          Tu sesión terminó
         </h1>
         <p className="text-neutral-600">
-          Vuelve a entrar con el correo al que te dimos acceso. Si el problema sigue, escríbenos
+          Vuelve a entrar con el correo al que te dimos acceso. Si no puedes entrar, escríbenos
           a{" "}
           <a className="underline" href="mailto:hola@estudio-plural.co">
             hola@estudio-plural.co

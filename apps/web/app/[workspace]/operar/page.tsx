@@ -1,6 +1,7 @@
 import { workspaceDePagina } from "@/lib/sesion";
 import { getAlertProtocol, getCifras, getEstadoReporte } from "@/lib/data/operar";
 import { parsePeriodo } from "@/lib/operar";
+import { getProgramProgress } from "@/lib/data/design";
 import { OperarClient } from "./operar-client";
 
 export const dynamic = "force-dynamic";
@@ -16,10 +17,11 @@ export default async function OperarPage({
   const { workspace } = await workspaceDePagina(workspaceSlug);
 
   const periodo = parsePeriodo((await searchParams).periodo);
-  const [{ hayReales, cifras }, protocolo, reporte] = await Promise.all([
+  const [{ hayReales, cifras }, protocolo, reporte, progress] = await Promise.all([
     getCifras(workspace.id, periodo),
     getAlertProtocol(workspace.id),
     getEstadoReporte(workspace.id),
+    getProgramProgress(workspace),
   ]);
 
   return (
@@ -31,6 +33,8 @@ export default async function OperarPage({
       cifras={cifras}
       protocoloActivo={protocolo?.active === true}
       reporte={reporte}
+      probado={progress.test}
+      conectado={progress.connect}
     />
   );
 }

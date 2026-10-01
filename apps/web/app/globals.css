@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Tokens compartidos de la suite Plural IA (copia de ../design-system; sin data-product:
+   el color de Conversational está pendiente de decisión de marca). */
+@import "./plural-tokens.css";
 
 :root {
   /* App light-only por diseño (cards forzadas a blanco, sin clases dark:).

@@ -28,6 +28,9 @@ export default async function WhatsAppPage({
   const checklist = calcularChecklist(conexion, entorno, verificadoAt);
 
   const plural = acceso.esPlural;
+  // URL real del webhook para pegar en Meta. Sin ENGINE_PUBLIC_URL no se muestra.
+  const enginePublico = process.env.ENGINE_PUBLIC_URL?.trim().replace(/\/+$/, "");
+  const webhookUrl = enginePublico ? `${enginePublico}/api/webhook/meta` : null;
   // Plural puede ver la pantalla tal como la ve la organización.
   const comoCliente = !plural || vista === "cliente";
 
@@ -35,6 +38,7 @@ export default async function WhatsAppPage({
     <WhatsAppClient
       workspaceSlug={workspace.slug}
       workspaceName={workspace.name}
+      assistantName={workspace.assistant_name}
       rol={comoCliente ? "cliente" : "plural"}
       puedeCambiarVista={plural}
       conexion={comoCliente ? null : conexion}
@@ -43,6 +47,7 @@ export default async function WhatsAppPage({
       checklist={comoCliente ? { ...checklist, pasos: [] } : checklist}
       engineResponde={entorno !== null}
       cifras={cifras}
+      webhookUrl={comoCliente ? null : webhookUrl}
     />
   );
 }

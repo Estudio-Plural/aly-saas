@@ -1,10 +1,13 @@
 import { ReactNode } from "react";
-import Link from "next/link";
 import { WorkspaceSidebar } from "./workspace-sidebar";
+import { AppHeader } from "@/components/app-header";
 import { workspaceDePagina } from "@/lib/sesion";
 import { getProgramProgress } from "@/lib/data/design";
+import { listWorkspaces } from "@/lib/data/workspaces";
 
 export const dynamic = "force-dynamic";
+
+const PORTAL_URL = process.env.PORTAL_URL ?? "https://suite.estudio-plural.co/app";
 
 export default async function WorkspaceLayout({
   children,
@@ -14,28 +17,25 @@ export default async function WorkspaceLayout({
   params: Promise<{ workspace: string }>;
 }) {
   const { workspace: workspaceSlug } = await params;
-  const { workspace } = await workspaceDePagina(workspaceSlug);
-  const progress = await getProgramProgress(workspace);
+  const { acceso, workspace } = await workspaceDePagina(workspaceSlug);
+  // «Todos tus asistentes» solo si hay a dónde volver (la lista ya viene filtrada por acceso).
+  const [progress, visibles] = await Promise.all([
+    getProgramProgress(workspace),
+    listWorkspaces(acceso),
+  ]);
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Header: «Plural / {programa}» */}
-      <header className="border-b border-neutral-200 bg-white">
-        <div className="container mx-auto flex h-14 items-center px-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link href="/dashboard" className="flex flex-shrink-0 items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-neutral-900 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">P</span>
-              </div>
-              <span className="text-[15px] font-semibold text-neutral-900">Plural</span>
-            </Link>
-            <span className="text-neutral-300">/</span>
-            <span className="truncate text-sm font-medium text-neutral-700">
-              {workspace.name}
-            </span>
-          </div>
-        </div>
-      </header>
+      {/* Header: «Pl&ral IA Conversational / {asistente} para {programa}» */}
+      <AppHeader
+        email={acceso.email}
+        esPlural={acceso.esPlural}
+        portalUrl={PORTAL_URL}
+        assistantName={workspace.assistant_name}
+        programName={workspace.name}
+        orgName={acceso.esPlural ? workspace.org_name : undefined}
+        count={visibles.length}
+      />
 
       {/* Layout con sidebar */}
       <div className="container mx-auto px-4 py-4 md:py-8">
