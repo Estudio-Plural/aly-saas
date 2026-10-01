@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { LANDING_COPY } from "@/lib/landing-copy";
+import { CONTACT_EMAIL, LANDING_COPY } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
 export function CtaSection() {
@@ -25,6 +25,15 @@ export function CtaSection() {
                 {LANDING_COPY.cta.cta} <ArrowRight className="size-4" />
               </Link>
             </div>
+            <p className="mt-6 text-sm text-neutral-600">
+              {LANDING_COPY.cta.contact}{" "}
+              <a
+                href={`mailto:${CONTACT_EMAIL}`}
+                className="font-medium text-neutral-900 underline underline-offset-4 hover:text-neutral-700"
+              >
+                {CONTACT_EMAIL}
+              </a>
+            </p>
           </div>
         </div>
       </div>

@@ -1,15 +1,15 @@
 import {
   BookOpen,
-  BrainCircuit,
-  Database,
-  Layers,
+  FlaskConical,
+  LifeBuoy,
   MessageSquareText,
+  ShieldCheck,
   Smartphone,
 } from "lucide-react";
 import { LANDING_COPY } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
-const ICONS = [BookOpen, BrainCircuit, MessageSquareText, Layers, Database, Smartphone];
+const ICONS = [BookOpen, ShieldCheck, LifeBuoy, FlaskConical, MessageSquareText, Smartphone];
 
 export function FeaturesSection() {
   return (

@@ -1,8 +1,8 @@
-import { FileText, MessageCircle, Workflow } from "lucide-react";
+import { FileText, FlaskConical, MessageCircle } from "lucide-react";
 import { LANDING_COPY } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
-const ICONS = [FileText, Workflow, MessageCircle];
+const ICONS = [FileText, FlaskConical, MessageCircle];
 
 export function StepsSection() {
   return (
@@ -69,17 +69,17 @@ function StepVisual({ index }: { index: number }) {
 
   if (index === 1) {
     return (
-      <div className="flex h-24 items-center justify-center gap-3 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
-        <div className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-neutral-700 shadow-sm">
-          Pregunta
+      <div className="flex h-24 items-center justify-center gap-2 rounded-xl border border-neutral-100 bg-neutral-50 p-4">
+        <div className="whitespace-nowrap rounded-lg bg-white px-2.5 py-2 text-xs font-medium text-neutral-700 shadow-sm">
+          Qué dice
         </div>
         <div className="text-neutral-300">→</div>
-        <div className="rounded-lg bg-white px-3 py-2 text-xs font-medium text-neutral-700 shadow-sm">
-          Mensaje
+        <div className="whitespace-nowrap rounded-lg bg-white px-2.5 py-2 text-xs font-medium text-neutral-700 shadow-sm">
+          Qué no hace
         </div>
         <div className="text-neutral-300">→</div>
-        <div className="rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white shadow-sm">
-          Fin
+        <div className="whitespace-nowrap rounded-lg bg-neutral-900 px-2.5 py-2 text-xs font-medium text-white shadow-sm">
+          A dónde deriva
         </div>
       </div>
     );

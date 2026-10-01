@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { LANDING_COPY } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,8 @@ export function HeroSection() {
       <div className="relative mx-auto w-full max-w-[1200px] px-4 py-16 sm:px-6 sm:py-20 lg:py-24">
         <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_1fr]">
           <div className="text-center lg:text-left">
-            <div className="mb-5 inline-flex size-14 items-center justify-center rounded-2xl bg-neutral-900 text-2xl text-white animate-float brand-mark">
-              P
-            </div>
-
             <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-xs font-medium text-neutral-600">
-              <Sparkles className="size-3.5 text-neutral-900" />
+              <MessageCircle className="size-3.5 text-neutral-900" />
               {LANDING_COPY.hero.eyebrow}
             </div>
 
