@@ -22,8 +22,8 @@ const jakarta = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   title: {
-    default: "Plural IA Conversational",
-    template: "%s · Plural IA Conversational",
+    default: "Plural IA Conversacional",
+    template: "%s · Plural IA Conversacional",
   },
   description:
     "Diseña las conversaciones de tu programa de cambio de comportamiento, pruébalas con situaciones difíciles y llévalas a WhatsApp con Plural.",

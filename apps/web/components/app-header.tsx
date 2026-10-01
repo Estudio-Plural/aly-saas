@@ -39,11 +39,11 @@ export function AppHeader({
           <Link
             href="/dashboard"
             className="flex flex-shrink-0 items-center gap-2 rounded-md text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/30"
-            aria-label="Plural IA Conversational: inicio"
+            aria-label="Plural IA Conversacional: inicio"
           >
             <PluralLockup />
             <span className="hidden text-[15px] font-medium text-neutral-600 sm:inline">
-              Conversational
+              Conversacional
             </span>
           </Link>
           {assistantName && (

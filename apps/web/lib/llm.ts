@@ -32,7 +32,7 @@ async function openRouterFetch(body: Record<string, unknown>): Promise<Response>
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
       "HTTP-Referer": "http://localhost:3000",
-      "X-Title": "Plural IA Conversational",
+      "X-Title": "Plural IA Conversacional",
     },
     body: JSON.stringify(body),
   });

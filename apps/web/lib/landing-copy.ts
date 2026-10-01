@@ -1,7 +1,7 @@
 export const CONTACT_EMAIL = "hola@estudio-plural.co";
 
 export const LANDING_COPY = {
-  productName: "Plural IA Conversational",
+  productName: "Plural IA Conversacional",
   nav: {
     howItWorks: "Cómo funciona",
     features: "Qué incluye",

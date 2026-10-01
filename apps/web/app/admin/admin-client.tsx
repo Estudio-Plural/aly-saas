@@ -97,7 +97,7 @@ export function AdminClient({
             <a href={portal.url} className="underline underline-offset-2">
               portal de Plural IA
             </a>
-            : crea la organización, contrátale Conversational y agrega a las personas allá. Aparecen acá solas.
+            : crea la organización, contrátale Conversacional y agrega a las personas allá. Aparecen acá solas.
           </p>
           {!portal.sincronizado && (
             <p className="text-amber-700">
