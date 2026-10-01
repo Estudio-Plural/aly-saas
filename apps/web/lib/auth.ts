@@ -8,13 +8,15 @@
 //
 // Qué ve: el equipo de Plural (dominios de PLURAL_DOMAINS) ve todas las organizaciones y las
 // transcripciones; un cliente, solo los programas de sus organizaciones (tabla org_members,
-// migración 011) y nunca el texto de las conversaciones.
+// migración 011, espejo de los miembros del portal: lib/miembros.ts) y nunca el texto de las
+// conversaciones.
 //
 // Sin firma exigida (desarrollo local, sin GATE_SECRET): se acepta el encabezado tal cual o
 // DEV_USER_EMAIL. En producción, o con PLURAL_REQUIRE_GATE=1 (la VPS corre `next dev`), sin
 // GATE_SECRET nadie entra.
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { sql } from "@/lib/db";
+import { sincronizarMiembros } from "@/lib/miembros";
 
 export type RolOrg = "admin" | "miembro";
 
@@ -72,6 +74,8 @@ export function correoDe(h: Headers): string | null {
 
 export async function accesoPorCorreo(email: string): Promise<Acceso> {
   const esPlural = esCorreoPlural(email);
+  // Quién es de qué organización lo decide el portal (con freno de 1 min).
+  if (!esPlural) await sincronizarMiembros();
   const orgs = esPlural
     ? []
     : await sql<OrgDeUsuario[]>`

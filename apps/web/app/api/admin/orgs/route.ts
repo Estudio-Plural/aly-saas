@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resolverAcceso, noEncontrado } from "@/lib/api-acceso";
-import { createOrg, listOrgsDetalle, OrgExisteError } from "@/lib/data/orgs";
+import { createOrg, listOrgsDetalle, OrgExisteError, SeAdministraEnElPortalError } from "@/lib/data/orgs";
 
 // Administración de organizaciones: solo el equipo Plural. A un cliente se le responde 404
 // (no hace falta que sepa que esto existe).
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     const org = await createOrg(r.acceso, parsed.data.nombre);
     return NextResponse.json({ org }, { status: 201 });
   } catch (error) {
-    if (error instanceof OrgExisteError) {
+    if (error instanceof OrgExisteError || error instanceof SeAdministraEnElPortalError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
     return NextResponse.json({ error: "Escribe un nombre con letras o números." }, { status: 400 });

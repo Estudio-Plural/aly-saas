@@ -157,6 +157,8 @@ importers:
 
   packages/consentimiento: {}
 
+  packages/miembros: {}
+
   packages/operar: {}
 
   packages/shared-types: {}

@@ -1,0 +1,11 @@
+{
+  "name": "@aly-saas/miembros",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Quién entra a cada organización: espejo de los miembros del portal de Plural IA en org_members. Lo usan apps/web (al entrar y en /admin) y apps/api (antes del reporte semanal) vía alias de tsconfig. TS puro, sin dependencias.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

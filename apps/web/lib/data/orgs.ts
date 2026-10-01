@@ -1,8 +1,11 @@
 // Organizaciones y miembros (migración 011) — solo servidor.
 // Leer: cada usuario ve sus organizaciones (el equipo Plural, todas).
 // Escribir (crear org, miembros, mover programas): solo el equipo Plural.
+// Con la sincronización del portal activa (lib/miembros.ts), las organizaciones y quién entra
+// vienen del portal: acá solo se cambia el rol y de qué organización es cada programa.
 import { sql } from "@/lib/db";
 import { SinPermisoError, type Acceso, type RolOrg } from "@/lib/auth";
+import { miembrosDelPortal } from "@/lib/miembros";
 
 export type Org = { id: string; nombre: string };
 export type OrgMember = { email: string; rol: RolOrg };
@@ -40,6 +43,18 @@ export async function listOrgsDetalle(acceso: Acceso): Promise<OrgDetalle[]> {
   }));
 }
 
+/** Altas, bajas y organizaciones nuevas se hacen en el portal cuando la sincronización está activa. */
+export class SeAdministraEnElPortalError extends Error {
+  constructor() {
+    super("Quién entra se administra en el portal de Plural IA.");
+    this.name = "SeAdministraEnElPortalError";
+  }
+}
+
+const exigirEdicionLocal = () => {
+  if (miembrosDelPortal()) throw new SeAdministraEnElPortalError();
+};
+
 export class OrgExisteError extends Error {
   constructor(id: string) {
     super(`Ya existe una organización con el identificador «${id}». Usa otro nombre.`);
@@ -59,6 +74,7 @@ export function orgIdDesdeNombre(nombre: string): string {
 
 export async function createOrg(acceso: Acceso, nombre: string): Promise<Org> {
   exigirPlural(acceso);
+  exigirEdicionLocal();
   const id = orgIdDesdeNombre(nombre);
   if (!id) throw new Error("Nombre inválido");
   const rows = await sql<Org[]>`
@@ -77,6 +93,7 @@ export async function upsertOrgMember(
   rol: RolOrg
 ): Promise<boolean> {
   exigirPlural(acceso);
+  exigirEdicionLocal();
   const org = await sql`SELECT 1 FROM orgs WHERE id = ${orgId}`;
   if (!org.length) return false;
   await sql`
@@ -88,8 +105,23 @@ export async function upsertOrgMember(
 
 export async function removeOrgMember(acceso: Acceso, orgId: string, email: string): Promise<boolean> {
   exigirPlural(acceso);
+  exigirEdicionLocal();
   const rows = await sql`
     DELETE FROM org_members WHERE org_id = ${orgId} AND email = ${email.trim().toLowerCase()} RETURNING 1
+  `;
+  return rows.length > 0;
+}
+
+/** Cambia el rol de alguien que ya es miembro. Devuelve false si no lo es. */
+export async function cambiarRolMiembro(
+  acceso: Acceso,
+  orgId: string,
+  email: string,
+  rol: RolOrg
+): Promise<boolean> {
+  exigirPlural(acceso);
+  const rows = await sql`
+    UPDATE org_members SET rol = ${rol} WHERE org_id = ${orgId} AND email = ${email.trim().toLowerCase()} RETURNING 1
   `;
   return rows.length > 0;
 }

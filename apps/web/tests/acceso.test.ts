@@ -18,6 +18,7 @@ if (/\/aly_saas$/.test(DB)) throw new Error("No corras los tests contra la base 
 process.env.DATABASE_URL = DB;
 process.env.GATE_SECRET = "secreto-de-prueba";
 process.env.PLURAL_DOMAINS = "estudio-plural.co";
+process.env.PORTAL_MIEMBROS_URL = "off"; // las altas a mano de este test; el espejo se prueba en packages/miembros
 delete process.env.DEV_USER_EMAIL;
 
 const { sql } = await import("@/lib/db");

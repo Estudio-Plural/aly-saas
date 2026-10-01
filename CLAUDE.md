@@ -246,6 +246,13 @@ systemd, `enabled`, sobreviven reboots):
   plural: ve todas las orgs, las transcripciones y `/admin`. Cliente = filas en
   `org_members (org_id, email, rol admin|miembro)`; ve solo los programas de sus orgs.
   Borrar un programa: admin de la org o Plural.
+- **Quién entra lo decide el portal (desde 2026-10-01):** `org_members` es el espejo de las
+  orgs con `aly` contratado en el portal y sus miembros (`packages/miembros`, endpoint
+  `portal/app/api/interno/aly` de plural-suite, con `GATE_SECRET`). Se sincroniza al entrar
+  un cliente (freno de 1 min), al abrir `/admin` y antes del reporte semanal (si el portal
+  no responde, el reporte no sale). Aly solo conserva el rol; altas, bajas y orgs nuevas se
+  hacen en el portal (las rutas de `/admin` dan 409). Sin `GATE_SECRET` (local) o con
+  `PORTAL_MIEMBROS_URL=off`, `/admin` edita a mano como antes.
 - **Aislamiento (la conexión es superuser: el RLS no protege):** `getWorkspaceBySlug(slug,
   acceso)` y el resto de `lib/data/workspaces.ts` filtran por org; todo lo demás de
   `lib/data/*` recibe un `workspaceId` que SOLO puede salir de ahí. Rutas:
