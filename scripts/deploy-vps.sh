@@ -1,5 +1,5 @@
 #!/bin/bash
-# Despliega Aly SaaS v2 en la VPS desde origin/main. Se corre desde el Mac:
+# Despliega Plural IA Conversational (repo aly-saas) en la VPS desde origin/main. Se corre desde el Mac:
 #   bash ~/Dev/plural.ai/aly-saas/scripts/deploy-vps.sh
 #
 # Orden a propósito: aly-web corre `next dev` sobre el working tree (recarga solo), así que
@@ -101,4 +101,4 @@ echo "   web sin identidad         $(curl -s -o /dev/null -w '%{http_code}' loca
 echo "   web API sin identidad     $(curl -s -o /dev/null -w '%{http_code}' localhost:3000/api/workspaces)   (esperado 401)"
 echo "   portal: lista de Aly      $(curl -s -o /dev/null -w '%{http_code}' -H "x-gate-secret: $GATE_SECRET" 127.0.0.1:3200/app/api/interno/aly)   (esperado 200; si da 404, falta desplegar plural-suite)"
 REMOTE
-echo "==> Listo. Falta el DNS aly.estudio-plural.co (registro A en Wix → 72.62.138.164) para entrar por la puerta."
+echo "==> Listo. Falta el DNS conversational.estudio-plural.co (registro A en Wix → 72.62.138.164) para entrar por la puerta."

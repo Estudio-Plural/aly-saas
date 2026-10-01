@@ -35,7 +35,7 @@ export async function POST(request: Request) {
   }
 
   const { name } = parsed.data;
-  const assistant_name = parsed.data.assistant_name || "Aly";
+  const assistant_name = parsed.data.assistant_name || "Asistente";
   // Sin org explícita: la única del cliente, o la de pruebas del equipo Plural.
   const org_id =
     parsed.data.org_id ??

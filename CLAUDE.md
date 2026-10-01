@@ -1,8 +1,10 @@
 # CLAUDE.md — Aly SaaS
 
-MVP de **Plural Conversational System** (nombre de producto en la UI desde
-2026-06-12; "Aly" queda como nombre interno/repo): plataforma multi-tenant de
-asistentes de IA para WhatsApp (pitch a CEOs/inversores).
+**Plural IA Conversational** (nombre desde 2026-10-01, en la familia Plural IA Monitor /
+Transcribe / Archetypes; antes «Plural Conversational System» y «Aly»): motor de
+construcción de conversaciones por WhatsApp, multi-tenant. **No es Aly** (Aly es el bot de
+producción en ~/Dev/Aly); «aly» queda solo como nombre de repo y como id del producto en el
+portal (`aly`, guardado en las orgs). Host: `conversational.estudio-plural.co`.
 Repo: `Estudio-Plural/aly-saas`, branch de trabajo `main`.
 
 **Visión de producto (definida por Daniel):** el usuario es **no-code** — entra,

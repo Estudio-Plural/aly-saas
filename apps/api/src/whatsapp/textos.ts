@@ -46,7 +46,7 @@ export type TextosCanal = {
   preguntasPerfil: PreguntaPerfil[];
 };
 
-export function textosPorDefecto(asistente = "Aly", organizacion = "el programa"): TextosCanal {
+export function textosPorDefecto(asistente = "Asistente", organizacion = "el programa"): TextosCanal {
   return {
     bienvenida: `¡Hola! Soy *${asistente}*, el asistente de ${organizacion} 🌱`,
     avisoPrivacidad:

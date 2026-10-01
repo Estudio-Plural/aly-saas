@@ -172,7 +172,7 @@ export function SettingsClient({
                   id="assistant_name"
                   value={workspace.assistant_name}
                   onChange={(e) => updateField({ assistant_name: e.target.value })}
-                  placeholder="Aly"
+                  placeholder="Ej: Sofía"
                   className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
                 />
                 <p className="text-xs text-neutral-600">

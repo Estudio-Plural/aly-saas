@@ -63,7 +63,7 @@ export function DashboardClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newWorkspace.name.trim(),
-          assistant_name: newWorkspace.assistant_name.trim() || "Aly",
+          assistant_name: newWorkspace.assistant_name.trim() || "Asistente",
           org_id: newOrg || undefined,
         }),
       });
@@ -150,14 +150,14 @@ export function DashboardClient({
                 <Label htmlFor="assistant_name">Nombre del asistente</Label>
                 <Input
                   id="assistant_name"
-                  placeholder="Ej: Aly"
+                  placeholder="Ej: Sofía"
                   value={newWorkspace.assistant_name}
                   onChange={(e) =>
                     setNewWorkspace({ ...newWorkspace, assistant_name: e.target.value })
                   }
                 />
                 <p className="text-xs text-neutral-600">
-                  Así se presenta en WhatsApp. Si lo dejas vacío, se llama Aly.
+                  Así se presenta en WhatsApp. Si lo dejas vacío, se llama Asistente.
                 </p>
               </div>
             </div>

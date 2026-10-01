@@ -11,10 +11,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               <span className="text-white font-bold text-sm">P</span>
             </div>
             <span className="text-[15px] font-semibold text-neutral-900">
-              Plural{" "}
-              <span className="text-neutral-600 font-normal">
-                Conversational System
-              </span>
+              Plural IA{" "}
+              <span className="text-neutral-600 font-normal">Conversational</span>
             </span>
           </Link>
         </div>

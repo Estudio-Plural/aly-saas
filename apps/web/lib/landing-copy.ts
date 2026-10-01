@@ -1,5 +1,5 @@
 export const LANDING_COPY = {
-  productName: "Plural",
+  productName: "Plural IA Conversational",
   nav: {
     features: "Funciones",
     howItWorks: "Cómo funciona",
