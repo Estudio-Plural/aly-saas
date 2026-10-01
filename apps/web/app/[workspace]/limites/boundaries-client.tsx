@@ -4,10 +4,15 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SaveBar } from "@/components/save-bar";
-import { LockIcon, PlusIcon, XIcon } from "lucide-react";
+import { ChevronRightIcon, LockIcon, PlusIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { uid } from "@/lib/utils";
-import { SAFETY_RULES, type Boundaries, type BoundaryRule } from "@/lib/design";
+import {
+  SAFETY_RULES,
+  nextAfterDesignStep,
+  type Boundaries,
+  type BoundaryRule,
+} from "@/lib/design";
 import { useDesignSave } from "@/lib/use-design-save";
 
 const SUGGESTIONS = [
@@ -21,10 +26,13 @@ export function BoundariesClient({
   workspaceSlug,
   assistantName,
   initial,
+  next: nextProp,
 }: {
   workspaceSlug: string;
   assistantName: string;
   initial: Boundaries | null;
+  /** Siguiente paso según el progreso real (lo calcula la página). */
+  next?: { label: string; path: string };
 }) {
   const [rules, setRules] = useState<BoundaryRule[]>(initial?.rules ?? []);
   const [isDirty, setIsDirty] = useState(false);
@@ -44,7 +52,10 @@ export function BoundariesClient({
       toast.error("Cada regla puede tener hasta 500 caracteres");
       return;
     }
-    const ok = await save({ boundaries: { rules: clean } }, "Reglas guardadas");
+    const ok = await save(
+      { boundaries: { rules: clean } },
+      clean.length ? "Reglas guardadas" : "Listo: sin reglas propias"
+    );
     if (ok) {
       setRules(clean);
       setIsDirty(false);
@@ -52,39 +63,26 @@ export function BoundariesClient({
     }
   };
 
+  const next = nextProp ?? nextAfterDesignStep("boundaries");
+
   const unusedSuggestions = SUGGESTIONS.filter(
     (text) => !rules.some((rule) => rule.text.trim() === text)
   );
+
+  const assistant = assistantName.trim() || "tu asistente";
+  const hasOwnRules = rules.some((rule) => rule.text.trim());
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-          Qué no hace el asistente
+          Qué no hace {assistant}
         </h1>
         <p className="mt-1 text-neutral-600">
-          Los límites de {assistantName}. Las reglas de seguridad ya vienen puestas y
-          no se pueden quitar; debajo agregas las de tu organización.
+          Los límites de {assistant}. Agrega las reglas de tu organización; las de seguridad ya
+          vienen puestas y no se pueden quitar.
         </p>
       </div>
-
-      <Card className="border-neutral-200 p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-neutral-900">Reglas de seguridad</h2>
-        <ul className="mt-4 space-y-4">
-          {SAFETY_RULES.map((rule) => (
-            <li key={rule.id} className="flex gap-3">
-              <LockIcon
-                aria-label="Fija"
-                className="mt-0.5 h-4 w-4 flex-shrink-0 text-neutral-500"
-              />
-              <div>
-                <p className="text-sm font-medium text-neutral-900">{rule.label}</p>
-                <p className="text-xs text-neutral-600">{rule.why}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Card>
 
       <Card className="border-neutral-200 p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-neutral-900">Reglas de tu organización</h2>
@@ -92,7 +90,7 @@ export function BoundariesClient({
           Escribe cada regla como una frase corta: «No…».
         </p>
 
-        {rules.length > 0 && (
+        {rules.length > 0 ? (
           <ul className="mt-4 space-y-2">
             {rules.map((rule, index) => (
               <li key={rule.id} className="flex items-center gap-2">
@@ -100,12 +98,13 @@ export function BoundariesClient({
                   value={rule.text}
                   aria-label={`Regla ${index + 1}`}
                   maxLength={500}
+                  placeholder="Ej.: No recomienda medicamentos ni dosis"
                   onChange={(e) =>
                     update(
                       rules.map((r) => (r.id === rule.id ? { ...r, text: e.target.value } : r))
                     )
                   }
-                  className="bg-white"
+                  className="bg-white placeholder:italic"
                 />
                 <button
                   type="button"
@@ -118,6 +117,10 @@ export function BoundariesClient({
               </li>
             ))}
           </ul>
+        ) : (
+          <p className="mt-4 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-600">
+            Todavía no agregas reglas propias. Si las de seguridad te bastan, confírmalo.
+          </p>
         )}
 
         <button
@@ -147,12 +150,43 @@ export function BoundariesClient({
         )}
       </Card>
 
+      <Card className="border-neutral-200 p-5 shadow-sm">
+        <details className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm text-neutral-700 hover:text-neutral-900 [&::-webkit-details-marker]:hidden">
+            <LockIcon aria-hidden className="h-4 w-4 flex-shrink-0 text-neutral-500" />
+            <span className="flex-1">
+              <span className="font-medium text-neutral-900">
+                {SAFETY_RULES.length} reglas de seguridad siempre activas
+              </span>{" "}
+              · <span className="underline underline-offset-2">Ver cuáles</span>
+            </span>
+            <ChevronRightIcon className="h-4 w-4 flex-shrink-0 text-neutral-500 transition-transform group-open:rotate-90" />
+          </summary>
+          <ul className="mt-4 space-y-4">
+            {SAFETY_RULES.map((rule) => (
+              <li key={rule.id} className="flex gap-3">
+                <LockIcon
+                  aria-label="Fija"
+                  className="mt-0.5 h-4 w-4 flex-shrink-0 text-neutral-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-neutral-900">{rule.label}</p>
+                  <p className="text-xs text-neutral-600">{rule.why}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      </Card>
+
       <SaveBar
         isDirty={isDirty}
         isSaving={isSaving}
         onSave={handleSave}
         enabled={!confirmed}
-        label={confirmed ? "Guardar" : "Confirmar reglas"}
+        saved={confirmed}
+        next={{ label: next.label, href: `/${workspaceSlug}/${next.path}` }}
+        label={hasOwnRules ? "Guardar reglas" : "Confirmar sin reglas propias"}
       />
     </div>
   );

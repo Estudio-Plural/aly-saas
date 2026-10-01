@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -13,10 +13,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Solo para el «IA» del lockup de marca (plural-tokens.css lo lee de --font-jakarta).
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["700"],
+});
+
 export const metadata: Metadata = {
-  title: "Plural IA Conversational",
+  title: {
+    default: "Plural IA Conversational",
+    template: "%s · Plural IA Conversational",
+  },
   description:
-    "Crea asistentes de WhatsApp con IA para tus programas. Sin código.",
+    "Crea asistentes de WhatsApp que acompañan a las personas de tu programa. Sin código.",
 };
 
 export default function RootLayout({
@@ -27,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         {children}

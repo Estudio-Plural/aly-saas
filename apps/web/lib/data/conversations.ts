@@ -34,11 +34,14 @@ export function maskNumber(number: string): string {
 /**
  * El análisis del supervisor para quien no ve transcripciones (rol cliente): solo qué regla
  * saltó y con qué severidad. Sin la evidencia textual (fragmentos de mensajes de la persona)
- * ni el detalle redactado por el analista, que puede parafrasearlos.
+ * ni el detalle redactado por el analista, que puede parafrasearlos. Tampoco el resumen ni
+ * las palabras clave del supervisor: son parafraseo de la conversación.
  */
 export function supervisionSinTexto(s: ConversationSupervision): ConversationSupervision {
   return {
     ...s,
+    summary: null,
+    keywords: [],
     cumplioCriterioExito: { value: s.cumplioCriterioExito.value, evidence: [] },
     flags: s.flags.map((f) => ({ ...f, detail: "", evidence: [] })),
   };
@@ -46,7 +49,9 @@ export function supervisionSinTexto(s: ConversationSupervision): ConversationSup
 
 /**
  * Bandeja de conversaciones. Con `verTranscripciones: false` (rol cliente) NO sale el texto
- * de ningún mensaje ni el nombre/número de la persona: solo fecha, estado, alertas y resumen.
+ * de ningún mensaje, ni el nombre/número de la persona, ni el resumen, las palabras clave o
+ * el texto libre de las alertas (todo eso parafrasea la conversación): solo fecha, estado,
+ * severidad de la alerta, la regla que saltó y si ya se revisó.
  */
 export async function listConversations(
   workspaceId: string,
@@ -89,7 +94,7 @@ export async function listConversations(
     return {
       conversationId: row.conversation_id,
       clientNumber: ver || isWebPreview ? row.client_number : maskNumber(row.client_number),
-      userName: isWebPreview ? "Vista previa web" : ver ? row.user_name : null,
+      userName: isWebPreview ? "Prueba" : ver ? row.user_name : null,
       isWebPreview,
       lastMessage: ver ? row.last_message : null,
       lastMessageRole: row.last_message_role,
@@ -97,9 +102,9 @@ export async function listConversations(
       isOpen: row.is_open,
       startedAt: row.started_at.toISOString(),
       lastAt: row.last_at.toISOString(),
-      summary: row.summary,
-      keywords: row.keywords ?? [],
-      flags: row.flags,
+      summary: ver ? row.summary : null,
+      keywords: ver ? (row.keywords ?? []) : [],
+      flags: ver ? row.flags : null,
       flagSeverity: row.flag_severity,
       reviewedAt: row.reviewed_at?.toISOString() ?? null,
       reviewedBy: row.reviewed_by,

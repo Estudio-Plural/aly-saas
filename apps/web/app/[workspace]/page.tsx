@@ -7,6 +7,7 @@ import {
   DESIGN_STEPS,
   isDesignDone,
   nextStepPath,
+  stepLabel,
   type ProgramProgress,
 } from "@/lib/design";
 
@@ -14,31 +15,26 @@ export const dynamic = "force-dynamic";
 
 function Check({ done }: { done: boolean }) {
   return done ? (
-    <CheckCircle2Icon aria-label="Hecho" className="h-5 w-5 flex-shrink-0 text-green-600" />
+    <CheckCircle2Icon aria-label="Listo" className="h-5 w-5 flex-shrink-0 text-green-600" />
   ) : (
     <CircleIcon aria-label="Pendiente" className="h-5 w-5 flex-shrink-0 text-neutral-300" />
   );
 }
 
-const PATH_LABELS: Record<string, string> = {
-  ...Object.fromEntries(DESIGN_STEPS.map((step) => [step.path, step.label])),
-  "chat/casos": "Probar",
-  whatsapp: "Conectar WhatsApp",
-  operar: "Operar",
-};
-
-function countDone(progress: ProgramProgress): { done: number; total: number } {
-  const flags = [
-    ...Object.values(progress.design),
-    progress.test,
-    progress.connect,
-    progress.operate,
-  ];
-  return { done: flags.filter(Boolean).length, total: flags.length };
+/** Las 4 etapas: Diseñar (una sola, aunque tenga 5 pasos), Probar, Conectar y Operar. */
+function countStages(progress: ProgramProgress): number {
+  return [isDesignDone(progress), progress.test, progress.connect, progress.operate].filter(
+    Boolean
+  ).length;
 }
 
-/** Primeros pasos: el checklist del programa con UN botón al primer pendiente. */
-export default async function FirstStepsPage({
+/**
+ * Inicio del asistente: el checklist de 4 etapas con UN botón al primer
+ * pendiente. Cuando el asistente ya está conectado a WhatsApp, arriba va
+ * «Así va {asistente}» (con el único botón primario) y el checklist queda
+ * debajo, más tenue.
+ */
+export default async function HomePage({
   params,
 }: {
   params: Promise<{ workspace: string }>;
@@ -49,27 +45,30 @@ export default async function FirstStepsPage({
   const progress = await getProgramProgress(workspace);
   const base = `/${workspace.slug}`;
   const next = nextStepPath(progress);
-  const { done, total } = countDone(progress);
-  const assistant = workspace.assistant_name;
+  const done = countStages(progress);
+  const assistant = workspace.assistant_name || "tu asistente";
+  const designDone = DESIGN_STEPS.filter((step) => progress.design[step.key]).length;
+  const live = progress.connect;
 
   const sections = [
     {
       title: "Probar",
       done: progress.test,
-      href: `${base}/chat/casos`,
-      description: `Corre los casos difíciles (crisis, privacidad, pedidos que no puede cumplir) y conversa con ${assistant} como una persona del programa.`,
+      href: `${base}/${progress.test ? "chat" : "chat/casos"}`,
+      description: `Revisa las situaciones difíciles (crisis, privacidad, pedidos que no puede cumplir). Después conversa libremente con ${assistant}.`,
     },
     {
       title: "Conectar WhatsApp",
       done: progress.connect,
       href: `${base}/whatsapp`,
-      description: "Plural conecta el número de WhatsApp de tu organización.",
+      description: "Nos escribes y conectamos el número de WhatsApp de tu organización.",
     },
     {
       title: "Operar",
       done: progress.operate,
       href: `${base}/operar`,
-      description: "Cifras de uso, alertas y qué hacer ante una situación de riesgo, sin leer conversaciones una por una.",
+      description:
+        "Cuántas personas conversan, qué alertas hay y qué hacer ante una situación de riesgo, sin leer conversaciones una por una.",
     },
   ];
 
@@ -77,38 +76,57 @@ export default async function FirstStepsPage({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Primeros pasos
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Inicio</h1>
           <p className="mt-1 text-neutral-600">
             Cuatro pasos para que {assistant} acompañe a las personas de tu programa.{" "}
-            <span className="whitespace-nowrap text-neutral-500">
-              {done} de {total} listos.
-            </span>
+            <span className="whitespace-nowrap text-neutral-500">{done} de 4 listos.</span>
           </p>
         </div>
-        {next ? (
-          <Button asChild size="lg" className="flex-shrink-0">
-            <Link href={`${base}/${next}`}>
-              Siguiente paso: {PATH_LABELS[next]}
+        {!live &&
+          (next ? (
+            <Button asChild size="lg" className="flex-shrink-0">
+              <Link href={`${base}/${next}`}>
+                Siguiente: {stepLabel(next)}
+                <ArrowRightIcon className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          ) : (
+            <p className="flex items-center gap-2 text-sm font-medium text-green-700">
+              <CheckCircle2Icon className="h-5 w-5" /> Todo listo
+            </p>
+          ))}
+      </div>
+
+      {live && (
+        <section className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <h2 className="text-xl font-semibold text-neutral-900">Así va {assistant}</h2>
+          <p className="mt-1 text-neutral-600">
+            {progress.operate
+              ? `${assistant} ya conversa con las personas de tu programa por WhatsApp. Mira cuántas personas le escriben, qué temas salen y si hay alertas.`
+              : `${assistant} ya está conectado a WhatsApp. Cuando alguien de tu programa le escriba, aquí vas a ver cómo va.`}
+          </p>
+          <Button asChild size="lg" className="mt-4">
+            <Link href={`${base}/operar`}>
+              Ver cómo va
               <ArrowRightIcon className="ml-2 h-4 w-4" />
             </Link>
           </Button>
-        ) : (
-          <p className="flex items-center gap-2 text-sm font-medium text-green-700">
-            <CheckCircle2Icon className="h-5 w-5" /> Todo listo
-          </p>
-        )}
-      </div>
+        </section>
+      )}
 
-      <ol className="space-y-3">
+      <ol className={`space-y-3 ${live ? "opacity-80" : ""}`}>
         <li className="rounded-xl border border-neutral-200 bg-white p-5">
           <div className="flex items-center gap-3">
             <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-neutral-900 text-sm font-semibold text-white">
               1
             </span>
             <div className="flex-1">
-              <h2 className="font-semibold text-neutral-900">Diseñar</h2>
+              <h2 className="font-semibold text-neutral-900">
+                Diseñar{" "}
+                <span className="text-sm font-normal text-neutral-500">
+                  · {designDone} de {DESIGN_STEPS.length} listos
+                </span>
+              </h2>
               <p className="text-sm text-neutral-600">
                 Qué hace {assistant}, qué no hace, a dónde deriva y con qué material
                 acompaña.

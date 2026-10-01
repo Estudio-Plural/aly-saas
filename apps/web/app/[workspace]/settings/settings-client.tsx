@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,43 +11,58 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { SaveIcon, TrashIcon } from "lucide-react";
+import { PlusIcon, TrashIcon } from "lucide-react";
 import { toast } from "sonner";
-import { slugify, type Workspace } from "@/lib/workspaces";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import type { Workspace } from "@/lib/workspaces";
 
 export function SettingsClient({
   initialWorkspace,
+  puedeAdministrar,
+  whatsappConectado,
 }: {
   initialWorkspace: Workspace;
+  /** Admin de la organización o equipo Plural: puede eliminar y crear asistentes. */
+  puedeAdministrar: boolean;
+  /** Con WhatsApp conectado, para eliminar hay que escribir el nombre del asistente. */
+  whatsappConectado: boolean;
 }) {
   const router = useRouter();
   const [workspace, setWorkspace] = useState(initialWorkspace);
-  const [savedSlug, setSavedSlug] = useState(initialWorkspace.slug);
+  const [saved, setSaved] = useState(initialWorkspace);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
 
-  const updateField = (fields: Partial<Workspace>) => {
+  const isDirty =
+    workspace.name !== saved.name || workspace.assistant_name !== saved.assistant_name;
+
+  const updateField = (fields: Partial<Pick<Workspace, "name" | "assistant_name">>) => {
     setWorkspace((prev) => ({ ...prev, ...fields }));
-    setIsDirty(true);
   };
 
   const handleSave = async () => {
     if (!workspace.name.trim() || !workspace.assistant_name.trim()) {
-      toast.error("El nombre del programa y del asistente no pueden estar vacíos");
+      toast.error("El nombre del asistente y el del programa no pueden quedar vacíos");
       return;
     }
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/workspaces/${savedSlug}`, {
+      const res = await fetch(`/api/workspaces/${saved.slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: workspace.name.trim(),
-          slug: workspace.slug,
+          // El schema exige el slug: se manda el actual, sin cambios (la dirección no se toca).
+          slug: saved.slug,
           assistant_name: workspace.assistant_name.trim(),
         }),
       });
@@ -56,10 +72,9 @@ export function SettingsClient({
         return;
       }
       setWorkspace(data.workspace);
-      setIsDirty(false);
+      setSaved(data.workspace);
       toast.success("Cambios guardados");
-      if (data.workspace.slug !== savedSlug) {
-        setSavedSlug(data.workspace.slug);
+      if (data.workspace.slug !== saved.slug) {
         router.replace(`/${data.workspace.slug}/settings`);
       } else {
         router.refresh();
@@ -71,216 +86,206 @@ export function SettingsClient({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/workspaces/${savedSlug}`, { method: "DELETE" });
+      const res = await fetch(`/api/workspaces/${saved.slug}`, { method: "DELETE" });
       if (!res.ok) {
-        const data = await res.json();
-        toast.error(data.error ?? "No se pudo eliminar el programa");
-        return;
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "No se pudo eliminar el asistente");
+        return false;
       }
-      toast.success(`Programa «${workspace.name}» eliminado`);
+      toast.success(`Eliminaste a ${saved.assistant_name}`);
       router.push("/dashboard");
       router.refresh();
+      return true;
     } catch {
       toast.error("Error de conexión al eliminar");
+      return false;
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      {/* Encabezado */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-            Ajustes
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Ajustes</h1>
           <p className="text-neutral-600 mt-1">
-            Los datos básicos de tu programa y tu asistente
+            El nombre de {saved.assistant_name} y el de tu programa.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {isDirty && (
-            <span className="text-xs text-amber-700">Cambios sin guardar</span>
-          )}
-          <Button
-            onClick={handleSave}
-            disabled={isSaving || !isDirty}
-            className="bg-neutral-900 hover:bg-neutral-800 text-white font-medium shadow-sm"
-          >
-            <SaveIcon className="mr-2 h-4 w-4" />
-            {isSaving ? "Guardando..." : isDirty ? "Guardar Cambios" : "Guardado ✓"}
+          {isDirty && <span className="text-xs text-neutral-600">Cambios sin guardar</span>}
+          <Button onClick={handleSave} disabled={isSaving || !isDirty}>
+            {isSaving ? "Guardando…" : isDirty ? "Guardar cambios" : "Guardado"}
           </Button>
         </div>
       </div>
 
-      <div className="space-y-6">
-          {/* Datos del programa */}
-          <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-xl">Datos del programa</CardTitle>
-              <CardDescription className="text-base">
-                El nombre y la dirección identifican tu programa en Plural
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Label htmlFor="name" className="text-sm font-medium text-neutral-900">
-                  Nombre del programa
-                </Label>
-                <Input
-                  id="name"
-                  value={workspace.name}
-                  onChange={(e) => {
-                    const newName = e.target.value;
-                    updateField({ name: newName, slug: slugify(newName) });
-                  }}
-                  placeholder="Cuidar a quien cuida"
-                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
-                />
-                <p className="text-xs text-neutral-600">
-                  Así aparece en tu lista de programas y en los avisos
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-neutral-50 border border-neutral-200 p-4">
-                <p className="text-xs font-medium text-neutral-600 mb-1">Dirección de tu programa</p>
-                <p className="text-sm font-mono text-neutral-900">
-                  app.plural.com/<span className="font-semibold text-neutral-900">{workspace.slug}</span>
-                </p>
-                <p className="text-xs text-neutral-600 mt-2">
-                  Se genera automáticamente desde el nombre
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Configuración del Asistente */}
-          <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-xl">Configuración del Asistente</CardTitle>
-              <CardDescription className="text-base">
-                Cómo se presenta tu asistente
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <Label htmlFor="assistant_name" className="text-sm font-medium text-neutral-900">
-                  Nombre del Asistente
-                </Label>
-                <Input
-                  id="assistant_name"
-                  value={workspace.assistant_name}
-                  onChange={(e) => updateField({ assistant_name: e.target.value })}
-                  placeholder="Ej: Sofía"
-                  className="h-11 border-neutral-300 focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-400 transition-all"
-                />
-                <p className="text-xs text-neutral-600">
-                  Así se presenta en WhatsApp y en el chat de prueba
-                </p>
-              </div>
-
-              {/* Preview Card with Gradient Border */}
-              <div className="relative p-px rounded-xl bg-neutral-200">
-                <div className="bg-white rounded-xl p-6">
-                  <p className="text-xs font-medium text-neutral-600 uppercase tracking-wide mb-4">
-                    Vista Previa
-                  </p>
-                  <div className="space-y-4">
-                    {/* User Message */}
-                    <div className="flex justify-end">
-                      <div className="rounded-2xl bg-neutral-900 px-5 py-3 max-w-[80%] shadow-md">
-                        <p className="text-white text-sm">
-                          Hola
-                        </p>
-                      </div>
-                    </div>
-                    {/* Assistant Response */}
-                    <div className="flex gap-3">
-                      <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center flex-shrink-0 shadow-md">
-                        <span className="text-white font-semibold text-sm">
-                          {workspace.assistant_name.charAt(0)}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-xs font-medium text-neutral-600 mb-2">
-                          {workspace.assistant_name}
-                        </div>
-                        <div className="rounded-2xl bg-neutral-100 px-5 py-3 max-w-[90%]">
-                          <p className="text-neutral-900 text-sm">
-                            ¡Hola! Soy {workspace.assistant_name}, tu asistente de IA. ¿En qué puedo ayudarte hoy?
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Suscripción */}
-          <Card className="border-neutral-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-xl">Suscripción</CardTitle>
-              <CardDescription className="text-base">Información sobre tu plan actual</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm font-medium text-neutral-900">Plan Actual</div>
-                    {workspace.subscription_status === "trial" && (
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-neutral-900 text-white shadow-sm">
-                        Trial
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-neutral-600">
-                    {workspace.subscription_status === "trial"
-                      ? "14 días restantes"
-                      : workspace.subscription_status === "active"
-                      ? "Pro - $49/mes"
-                      : "Free"}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Danger Zone */}
-          <Card className="border-red-200 shadow-sm">
-            <CardHeader className="space-y-1 pb-6">
-              <CardTitle className="text-xl text-red-600">Zona de Peligro</CardTitle>
-              <CardDescription className="text-base">
-                Acciones que no se pueden deshacer
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ConfirmDialog
-                title="¿Eliminar programa?"
-                description={`Vas a eliminar «${workspace.name}» con sus documentos y conversaciones. Esta acción no se puede deshacer.`}
-                confirmLabel="Eliminar"
-                onConfirm={handleDelete}
-              >
-                <Button
-                  variant="outline"
-                  className="h-11 px-6 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-colors"
-                >
-                  <TrashIcon className="mr-2 h-4 w-4" />
-                  Eliminar programa
-                </Button>
-              </ConfirmDialog>
-            </CardContent>
-          </Card>
-
-          <Separator className="my-6" />
-
-          {/* Info adicional */}
-          <div className="text-sm text-neutral-600">
-            <p>Creado el {new Date(workspace.created_at).toLocaleDateString("es-AR")}</p>
+      <Card className="border-neutral-200">
+        <CardHeader>
+          <CardTitle className="text-lg">Nombres</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="assistant_name">Nombre del asistente</Label>
+            <Input
+              id="assistant_name"
+              value={workspace.assistant_name}
+              onChange={(e) => updateField({ assistant_name: e.target.value })}
+              placeholder="Ej: Sofía"
+              maxLength={100}
+              className="h-11"
+            />
+            <p className="text-xs text-neutral-600">
+              Así se presenta en WhatsApp. Su saludo lo cambias en{" "}
+              <Link href={`/${saved.slug}/bienvenida`} className="underline">
+                Bienvenida y consentimiento
+              </Link>
+              .
+            </p>
           </div>
-        </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre del programa</Label>
+            <Input
+              id="name"
+              value={workspace.name}
+              onChange={(e) => updateField({ name: e.target.value })}
+              placeholder="Ej: Cuidar a quien cuida"
+              maxLength={100}
+              className="h-11"
+            />
+            <p className="text-xs text-neutral-600">
+              Así aparece en tu lista y en los correos del resumen semanal.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <p className="text-sm text-neutral-600">
+        Tu programa lo acompaña Estudio Plural. Para cambios en tu contrato, escríbenos a{" "}
+        <a href="mailto:hola@estudio-plural.co" className="underline">
+          hola@estudio-plural.co
+        </a>
+        .
+      </p>
+
+      {puedeAdministrar && (
+        <>
+          <div>
+            <Button asChild variant="outline">
+              <Link href="/dashboard?nuevo=1">
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Crear otro asistente
+              </Link>
+            </Button>
+          </div>
+
+          <Card className="border-neutral-200">
+            <CardHeader>
+              <CardTitle className="text-lg">Eliminar este asistente</CardTitle>
+              <CardDescription>
+                Se borran el diseño, el material y todas las conversaciones. No se puede deshacer.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeleteDialog
+                assistantName={saved.assistant_name}
+                requireTypedName={whatsappConectado}
+                onConfirm={handleDelete}
+              />
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      <p className="text-xs text-neutral-500">
+        Creado el{" "}
+        {new Date(saved.created_at).toLocaleDateString("es-CO", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}
+      </p>
     </div>
+  );
+}
+
+/**
+ * Confirmación para eliminar. Si el asistente ya atiende personas por WhatsApp, hay que
+ * escribir su nombre: así nadie lo borra con un clic distraído.
+ */
+function DeleteDialog({
+  assistantName,
+  requireTypedName,
+  onConfirm,
+}: {
+  assistantName: string;
+  requireTypedName: boolean;
+  onConfirm: () => Promise<boolean>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const matches = typed.trim().toLocaleLowerCase("es") === assistantName.trim().toLocaleLowerCase("es");
+  const canConfirm = !isDeleting && (!requireTypedName || matches);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        setOpen(value);
+        if (!value) setTyped("");
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <TrashIcon className="mr-2 h-4 w-4" />
+          Eliminar asistente
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>¿Eliminar a {assistantName}?</DialogTitle>
+          <DialogDescription>
+            Se borran el diseño, el material y todas las conversaciones. No se puede deshacer.
+            {requireTypedName &&
+              ` ${assistantName} está conectado a WhatsApp: las personas que le escriban dejarán de recibir respuesta.`}
+          </DialogDescription>
+        </DialogHeader>
+        {requireTypedName && (
+          <div className="space-y-2">
+            <Label htmlFor="confirmar-nombre">
+              Para confirmar, escribe <strong>{assistantName}</strong>
+            </Label>
+            <Input
+              id="confirmar-nombre"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={!canConfirm}
+            onClick={async () => {
+              setIsDeleting(true);
+              const ok = await onConfirm();
+              setIsDeleting(false);
+              if (ok) setOpen(false);
+            }}
+          >
+            {isDeleting ? "Eliminando…" : "Eliminar"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -8,6 +8,7 @@
 import { sql } from "@/lib/db";
 import { orgsVisibles, puedeVerOrg, SinPermisoError, type Acceso } from "@/lib/auth";
 import type { Workspace } from "@/lib/workspaces";
+import { WEB_PREVIEW_NUMBER } from "@/lib/data/chat";
 
 type WorkspaceRow = {
   id: string;
@@ -54,7 +55,9 @@ const workspaceSelect = () => sql`
     w.created_at, w.updated_at, w.whatsapp_phone_number, w.kapso_connection_status,
     w.org_id, o.nombre AS org_name,
     (SELECT count(*)::int FROM documents d WHERE d.workspace_id = w.id) AS documents_count,
-    (SELECT count(DISTINCT ui.conversation_id)::int FROM users_interactions ui WHERE ui.workspace_id = w.id) AS conversations_count,
+    -- Conversaciones reales: el chat de prueba (web-preview) no cuenta.
+    (SELECT count(DISTINCT ui.conversation_id)::int FROM users_interactions ui
+      WHERE ui.workspace_id = w.id AND ui.client_number <> ${WEB_PREVIEW_NUMBER}) AS conversations_count,
     (SELECT count(*)::int FROM users_data ud WHERE ud.workspace_id = w.id) AS users_count
   FROM workspaces w
   JOIN orgs o ON o.id = w.org_id

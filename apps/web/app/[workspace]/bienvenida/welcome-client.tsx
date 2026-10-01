@@ -8,11 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { ExampleField } from "@/components/example-field";
 import { SaveBar } from "@/components/save-bar";
 import { LockIcon, PlusIcon, Trash2Icon } from "lucide-react";
-import { toast } from "sonner";
 import { uid } from "@/lib/utils";
 import {
   PREGUNTA_CONSENTIMIENTO,
   DESPEDIDA_RECHAZO,
+  nextAfterDesignStep,
   toVariableName,
   type ProfileQuestion,
   type Welcome,
@@ -43,6 +43,13 @@ function parseOptions(text: string): string[] {
     .filter(Boolean);
 }
 
+/** Aviso modelo para adaptar: no promete privacidad (la conversación queda guardada). */
+function privacyModel(org: string): string {
+  return `Antes de empezar, algo importante: ${org} guarda lo que escribes aquí para acompañarte y mejorar el programa. Un equipo pequeño de ${org} puede leer las conversaciones para cuidar el acompañamiento. No compartimos tus datos con nadie más sin tu permiso, y puedes pedir que los borremos cuando quieras escribiendo a [correo de contacto].`;
+}
+
+type Errors = { privacy?: string; url?: string };
+
 /** Nombre de dato único y estable (se fija la primera vez que se guarda). */
 function uniqueVariable(base: string, taken: Set<string>): string {
   let name = base;
@@ -54,12 +61,20 @@ function uniqueVariable(base: string, taken: Set<string>): string {
 export function WelcomeClient({
   workspaceSlug,
   assistantName,
+  orgName,
   initial,
+  next: nextProp,
 }: {
   workspaceSlug: string;
   assistantName: string;
+  /** Nombre de la organización, para el aviso modelo (si no llega, queda para completar). */
+  orgName?: string;
   initial: Welcome | null;
+  /** Siguiente paso según el progreso real (lo calcula la página). */
+  next?: { label: string; path: string };
 }) {
+  const assistant = assistantName.trim() || "tu asistente";
+  const welcomeExample = `¡Hola! Soy ${assistant} 👋 Estoy aquí para acompañarte en el programa: puedes contarme cómo vas, pedirme ideas o resolver dudas.`;
   const [welcomeMessage, setWelcomeMessage] = useState(initial?.welcome_message ?? "");
   const [privacyNotice, setPrivacyNotice] = useState(initial?.privacy_notice ?? "");
   const [policyUrl, setPolicyUrl] = useState(initial?.privacy_policy_url ?? "");
@@ -67,12 +82,17 @@ export function WelcomeClient({
     (initial?.profile_questions ?? []).map(toDraft)
   );
   const [isDirty, setIsDirty] = useState(false);
+  const [saved, setSaved] = useState(initial !== null);
+  const [errors, setErrors] = useState<Errors>({});
   const { save, isSaving } = useDesignSave(workspaceSlug);
+  const next = nextProp ?? nextAfterDesignStep("welcome");
 
-  const dirty = <T,>(setter: (value: T) => void) => (value: T) => {
-    setter(value);
-    setIsDirty(true);
-  };
+  const dirty =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setIsDirty(true);
+    };
 
   const setQuestion = (id: string, patch: Partial<QuestionDraft>) => {
     setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, ...patch } : q)));
@@ -85,7 +105,9 @@ export function WelcomeClient({
       {
         id: uid(),
         question: preset?.question ?? "",
-        variable: preset ? uniqueVariable(preset.variable, new Set(prev.map((q) => q.variable))) : "",
+        variable: preset
+          ? uniqueVariable(preset.variable, new Set(prev.map((q) => q.variable)))
+          : "",
         options: preset?.options ?? [],
         optionsText: (preset?.options ?? []).join(", "),
       },
@@ -94,19 +116,18 @@ export function WelcomeClient({
   };
 
   const handleSave = async () => {
-    if (!welcomeMessage.trim()) {
-      toast.error("Escribe el mensaje de bienvenida");
-      return;
-    }
-    if (!privacyNotice.trim()) {
-      toast.error("Escribe el aviso de privacidad");
-      return;
-    }
     const url = policyUrl.trim();
-    if (url && !/^https?:\/\/\S+$/.test(url)) {
-      toast.error("El link de la política debe empezar con http:// o https://");
-      return;
+    const found: Errors = {};
+    if (!privacyNotice.trim()) {
+      found.privacy = "Escribe el aviso o usa el modelo y adáptalo.";
     }
+    if (url && !/^https?:\/\/\S+$/.test(url)) {
+      found.url = "El link debe empezar con http:// o https://";
+    }
+    setErrors(found);
+    if (found.privacy || found.url) return;
+    // Bienvenida vacía: se guarda el ejemplo (es lo que el asistente diría igual).
+    const message = welcomeMessage.trim() || welcomeExample;
     const taken = new Set(questions.map((q) => q.variable).filter(Boolean));
     const profile: ProfileQuestion[] = questions
       .filter((q) => q.question.trim())
@@ -121,15 +142,17 @@ export function WelcomeClient({
         };
       });
     const welcome: Welcome = {
-      welcome_message: welcomeMessage.trim(),
+      welcome_message: message,
       privacy_notice: privacyNotice,
       privacy_policy_url: url,
       profile_questions: profile,
     };
     const ok = await save({ welcome }, "Bienvenida guardada");
     if (ok) {
+      setWelcomeMessage(message);
       setQuestions(profile.map(toDraft));
       setIsDirty(false);
+      setSaved(true);
     }
   };
 
@@ -140,8 +163,8 @@ export function WelcomeClient({
           Bienvenida y consentimiento
         </h1>
         <p className="mt-1 text-neutral-600">
-          Lo primero que recibe cada persona cuando escribe por primera vez. Nada de lo
-          que diga se guarda hasta que acepte.
+          Lo primero que recibe cada persona cuando escribe por primera vez. Nada de lo que diga se
+          guarda hasta que acepte.
         </p>
       </div>
 
@@ -150,10 +173,11 @@ export function WelcomeClient({
         <ExampleField
           id="welcome_message"
           label="Mensaje de bienvenida"
-          hint="Quién es el asistente y en qué puede acompañar."
+          hint={`Quién es ${assistant} y en qué puede acompañar.`}
           value={welcomeMessage}
-          example={`¡Hola! Soy ${assistantName} 👋 Estoy aquí para acompañarte en el programa: puedes contarme cómo vas, pedirme ideas o resolver dudas.`}
+          example={welcomeExample}
           onChange={dirty(setWelcomeMessage)}
+          assistantName={assistant}
         />
       </Card>
 
@@ -163,17 +187,39 @@ export function WelcomeClient({
           <Label htmlFor="privacy_notice" className="text-sm font-medium text-neutral-900">
             Texto del aviso
           </Label>
-          <p className="text-xs text-neutral-600">
-            Se envía exactamente como lo escribas. Usa el texto aprobado por tu organización.
+          <p id="privacy_notice-help" className="text-xs text-neutral-600">
+            Se envía exactamente como lo escribas. Revísalo con quien aprueba los textos legales de
+            tu organización.
           </p>
           <Textarea
             id="privacy_notice"
             value={privacyNotice}
-            onChange={(e) => dirty(setPrivacyNotice)(e.target.value)}
+            onChange={(e) => {
+              dirty(setPrivacyNotice)(e.target.value);
+              if (errors.privacy) setErrors((prev) => ({ ...prev, privacy: undefined }));
+            }}
             rows={5}
             maxLength={5000}
-            className="resize-y border-neutral-300 bg-white"
+            aria-invalid={Boolean(errors.privacy) || undefined}
+            aria-describedby="privacy_notice-help"
+            placeholder="Escribe con tus palabras…"
+            className="resize-y border-neutral-300 bg-white placeholder:italic"
           />
+          {errors.privacy && <p className="text-xs text-red-700">{errors.privacy}</p>}
+          {!privacyNotice.trim() && (
+            <button
+              type="button"
+              onClick={() => {
+                dirty(setPrivacyNotice)(
+                  privacyModel(orgName?.trim() || "[nombre de tu organización]")
+                );
+                setErrors((prev) => ({ ...prev, privacy: undefined }));
+              }}
+              className="text-xs font-medium text-neutral-900 underline underline-offset-2 hover:text-neutral-700"
+            >
+              Usar un modelo y adaptarlo
+            </button>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="privacy_policy_url" className="text-sm font-medium text-neutral-900">
@@ -185,9 +231,14 @@ export function WelcomeClient({
             inputMode="url"
             placeholder="https://"
             value={policyUrl}
-            onChange={(e) => dirty(setPolicyUrl)(e.target.value)}
+            onChange={(e) => {
+              dirty(setPolicyUrl)(e.target.value);
+              if (errors.url) setErrors((prev) => ({ ...prev, url: undefined }));
+            }}
+            aria-invalid={Boolean(errors.url) || undefined}
             className="bg-white"
           />
+          {errors.url && <p className="text-xs text-red-700">{errors.url}</p>}
         </div>
       </Card>
 
@@ -204,19 +255,19 @@ export function WelcomeClient({
         </div>
         <ul className="mt-4 space-y-2 text-sm text-neutral-800">
           <li>
-            <span className="font-medium">Acepta</span> si responde «1», «sí», «acepto»,
-            «sí, acepto» o «estoy de acuerdo».
+            <span className="font-medium">Acepta</span> si responde «1», «sí», «acepto», «sí,
+            acepto» o «estoy de acuerdo».
           </li>
           <li>
-            <span className="font-medium">Rechaza</span> solo si responde «2» o un mensaje
-            que empieza con «no».
+            <span className="font-medium">Rechaza</span> solo si responde «2» o un mensaje que
+            empieza con «no».
           </li>
           <li>
             <span className="font-medium">Cualquier otra respuesta</span> repite la pregunta.
           </li>
           <li>
-            <span className="font-medium">Al rechazar</span> no se guarda ningún dato y
-            recibe: «{DESPEDIDA_RECHAZO}»
+            <span className="font-medium">Al rechazar</span> no se guarda ningún dato y recibe: «
+            {DESPEDIDA_RECHAZO}»
           </li>
         </ul>
       </Card>
@@ -226,8 +277,8 @@ export function WelcomeClient({
           4. Preguntas de perfil <span className="font-normal text-neutral-500">(opcionales)</span>
         </h2>
         <p className="mt-0.5 text-sm text-neutral-600">
-          Se hacen una sola vez, después de aceptar. Sirven para las cifras del programa.
-          Menos preguntas, más personas llegan al final.
+          Se hacen una sola vez, después de aceptar. Sirven para las cifras del programa. Menos
+          preguntas, más personas llegan al final.
         </p>
 
         {questions.length > 0 && (
@@ -300,7 +351,13 @@ export function WelcomeClient({
         </div>
       </Card>
 
-      <SaveBar isDirty={isDirty} isSaving={isSaving} onSave={handleSave} />
+      <SaveBar
+        isDirty={isDirty}
+        isSaving={isSaving}
+        onSave={handleSave}
+        saved={saved}
+        next={{ label: next.label, href: `/${workspaceSlug}/${next.path}` }}
+      />
     </div>
   );
 }

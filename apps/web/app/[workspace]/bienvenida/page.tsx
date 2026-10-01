@@ -1,5 +1,6 @@
 import { workspaceDePagina } from "@/lib/sesion";
-import { getDesign } from "@/lib/data/design";
+import { getDesign, getProgramProgress } from "@/lib/data/design";
+import { nextAfterDesignStep } from "@/lib/design";
 import { WelcomeClient } from "./welcome-client";
 
 export const dynamic = "force-dynamic";
@@ -13,12 +14,16 @@ export default async function WelcomePage({
   const { workspace: workspaceSlug } = await params;
   const { workspace } = await workspaceDePagina(workspaceSlug);
 
-  const design = await getDesign(workspace.id);
+  const [design, progress] = await Promise.all([
+    getDesign(workspace.id),
+    getProgramProgress(workspace),
+  ]);
   return (
     <WelcomeClient
       workspaceSlug={workspace.slug}
       assistantName={workspace.assistant_name}
       initial={design.welcome}
+      next={nextAfterDesignStep("welcome", progress)}
     />
   );
 }

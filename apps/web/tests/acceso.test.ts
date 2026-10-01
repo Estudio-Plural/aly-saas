@@ -310,11 +310,13 @@ describe("transcripciones: solo el equipo Plural", () => {
     expect(texto).toContain("solo las ve el equipo de Plural");
   });
 
-  test("la bandeja del cliente trae resumen y alertas, sin texto ni teléfono", async () => {
+  test("la bandeja del cliente trae solo severidad y regla, sin resumen, texto ni teléfono", async () => {
     const lista = await listConversations(WS_B, { verTranscripciones: false });
     expect(lista).toHaveLength(1);
     expect(lista[0].lastMessage).toBeNull();
-    expect(lista[0].summary).toBe("Resumen de la conversación");
+    expect(lista[0].summary).toBeNull();
+    expect(lista[0].keywords).toEqual([]);
+    expect(lista[0].flags).toBeNull();
     expect(lista[0].flagSeverity).toBe("high");
     expect(JSON.stringify(lista)).not.toContain("MENSAJE PRIVADO");
     expect(JSON.stringify(lista)).not.toContain("3001112233");
@@ -326,6 +328,7 @@ describe("transcripciones: solo el equipo Plural", () => {
     expect(cliente.supervision?.flags[0].ruleDescription).toBe("Riesgo");
     expect(cliente.supervision?.flags[0].evidence).toEqual([]);
     expect(cliente.supervision?.flags[0].detail).toBe("");
+    expect(cliente.supervision?.summary).toBeNull();
     expect(JSON.stringify(cliente)).not.toContain("MENSAJE PRIVADO");
     const [plural] = await listConversations(WS_B, { verTranscripciones: true });
     expect(plural.supervision?.flags[0].evidence[0].fragment).toBe("MENSAJE PRIVADO");

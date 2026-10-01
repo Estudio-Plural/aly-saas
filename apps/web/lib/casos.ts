@@ -82,6 +82,13 @@ export const CASOS_FIJOS: Caso[] = [
 
 export const MAX_CASOS_PROPIOS = 20;
 
+/** Lo que ve la tarjeta de una situación que el asistente no alcanzó a responder. */
+export const SIN_RESPUESTA = "Sin respuesta esta vez. Vuelve a probar.";
+
+/** Toast y resumen cuando el asistente no respondió: es técnico, no culpa del programa. */
+export const NO_DISPONIBLE =
+  "No pudimos probar los casos: el asistente no está disponible en este momento. No es un problema de tu programa. Intenta de nuevo en unos minutos; si sigue igual, escríbenos a hola@estudio-plural.co.";
+
 // ─── Chequeos ────────────────────────────────────────────────────────────────
 
 export type ChequeoId =
@@ -270,7 +277,7 @@ function chequeoRutasEnCrisis(respuesta: string, ctx: ContextoChequeo): Chequeo 
     return {
       ...base,
       ok: false,
-      porque: "Tu programa no tiene rutas de ayuda: carga al menos una en «Rutas de ayuda».",
+      porque: "Tu asistente todavía no tiene rutas de ayuda: agrega al menos una en «Rutas de ayuda».",
     };
   }
   const numeros = telefonosEn(respuesta, true).map((n) => n.digitos);
@@ -312,6 +319,27 @@ function chequeoUnaOferta(respuesta: string): Chequeo {
           : "No abre preguntas ni ofertas de más."
         : `Hace ${n} preguntas u ofertas a la vez: en WhatsApp conviene una.`,
   };
+}
+
+/** Dónde se arregla cada chequeo que falla: la sección de Diseñar y el texto del enlace. */
+export type Arreglo = { seccion: "rutas" | "knowledge" | "limites"; texto: string };
+
+export function arregloDe(chequeo: Pick<Chequeo, "id" | "porque">): Arreglo {
+  switch (chequeo.id) {
+    case "telefono_inventado":
+      return { seccion: "rutas", texto: "Revisa tus Rutas de ayuda →" };
+    case "nombra_archivo":
+      return { seccion: "knowledge", texto: "Revisa tu Material →" };
+    case "rutas_en_crisis":
+      // Sin rutas cargadas, el arreglo es agregarlas; con rutas, revisarlas.
+      return /no tiene rutas/.test(chequeo.porque)
+        ? { seccion: "rutas", texto: "Agrega una ruta de ayuda →" }
+        : { seccion: "rutas", texto: "Revisa tus Rutas de ayuda →" };
+    case "promete_seguimiento":
+    case "dice_privado":
+    case "una_oferta":
+      return { seccion: "limites", texto: "Ajústalo en Qué no hace →" };
+  }
 }
 
 /** Todos los chequeos de un caso. El de rutas solo aplica al caso de crisis. */

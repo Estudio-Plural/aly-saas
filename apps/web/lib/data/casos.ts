@@ -10,6 +10,7 @@ import { listDocuments } from "@/lib/data/documents";
 import {
   CASOS_FIJOS,
   MAX_CASOS_PROPIOS,
+  SIN_RESPUESTA,
   chequear,
   estimarCosto,
   resumirCorrida,
@@ -28,7 +29,7 @@ export async function listCasosPropios(workspaceId: string): Promise<Caso[]> {
   `;
   return rows.map((r, i) => ({
     id: r.id,
-    titulo: `Caso propio ${i + 1}`,
+    titulo: `Tu situación ${i + 1}`,
     mensaje: r.mensaje,
     tipo: "propio",
     fijo: false,
@@ -41,7 +42,7 @@ export async function listCasos(workspaceId: string): Promise<Caso[]> {
 
 export class DemasiadosCasosError extends Error {
   constructor() {
-    super(`Puedes tener hasta ${MAX_CASOS_PROPIOS} casos propios.`);
+    super(`Puedes tener hasta ${MAX_CASOS_PROPIOS} situaciones propias.`);
     this.name = "DemasiadosCasosError";
   }
 }
@@ -144,7 +145,7 @@ export async function correrCasos(
           ephemeral: true,
         });
     if (!res) {
-      return { ...base, respuesta: null, intent: null, error: "El asistente no respondió.", chequeos: [] };
+      return { ...base, respuesta: null, intent: null, error: SIN_RESPUESTA, chequeos: [] };
     }
     return { ...base, respuesta: res.answer, intent: res.intent, error: null, chequeos: chequear(caso, res.answer, ctx) };
   };

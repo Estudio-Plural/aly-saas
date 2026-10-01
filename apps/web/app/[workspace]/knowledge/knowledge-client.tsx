@@ -2,55 +2,23 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   UploadIcon,
   FileTextIcon,
   TrashIcon,
   DownloadIcon,
-  FileIcon,
-  PencilIcon,
-  SplitIcon,
   HeadingIcon,
   LayersIcon,
   ShieldCheckIcon,
   CheckCircle2Icon,
-  AlertTriangleIcon,
+  InfoIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useRouter } from "next/navigation";
 import type { DocumentRow, UploadReview } from "@/lib/workspaces";
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString("es", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 /**
  * "Cuándo lo consulta el asistente" — la señal de ruteo del documento.
@@ -77,14 +45,11 @@ function RoutingHintEditor({
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const res = await fetch(
-        `/api/workspaces/${workspaceSlug}/documents/${doc.id}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ routing_hint: draft.trim() }),
-        }
-      );
+      const res = await fetch(`/api/workspaces/${workspaceSlug}/documents/${doc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ routing_hint: draft.trim() }),
+      });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error ?? "No se pudo guardar");
@@ -92,7 +57,7 @@ function RoutingHintEditor({
       }
       onSaved(data.document);
       setIsEditing(false);
-      toast.success("Listo: el asistente usará esta indicación");
+      toast.success("Listo: guardamos cuándo consultarlo");
     } catch {
       toast.error("Error de conexión al guardar");
     } finally {
@@ -106,7 +71,7 @@ function RoutingHintEditor({
         <Textarea
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder='Ej: "Cuando pregunten por actividades para hacer en familia"'
+          placeholder="Ej.: Cuando pregunten por actividades para hacer en familia"
           maxLength={300}
           rows={2}
           className="text-sm text-neutral-900"
@@ -114,14 +79,9 @@ function RoutingHintEditor({
         />
         <div className="flex gap-2">
           <Button size="sm" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Guardando..." : "Guardar"}
+            {isSaving ? "Guardando…" : "Guardar"}
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsEditing(false)}
-            disabled={isSaving}
-          >
+          <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} disabled={isSaving}>
             Cancelar
           </Button>
         </div>
@@ -130,76 +90,61 @@ function RoutingHintEditor({
   }
 
   return (
-    <button
-      type="button"
-      onClick={startEditing}
-      className="group mt-1.5 flex items-start gap-1.5 text-left max-w-md"
-      title="Editar cuándo consulta este documento"
-    >
-      <SplitIcon className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-neutral-600" />
-      <span className="text-xs text-neutral-700 group-hover:text-neutral-900">
-        {doc.routing_hint ?? "Define cuándo lo consulta el asistente"}
-      </span>
-      <PencilIcon className="h-3 w-3 mt-0.5 flex-shrink-0 text-neutral-400 group-hover:text-neutral-900" />
-    </button>
+    <p className="mt-1.5 max-w-xl text-xs text-neutral-700">
+      {doc.routing_hint ? (
+        <>
+          <span className="text-neutral-500">Lo consulta cuando:</span> {doc.routing_hint}
+        </>
+      ) : (
+        <span className="text-neutral-500">Todavía no dice cuándo consultarlo.</span>
+      )}{" "}
+      ·{" "}
+      <button
+        type="button"
+        onClick={startEditing}
+        className="font-medium text-neutral-900 underline underline-offset-2 hover:text-neutral-700"
+      >
+        {doc.routing_hint ? "Cambiar" : "Escribirlo"}
+      </button>
+    </p>
   );
 }
 
 const TIPS = [
   {
     icon: HeadingIcon,
-    title: "Encabezados claros",
-    body: "Títulos que digan de qué trata cada parte («Qué hacer si…», «Actividad: …»). Así el asistente encuentra la parte justa.",
+    title: "Títulos claros",
+    body: "Que cada parte diga de qué trata («Qué hacer si…», «Actividad: …»).",
   },
   {
     icon: LayersIcon,
     title: "Un tema por documento",
-    body: "Mejor varios documentos cortos que uno largo que mezcla todo. Un PDF escaneado (foto) no se puede leer.",
+    body: "Mejor varios documentos cortos que uno largo que mezcla todo. Un PDF escaneado (una foto) no se puede leer.",
   },
   {
     icon: ShieldCheckIcon,
     title: "Nunca cita nombres de archivo",
-    body: "La persona no ve «guia_final_v3.pdf»: el asistente habla del tema o de la actividad, nunca del archivo.",
+    body: "La persona no ve «guia_final_v3.pdf»: tu asistente habla del tema o de la actividad, nunca del archivo.",
   },
 ];
 
 function ReviewItem({ review }: { review: UploadReview }) {
-  const problems: string[] = [];
-  if (!review.readable) {
-    problems.push(
-      "No pudimos leer texto. Si es un PDF escaneado, súbelo como PDF con texto o como TXT."
-    );
-  }
-  if (review.omittedChars > 0) {
-    const pct = Math.round((review.omittedChars / review.totalChars) * 100);
-    problems.push(
-      `Es muy largo: el asistente solo usa los primeros 20.000 caracteres y se omitió el ${pct}% final. Divídelo en documentos por tema.`
-    );
-  }
-  if (review.readable && review.name.toLowerCase().endsWith(".md") && review.headings === 0) {
-    problems.push("No encontramos encabezados (# Título). Agrégalos para separar los temas.");
-  }
-  const ok = problems.length === 0;
+  const complete = review.readable && review.omittedChars === 0;
+  const message = !review.readable
+    ? "No pudimos leer texto. Si es un PDF escaneado, súbelo como PDF con texto."
+    : review.omittedChars > 0
+      ? "Leímos solo el comienzo: divídelo en documentos por tema."
+      : "Leímos todo el documento.";
   return (
     <li className="flex gap-3">
-      {ok ? (
+      {complete ? (
         <CheckCircle2Icon className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
       ) : (
-        <AlertTriangleIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+        <InfoIcon className="mt-0.5 h-4 w-4 flex-shrink-0 text-neutral-500" />
       )}
       <div className="min-w-0 text-sm">
         <p className="truncate font-medium text-neutral-900">{review.name}</p>
-        {review.readable && (
-          <p className="text-neutral-600">
-            Leímos {review.totalChars.toLocaleString("es")} caracteres
-            {review.fragments ? ` en ${review.fragments} fragmentos para la búsqueda` : ""}.
-          </p>
-        )}
-        {problems.map((problem) => (
-          <p key={problem} className="text-amber-800">
-            {problem}
-          </p>
-        ))}
+        <p className="text-neutral-600">{message}</p>
       </div>
     </li>
   );
@@ -216,6 +161,8 @@ export function KnowledgeClient({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [reviews, setReviews] = useState<UploadReview[]>([]);
+  // Lo que no se pudo subir, con el motivo que da el servidor: se muestra en la página.
+  const [rejected, setRejected] = useState<string[]>([]);
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -231,21 +178,21 @@ export function KnowledgeClient({
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
+      setReviews(data.reviews ?? []);
       if (data.documents?.length) {
         setDocuments((prev) => [...data.documents, ...prev]);
-        setReviews(data.reviews ?? []);
         router.refresh();
       }
-      for (const reason of data.rejected ?? []) {
-        toast.error(`No se subió: ${reason}`);
+      const reasons: string[] = data.rejected ?? [];
+      if (!res.ok && !data.documents?.length && !reasons.length) {
+        reasons.push(data.error ?? "No se pudieron subir los archivos");
       }
-      if (!res.ok && !data.documents?.length && !data.rejected?.length) {
-        toast.error(data.error ?? "No se pudieron subir los archivos");
-      }
+      setRejected(reasons);
+      if (reasons.length) toast.error("Algunos archivos no se subieron: mira el motivo abajo");
     } catch {
-      toast.error("Error de conexión al subir archivos");
+      setRejected(["Error de conexión al subir archivos. Inténtalo de nuevo."]);
     } finally {
       setIsUploading(false);
     }
@@ -253,17 +200,16 @@ export function KnowledgeClient({
 
   const handleDelete = async (doc: DocumentRow) => {
     try {
-      const res = await fetch(
-        `/api/workspaces/${workspaceSlug}/documents/${doc.id}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`/api/workspaces/${workspaceSlug}/documents/${doc.id}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         const data = await res.json();
         toast.error(data.error ?? "No se pudo eliminar el documento");
         return;
       }
       setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-      toast.success(`"${doc.name}" eliminado`);
+      toast.success(`«${doc.name}» eliminado`);
       setReviews((prev) => prev.filter((r) => r.documentId !== doc.id));
       router.refresh();
     } catch {
@@ -272,9 +218,7 @@ export function KnowledgeClient({
   };
 
   const handleDownload = (doc: DocumentRow) => {
-    window.location.assign(
-      `/api/workspaces/${workspaceSlug}/documents/${doc.id}`
-    );
+    window.location.assign(`/api/workspaces/${workspaceSlug}/documents/${doc.id}`);
   };
 
   const handleSelectFiles = () => {
@@ -305,8 +249,8 @@ export function KnowledgeClient({
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Material</h1>
         <p className="text-neutral-700 mt-1">
-          Guías, protocolos, actividades y preguntas frecuentes de tu programa. El
-          asistente responde con lo que está aquí.
+          Guías, protocolos, actividades y preguntas frecuentes de tu programa. Tu asistente
+          responde con lo que está aquí.
         </p>
       </div>
 
@@ -325,7 +269,7 @@ export function KnowledgeClient({
         ref={fileInputRef}
         type="file"
         multiple
-        accept=".pdf,.txt,.md,.markdown,.csv"
+        accept=".pdf,.doc,.docx,.txt,.md,.markdown,.csv"
         className="hidden"
         onChange={(e) => {
           if (e.target.files?.length) uploadFiles(e.target.files);
@@ -337,7 +281,7 @@ export function KnowledgeClient({
       <Card>
         <CardHeader>
           <CardTitle>Subir material</CardTitle>
-          <CardDescription>PDF con texto, TXT o Markdown (.md), hasta 10 MB.</CardDescription>
+          <CardDescription>Sube PDF con texto o documentos de Word, hasta 10 MB.</CardDescription>
         </CardHeader>
         <CardContent>
           <div
@@ -358,9 +302,24 @@ export function KnowledgeClient({
           >
             <UploadIcon className="h-8 w-8 text-neutral-500" />
             <p className="text-base font-semibold text-neutral-900">
-              {isUploading ? "Subiendo y revisando…" : "Arrastra archivos aquí o haz clic para elegirlos"}
+              {isUploading
+                ? "Subiendo y revisando…"
+                : "Arrastra archivos aquí o haz clic para elegirlos"}
             </p>
           </div>
+          {rejected.length > 0 && (
+            <div
+              role="alert"
+              className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-700"
+            >
+              <p className="font-medium text-neutral-900">No se subió:</p>
+              <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                {rejected.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -369,9 +328,7 @@ export function KnowledgeClient({
         <Card>
           <CardHeader>
             <CardTitle>Revisión de lo que subiste</CardTitle>
-            <CardDescription>
-              Esto es lo que el asistente pudo leer de cada archivo.
-            </CardDescription>
+            <CardDescription>Lo que tu asistente pudo leer de cada archivo.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
@@ -383,127 +340,77 @@ export function KnowledgeClient({
         </Card>
       )}
 
-      {/* Documents Table */}
+      {/* Lista del material */}
       <Card>
         <CardHeader>
           <CardTitle>Material del programa ({documents.length})</CardTitle>
           <CardDescription>
-            Debajo de cada documento: cuándo lo consulta el asistente (se genera solo y puedes editarlo).
+            Debajo de cada documento: cuándo lo consulta tu asistente. Se escribe solo y puedes
+            cambiarlo.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <div className="text-center py-12 text-neutral-600">
-              <FileIcon className="h-12 w-12 mx-auto mb-4 text-neutral-400" />
-              <p>Todavía no hay material</p>
-              <p className="text-sm mt-1">Sube tu primer documento para empezar</p>
+            <div className="py-10 text-center text-neutral-600">
+              <FileTextIcon className="mx-auto mb-3 h-10 w-10 text-neutral-400" />
+              <p className="font-medium text-neutral-900">Todavía no hay material</p>
+              <p className="mt-1 text-sm">
+                Sube tu primer documento: tu asistente responde con lo que está aquí.
+              </p>
             </div>
           ) : (
-            <div className="rounded-lg overflow-hidden border-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-b border-neutral-200 hover:bg-transparent">
-                    <TableHead className="font-semibold">Nombre</TableHead>
-                    <TableHead className="font-semibold">Tipo</TableHead>
-                    <TableHead className="font-semibold">Tamaño</TableHead>
-                    <TableHead className="font-semibold">Fecha</TableHead>
-                    <TableHead className="text-right font-semibold">Acciones</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {documents.map((doc) => (
-                    <TableRow
-                      key={doc.id}
-                      className="border-0 hover:bg-neutral-50 transition-colors"
+            <ul className="divide-y divide-neutral-100">
+              {documents.map((doc) => (
+                <li key={doc.id} className="flex items-start gap-3 py-4">
+                  <FileTextIcon className="mt-0.5 h-5 w-5 flex-shrink-0 text-neutral-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="break-words font-medium text-neutral-900">{doc.name}</p>
+                    {doc.summary && (
+                      <p className="mt-0.5 line-clamp-2 max-w-xl text-sm text-neutral-600">
+                        {doc.summary}
+                      </p>
+                    )}
+                    <RoutingHintEditor
+                      doc={doc}
+                      workspaceSlug={workspaceSlug}
+                      onSaved={(updated) =>
+                        setDocuments((prev) => prev.map((d) => (d.id === updated.id ? updated : d)))
+                      }
+                    />
+                  </div>
+                  <div className="flex flex-shrink-0 items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDownload(doc)}
+                      aria-label={`Descargar ${doc.name}`}
+                      title="Descargar"
                     >
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-neutral-900 flex items-center justify-center shadow-sm flex-shrink-0">
-                            <FileTextIcon className="h-5 w-5 text-white" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium text-neutral-900">
-                                {doc.name}
-                              </span>
-                              {doc.theme_category && (
-                                <Badge variant="outline" className="text-neutral-600">
-                                  {doc.theme_category}
-                                </Badge>
-                              )}
-                            </div>
-                            {doc.summary && (
-                              <p
-                                className="text-xs text-neutral-600 truncate max-w-md mt-0.5"
-                                title={doc.summary}
-                              >
-                                {doc.summary}
-                              </p>
-                            )}
-                            <RoutingHintEditor
-                              doc={doc}
-                              workspaceSlug={workspaceSlug}
-                              onSaved={(updated) =>
-                                setDocuments((prev) =>
-                                  prev.map((d) => (d.id === updated.id ? updated : d))
-                                )
-                              }
-                            />
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700">
-                          {doc.type.split("/")[1]?.toUpperCase() || "FILE"}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-4">
-                        <span className="text-sm font-medium text-neutral-900">
-                          {formatFileSize(doc.size)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="py-4">
-                        <span className="text-sm text-neutral-600">
-                          {formatDate(doc.created_at)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right py-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="lg"
-                            onClick={() => handleDownload(doc)}
-                            aria-label={`Descargar ${doc.name}`}
-                            className="h-10 w-10 p-0"
-                          >
-                            <DownloadIcon className="h-4 w-4" />
-                          </Button>
-                          <ConfirmDialog
-                            title="¿Eliminar documento?"
-                            description={`El asistente dejará de usar "${doc.name}". No se puede deshacer.`}
-                            confirmLabel="Eliminar"
-                            onConfirm={() => handleDelete(doc)}
-                          >
-                            <Button
-                              variant="destructive"
-                              size="lg"
-                              aria-label={`Eliminar ${doc.name}`}
-                              className="h-10 w-10 p-0"
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </Button>
-                          </ConfirmDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      <DownloadIcon className="h-4 w-4" />
+                    </Button>
+                    <ConfirmDialog
+                      title="¿Eliminar documento?"
+                      description={`Tu asistente dejará de usar «${doc.name}». No se puede deshacer.`}
+                      confirmLabel="Eliminar"
+                      onConfirm={() => handleDelete(doc)}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Eliminar ${doc.name}`}
+                        title="Eliminar"
+                        className="text-neutral-500 hover:text-red-600"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                    </ConfirmDialog>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>
-
     </div>
   );
 }

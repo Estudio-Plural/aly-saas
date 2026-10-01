@@ -7,11 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AlertTriangle, CheckCircle2, Circle, Loader2 } from 'lucide-react'
+import { CheckCircle2, Circle, Copy, Info, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { CifrasCanal } from '@/lib/data/whatsapp'
 import {
   ETIQUETA_ESTADO,
+  ETIQUETA_ESTADO_CLIENTE,
   fechaCorta,
   type ConexionWhatsapp,
   type EstadoConexion,
@@ -31,17 +32,40 @@ const COLOR_ESTADO: Record<EstadoConexion, string> = {
   pausado: 'bg-amber-50 text-amber-800 border-amber-200',
 }
 
-function EstadoBadge({ estado }: { estado: EstadoConexion }) {
+function EstadoBadge({ estado, cliente = false }: { estado: EstadoConexion; cliente?: boolean }) {
   return (
     <span className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium ${COLOR_ESTADO[estado]}`}>
-      {ETIQUETA_ESTADO[estado]}
+      {cliente ? ETIQUETA_ESTADO_CLIENTE[estado] : ETIQUETA_ESTADO[estado]}
     </span>
+  )
+}
+
+/** Copia un texto al portapapeles con un aviso corto. */
+function BotonCopiar({ texto, etiqueta = 'Copiar' }: { texto: string; etiqueta?: string }) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(texto)
+          toast.success('Copiado')
+        } catch {
+          toast.error('No pudimos copiarlo. Selecciónalo y cópialo a mano.')
+        }
+      }}
+    >
+      <Copy className="w-3.5 h-3.5 mr-1.5" />
+      {etiqueta}
+    </Button>
   )
 }
 
 export function WhatsAppClient(props: {
   workspaceSlug: string
   workspaceName: string
+  assistantName: string
   rol: 'plural' | 'cliente'
   puedeCambiarVista: boolean
   conexion: ConexionWhatsapp | null
@@ -49,6 +73,8 @@ export function WhatsAppClient(props: {
   checklist: Checklist
   engineResponde: boolean
   cifras: CifrasCanal
+  /** Solo en la vista Plural, y solo si ENGINE_PUBLIC_URL está definido. */
+  webhookUrl: string | null
 }) {
   return props.rol === 'cliente' ? <VistaCliente {...props} /> : <VistaPlural {...props} />
 }
@@ -57,12 +83,19 @@ export function WhatsAppClient(props: {
 
 function VistaCliente({
   workspaceSlug,
+  assistantName,
   puedeCambiarVista,
   displayNumber,
   checklist,
   cifras,
 }: Parameters<typeof WhatsAppClient>[0]) {
-  const activo = checklist.estado === 'activo'
+  const nombre = assistantName.trim() || 'Tu asistente'
+  const estado = checklist.estado
+  const contacto = (
+    <a href="mailto:hola@estudio-plural.co" className="font-medium text-neutral-900 underline underline-offset-2">
+      Escríbenos a hola@estudio-plural.co
+    </a>
+  )
   return (
     <div className="space-y-6 max-w-3xl">
       {puedeCambiarVista && (
@@ -75,14 +108,30 @@ function VistaCliente({
       )}
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-3xl font-bold tracking-tight text-neutral-900">WhatsApp</h1>
-        <EstadoBadge estado={checklist.estado} />
+        <EstadoBadge estado={estado} cliente />
       </div>
 
-      {activo ? (
+      {estado === 'activo' ? (
         <>
-          <p className="text-neutral-700">
-            Tu asistente está respondiendo en WhatsApp{displayNumber ? <> en <span className="font-medium text-neutral-900">{displayNumber}</span></> : null}.
-          </p>
+          <Card className="p-6 border border-neutral-200 shadow-sm space-y-4">
+            <p className="text-lg text-neutral-900">
+              {nombre} responde en WhatsApp
+              {displayNumber ? <> en <span className="font-semibold">{displayNumber}</span></> : null}. Compártelo con
+              las personas de tu programa.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button asChild size="lg">
+                <Link href={`/${workspaceSlug}/operar`}>Ver cómo va →</Link>
+              </Button>
+              {displayNumber && <BotonCopiar texto={displayNumber} etiqueta="Copiar el número" />}
+            </div>
+            <Link
+              href={`/${workspaceSlug}/chat`}
+              className="inline-block text-sm font-medium text-neutral-700 underline-offset-2 hover:underline"
+            >
+              Probar cambios antes de que lleguen a WhatsApp
+            </Link>
+          </Card>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Cifra valor={cifras.personasAceptaron} etiqueta="personas aceptaron el aviso de privacidad" />
             <Cifra valor={cifras.conversaciones7d} etiqueta="conversaciones en los últimos 7 días" />
@@ -90,28 +139,51 @@ function VistaCliente({
           </div>
         </>
       ) : (
-        <Card className="p-6 border border-neutral-200 shadow-sm space-y-2">
-          <p className="text-lg font-medium text-neutral-900">Plural conecta tu número. Te avisamos cuando esté activo.</p>
-          <p className="text-neutral-600">
-            {checklist.estado === 'pausado'
-              ? 'La conexión está pausada por ahora.'
-              : `Vamos en ${checklist.hechos} de ${TOTAL_PASOS} pasos.`}
+        <Card className="p-6 border border-neutral-200 shadow-sm space-y-3">
+          <p className="text-lg text-neutral-900">
+            {estado === 'pausado' ? (
+              'Pausamos las respuestas en WhatsApp. Escríbenos si quieres reactivarlas.'
+            ) : estado === 'esperando_mensaje' ? (
+              <>
+                Tu número ya está conectado. Último paso: escríbele «hola» desde tu celular
+                {displayNumber ? <> al <span className="font-semibold">{displayNumber}</span></> : ' a tu número'} y
+                confirma que te responde.
+              </>
+            ) : estado === 'sin_configurar' ? (
+              <>
+                Para que {nombre} responda en WhatsApp, conectamos el número de tu organización. Escríbenos y lo hacemos
+                contigo.
+              </>
+            ) : (
+              'Estamos conectando tu número de WhatsApp. Te escribimos cuando esté listo; mientras tanto, prueba tu asistente aquí.'
+            )}
           </p>
-          <p className="text-sm text-neutral-600">
-            ¿Dudas? Escríbenos a{' '}
-            <a href="mailto:hola@estudio-plural.co" className="font-medium text-neutral-900 underline underline-offset-2">
-              hola@estudio-plural.co
-            </a>
-          </p>
+          {estado === 'esperando_mensaje' && displayNumber && (
+            <BotonCopiar texto={displayNumber} etiqueta="Copiar el número" />
+          )}
+          {estado !== 'sin_configurar' && <p className="text-sm text-neutral-600">¿Dudas? {contacto}</p>}
         </Card>
       )}
 
-      <Link
-        href={`/${workspaceSlug}/chat`}
-        className="inline-flex items-center text-base font-semibold text-neutral-900 hover:underline underline-offset-4"
-      >
-        {activo ? 'Prueba tu asistente →' : 'Mientras tanto, prueba tu asistente →'}
-      </Link>
+      {estado === 'sin_configurar' ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button asChild size="lg">
+            <a href={`mailto:hola@estudio-plural.co?subject=${encodeURIComponent(`Conectar WhatsApp: ${nombre}`)}`}>
+              Pedir la conexión
+            </a>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href={`/${workspaceSlug}/chat`}>Probar tu asistente</Link>
+          </Button>
+        </div>
+      ) : (
+        estado !== 'activo' &&
+        estado !== 'esperando_mensaje' && (
+          <Button asChild size="lg">
+            <Link href={`/${workspaceSlug}/chat`}>Probar tu asistente →</Link>
+          </Button>
+        )
+      )}
     </div>
   )
 }
@@ -133,6 +205,7 @@ function VistaPlural({
   conexion,
   checklist,
   engineResponde,
+  webhookUrl,
 }: Parameters<typeof WhatsAppClient>[0]) {
   const router = useRouter()
   const [form, setForm] = useState({
@@ -186,7 +259,10 @@ function VistaPlural({
       </div>
 
       {!engineResponde && (
-        <Aviso>No pudimos consultar el engine: el estado del token y del app secret no está confirmado.</Aviso>
+        <Aviso>
+          No pudimos confirmar el token ni el app secret porque el servidor del asistente no respondió. Revisa que esté
+          encendido y recarga esta página.
+        </Aviso>
       )}
       {conexion?.lastError && (
         <Aviso>
@@ -230,7 +306,7 @@ function VistaPlural({
       <Card className="p-6 border border-neutral-200 shadow-sm">
         <h2 className="text-lg font-semibold text-neutral-900">Datos del número</h2>
         <p className="text-sm text-neutral-600 mb-4">
-          El token nunca se escribe aquí: se carga en el entorno del engine y aquí va solo el nombre de la variable.
+          El token nunca se escribe aquí: se carga en el servidor del asistente y aquí va solo el nombre de la variable.
         </p>
         <form
           className="space-y-4"
@@ -243,7 +319,7 @@ function VistaPlural({
             <CampoTexto id="pnid" label="phone_number_id" value={form.phoneNumberId} onChange={campo('phoneNumberId')} placeholder="1062537536952098" inputMode="numeric" />
             <CampoTexto id="display" label="Número visible" value={form.displayNumber} onChange={campo('displayNumber')} placeholder="+57 315 000 0000" />
             <CampoTexto id="waba" label="ID de la WABA" value={form.wabaId} onChange={campo('wabaId')} placeholder="1834726783925571" inputMode="numeric" />
-            <CampoTexto id="token" label="Variable del token en el engine" value={form.tokenEnv} onChange={campo('tokenEnv')} placeholder="META_TOKEN_MI_PROGRAMA" />
+            <CampoTexto id="token" label="Variable del token en el servidor" value={form.tokenEnv} onChange={campo('tokenEnv')} placeholder="META_TOKEN_MI_PROGRAMA" />
           </div>
           <label className="flex items-center gap-2 text-sm text-neutral-800">
             <input
@@ -261,10 +337,16 @@ function VistaPlural({
         </form>
       </Card>
 
-      <p className="text-sm text-neutral-600">
-        URL del webhook en Meta: <code className="rounded bg-neutral-100 px-1">https://&lt;dominio-del-engine&gt;/api/webhook/meta</code>, campo
-        «messages». Paso a paso en <code className="rounded bg-neutral-100 px-1">docs/whatsapp-conectar-numero.md</code>.
-      </p>
+      {webhookUrl && (
+        <Card className="p-6 border border-neutral-200 shadow-sm space-y-2">
+          <h2 className="text-lg font-semibold text-neutral-900">Webhook en Meta</h2>
+          <p className="text-sm text-neutral-600">Pega esta URL en la configuración del webhook y activa el campo «messages».</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <code className="min-w-0 break-all rounded bg-neutral-100 px-2 py-1 text-sm">{webhookUrl}</code>
+            <BotonCopiar texto={webhookUrl} />
+          </div>
+        </Card>
+      )}
     </div>
   )
 }
@@ -296,10 +378,11 @@ function CampoTexto(props: {
   )
 }
 
+// Fallas técnicas: gris neutro (el ámbar es solo para riesgos de seguridad).
 function Aviso({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+    <div className="flex gap-2 rounded-md border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-800">
+      <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-neutral-500" />
       <p>{children}</p>
     </div>
   )

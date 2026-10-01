@@ -122,7 +122,7 @@ export function toVariableName(text: string): string {
   );
 }
 
-// ─── Estado de avance (Primeros pasos + checks del menú) ─────────────────────
+// ─── Estado de avance (Inicio + checks del menú) ─────────────────────
 
 export type DesignStepKey = "program" | "boundaries" | "routes" | "material" | "welcome";
 export type SectionKey = "design" | "test" | "connect" | "operate";
@@ -144,6 +144,38 @@ export const DESIGN_STEPS: { key: DesignStepKey; label: string; path: string }[]
 
 export function isDesignDone(progress: ProgramProgress): boolean {
   return Object.values(progress.design).every(Boolean);
+}
+
+/** Etiquetas de las etapas que siguen a Diseñar, por ruta (relativa al asistente). */
+export const STAGE_LABELS: Record<string, string> = {
+  "chat/casos": "Probar",
+  chat: "Probar",
+  whatsapp: "Conectar WhatsApp",
+  operar: "Cómo va",
+};
+
+/** Etiqueta de un paso por su ruta: la misma en el menú, en el H1 y en Inicio. */
+export function stepLabel(path: string): string {
+  return DESIGN_STEPS.find((step) => step.path === path)?.label ?? STAGE_LABELS[path] ?? path;
+}
+
+/**
+ * El paso que sigue a un paso de Diseñar, para el «Siguiente: … →» de la barra
+ * de guardado. Con el avance real: el primer paso de diseño pendiente que no
+ * sea este (o Probar si no queda ninguno). Sin avance: el que sigue en orden.
+ */
+export function nextAfterDesignStep(
+  key: DesignStepKey,
+  progress?: ProgramProgress
+): { label: string; path: string } {
+  const probar = { label: "Probar", path: "chat/casos" };
+  if (progress) {
+    const pending = DESIGN_STEPS.find((step) => step.key !== key && !progress.design[step.key]);
+    return pending ? { label: pending.label, path: pending.path } : probar;
+  }
+  const index = DESIGN_STEPS.findIndex((step) => step.key === key);
+  const following = DESIGN_STEPS[index + 1];
+  return following ? { label: following.label, path: following.path } : probar;
 }
 
 /** Ruta (relativa al programa) del primer paso pendiente, o null si todo está hecho. */
