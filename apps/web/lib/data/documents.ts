@@ -97,25 +97,3 @@ export async function deleteDocument(
   `;
   return rows.length ? rows[0] : null;
 }
-
-/** Texto de los documentos del workspace para inyectar al contexto del chat. */
-export async function getKnowledgeText(
-  workspaceId: string,
-  maxChars = 12000
-): Promise<{ name: string; text: string }[]> {
-  const rows = await sql<{ name: string; text_content: string }[]>`
-    SELECT name, text_content
-    FROM documents
-    WHERE workspace_id = ${workspaceId} AND text_content IS NOT NULL AND text_content <> ''
-    ORDER BY created_at ASC
-  `;
-  const result: { name: string; text: string }[] = [];
-  let used = 0;
-  for (const row of rows) {
-    if (used >= maxChars) break;
-    const text = row.text_content.slice(0, maxChars - used);
-    result.push({ name: row.name, text });
-    used += text.length;
-  }
-  return result;
-}

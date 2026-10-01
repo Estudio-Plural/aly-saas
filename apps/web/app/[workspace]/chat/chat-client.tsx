@@ -122,14 +122,12 @@ export function ChatClient({
   assistantName,
   flowSteps,
   initialMessages,
-  llmConfigured,
   storyboardAttachments = [],
 }: {
   workspaceSlug: string;
   assistantName: string;
   flowSteps: PreviewStep[];
   initialMessages: ChatMessage[];
-  llmConfigured: boolean;
   storyboardAttachments?: StoryboardAttachment[];
 }) {
   const attachmentsById = new Map(
@@ -230,6 +228,15 @@ export function ChatClient({
   }, []);
 
   const sendToLlm = async (text: string) => {
+    // Sin respuesta, el mensaje no se guardó: sale de la conversación y vuelve a la caja
+    // para reintentarlo.
+    const deshacer = () => {
+      setMessages((prev) => {
+        const i = prev.map((m) => m.sender === "user" && m.text === text).lastIndexOf(true);
+        return i < 0 ? prev : [...prev.slice(0, i), ...prev.slice(i + 1)];
+      });
+      setInputValue((actual) => actual || text);
+    };
     setIsTyping(true);
     try {
       const res = await fetch(`/api/workspaces/${workspaceSlug}/chat`, {
@@ -241,22 +248,13 @@ export function ChatClient({
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         toast.error(data?.error ?? "No se pudo obtener respuesta del asistente");
-        return;
-      }
-
-      // Sin API key configurada el endpoint responde JSON; con LLM, streamea texto.
-      const contentType = res.headers.get("content-type") ?? "";
-      if (contentType.includes("application/json")) {
-        const data = await res.json();
-        const reply = data.messages?.find(
-          (msg: ChatMessage) => msg.sender === "assistant"
-        );
-        if (reply) setMessages((prev) => [...prev, reply]);
+        deshacer();
         return;
       }
 
       if (!res.body) {
         toast.error("El asistente no devolvió respuesta");
+        deshacer();
         return;
       }
 
@@ -289,6 +287,7 @@ export function ChatClient({
       }
     } catch {
       toast.error("Error de conexión con el asistente");
+      deshacer();
     } finally {
       setIsTyping(false);
       setIsStreaming(false);
@@ -549,9 +548,7 @@ export function ChatClient({
               </Button>
             </div>
             <p className="text-xs text-neutral-600 mt-3 px-1">
-              {llmConfigured
-                ? "Presiona Enter para enviar. La conversación de prueba se guarda en tu programa."
-                : "El asistente todavía no está activado. Escríbenos a hola@estudio-plural.co."}
+              Presiona Enter para enviar. La conversación de prueba se guarda en tu programa.
             </p>
           </div>
         </Card>

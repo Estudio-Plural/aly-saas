@@ -70,8 +70,9 @@ cd apps/web && npx next dev           # http://localhost:3000
   `POST /api/rag/doQuestion` vía `lib/engine.ts` (`ENGINE_URL`, default
   `http://localhost:8080`) con `X-Engine-Token: ENGINE_TOKEN` (mismo valor en web
   y api; el engine está cerrado por defecto: todo salvo `/health`, el webhook de
-  Meta y `/internal/*` exige el token). Si el engine no responde, cae al camino legacy de
-  una sola llamada (`lib/llm.ts`) — el chat nunca se queda mudo.
+  Meta y `/internal/*` exige el token). Si el engine no responde, el chat responde 503
+  («El asistente no responde ahora») y no guarda nada: **sin respaldo** desde 2026-10-01
+  (el de `lib/llm.ts` no tenía triage ni rutas de ayuda deterministas y engañaba la prueba).
 - El engine persiste el par user+assistant en `users_interactions` por su
   cuenta; la ruta de chat NO debe volver a guardarlos cuando responde el engine.
 - **Ruteo de documentos** (port del doc-routing del librarian legacy): cada
@@ -190,9 +191,8 @@ systemd, `enabled`, sobreviven reboots):
   `voice_avoid` (`scope`/`key_actions` quedan como legacy opcional) y los
   campos vacíos caen al ejemplo **campo a campo**; en el panel los defaults se
   muestran como «ejemplo editable», nunca como valores llenos.
-  `compileIdentityBlock()` los compila al bloque de identidad que se inyecta en
-  los prompts (web fallback y engine vía `BotConfig.identity` + `withIdentity`
-  en factual/plan/ideate/smalltalk).
+  `compileIdentity()` del engine los compila al bloque de identidad que se inyecta
+  vía `BotConfig.identity` + `withIdentity` en factual/plan/ideate/smalltalk.
 - **Materiales del storyboard (desde 2026-07-21):** cada momento puede tener
   adjuntos (imagen/PDF/video/audio/doc) que el asistente envía en el chat.
   Viven dentro del mismo JSONB `storyboard.attachments` (sin migración);
@@ -270,13 +270,9 @@ systemd, `enabled`, sobreviven reboots):
 - `lib/db.ts` — cliente postgres.js. **Solo importar desde código de servidor.**
 - `lib/data/*.ts` — queries por entidad (workspaces, documents, onboarding,
   chat, conversations, whatsapp, program). Las fechas se devuelven como ISO strings.
-- `lib/llm.ts` — chat vía OpenRouter; system prompt = bloque de identidad
-  compilado (`compileIdentityBlock`: prompt núcleo + storyboard) + texto de
-  documentos.
-  Modelo: `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`), override por
-  workspace en `workspace_configs.model_preferences.chat`. La ruta de chat
-  **streamea** la respuesta (`streamChatCompletion`, SSE de OpenRouter →
-  `text/plain` chunked al cliente; fallback JSON si no hay API key).
+- `lib/llm.ts` — OpenRouter para tareas de fondo del panel (enrichment, extracción),
+  NO para el chat. Modelo: `OPENROUTER_MODEL` (default `openai/gpt-4o-mini`), override
+  por workspace en `workspace_configs.model_preferences.chat`.
 - `lib/uploads.ts` — archivos en `apps/web/.uploads/` (gitignoreado).
   `extractTextContent` es async: TXT/MD/CSV directo y **PDF vía `unpdf`**;
   ese texto entra al system prompt del chat.

@@ -1,15 +1,15 @@
 // Cliente del engine (apps/api) — el pipeline conversacional multi-tenant
 // real (normalize → triage → intent ∥ librarian → retrieve → agente terminal).
-// Solo importar desde código de servidor. La ruta de chat lo intenta primero
-// y cae a lib/llm.ts (una sola llamada) si el engine no está disponible.
+// Solo importar desde código de servidor. Es lo único que responde el chat de prueba:
+// si no está disponible, la ruta responde 503 (sin respaldo; ver chat/route.ts).
 
 const ENGINE_URL = process.env.ENGINE_URL ?? "http://localhost:8080";
 const ENGINE_TIMEOUT_MS = 60_000;
 
 /**
  * El engine exige `X-Engine-Token` (ENGINE_TOKEN, el mismo valor en web y api) en todo
- * lo que no es el webhook de Meta. Sin token el engine responde 401/503 y el chat cae
- * al camino de respaldo (lib/llm.ts).
+ * lo que no es el webhook de Meta. Sin token el engine responde 401/503 y el chat dice
+ * que el asistente no responde.
  */
 function engineHeaders(extra: Record<string, string> = {}): Record<string, string> {
   const token = process.env.ENGINE_TOKEN;
@@ -26,7 +26,7 @@ export interface EngineResponse {
 /**
  * Pregunta al pipeline real. El engine persiste el par user+assistant en
  * `users_interactions` por su cuenta (la ruta NO debe volver a guardarlos).
- * Devuelve null ante cualquier falla para que la ruta haga fallback.
+ * Devuelve null ante cualquier falla (la ruta responde 503).
  */
 export async function askEngine(params: {
   workspaceId: string;
@@ -62,7 +62,7 @@ export async function askEngine(params: {
     }
     return data;
   } catch (error) {
-    console.error("[engine] no disponible, fallback a lib/llm:", error);
+    console.error("[engine] no disponible, sin respuesta para el chat:", error);
     return null;
   }
 }

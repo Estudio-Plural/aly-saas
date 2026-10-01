@@ -65,22 +65,6 @@ export const SAFETY_RULES: SafetyRule[] = [
   },
 ];
 
-/** Bloque «qué no hace» para el prompt: seguridad (siempre) + reglas propias. */
-export function compileBoundariesBlock(boundaries: Boundaries | null | undefined): string {
-  const own = (boundaries?.rules ?? [])
-    .map((rule) => rule?.text?.trim())
-    .filter((text): text is string => Boolean(text));
-  let block =
-    `Reglas que no rompes nunca:\n` +
-    SAFETY_RULES.map((rule) => `- ${rule.prompt}`).join("\n");
-  if (own.length) {
-    block +=
-      `\n\nEsto tampoco lo haces (lo definió la organización):\n` +
-      own.map((text) => `- ${text}`).join("\n");
-  }
-  return block;
-}
-
 // ─── Rutas de ayuda (workspace_configs.help_routes) ─────────────────────────
 
 export type HelpRoute = {
@@ -96,33 +80,6 @@ export type HelpRoute = {
   /** '' = todos los territorios. */
   territory: string;
 };
-
-export const NO_HELP_ROUTES_BLOCK =
-  `Este programa no tiene rutas de ayuda cargadas. No des ningún teléfono, ` +
-  `línea ni institución: pide a la persona que busque ayuda en los servicios ` +
-  `de salud o de emergencia de su territorio, sin inventar números.`;
-
-/** Bloque de rutas para el prompt (mismo texto que compileHelpRoutes del engine). */
-export function compileHelpRoutesBlock(routes: HelpRoute[] | null | undefined): string {
-  const valid = (routes ?? []).filter(
-    (route) => route?.name?.trim() && route?.contact?.trim()
-  );
-  if (!valid.length) return NO_HELP_ROUTES_BLOCK;
-  const lines = valid.map((route) => {
-    const parts = [`*${route.name.trim()}* — ${route.contact.trim()}`];
-    if (route.hours?.trim()) parts.push(`horario: ${route.hours.trim()}`);
-    if (route.when?.trim()) parts.push(`cuándo usarla: ${route.when.trim()}`);
-    parts.push(`territorio: ${route.territory?.trim() || "todos"}`);
-    return `- ${parts.join(" · ")}`;
-  });
-  return (
-    `Rutas de ayuda del programa (son las ÚNICAS que puedes dar; cópialas tal cual, sin cambiar números):\n` +
-    lines.join("\n") +
-    `\nSi la persona puede estar en riesgo, dale la ruta que corresponda a su situación y a su territorio. ` +
-    `Si hay rutas distintas por territorio y no sabes el suyo, da las que aplican a todos o pregúntale su territorio en una frase. ` +
-    `No agregues rutas que no estén en esta lista.`
-  );
-}
 
 // ─── Bienvenida y consentimiento (workspace_configs.welcome) ────────────────
 

@@ -3,7 +3,6 @@ import { getDesign } from "@/lib/data/design";
 import { welcomeToSteps } from "@/lib/design";
 import { getOpenConversationId, getConversationMessages } from "@/lib/data/chat";
 import { getStoryboard } from "@/lib/data/program";
-import { isLlmConfigured } from "@/lib/llm";
 import { listStoryboardAttachments } from "@/lib/workspaces";
 import { ChatClient } from "./chat-client";
 
@@ -34,20 +33,12 @@ export default async function ChatPage({
       ? welcomeToSteps(welcome)
       : [];
 
-  const llmConfigured = isLlmConfigured();
-  if (!llmConfigured) {
-    console.warn(
-      "[chat] OPENROUTER_API_KEY no configurada (apps/web/.env.local): el chat de prueba no tiene LLM."
-    );
-  }
-
   return (
     <ChatClient
       workspaceSlug={workspace.slug}
       assistantName={workspace.assistant_name}
       flowSteps={flowSteps}
       initialMessages={messages}
-      llmConfigured={llmConfigured}
       storyboardAttachments={listStoryboardAttachments(storyboard).map(
         ({ attachment }) => attachment
       )}

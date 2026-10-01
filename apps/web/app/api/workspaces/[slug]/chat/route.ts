@@ -12,18 +12,9 @@ import {
 import { getFlagRules } from "@/lib/data/flags";
 import { upsertConversationAnalysis } from "@/lib/data/conversations";
 import { analyzeConversation } from "@/lib/enrichment";
-import {
-  buildSystemPrompt,
-  getChatModel,
-  isLlmConfigured,
-  streamChatCompletion,
-  type LlmMessage,
-} from "@/lib/llm";
 import { askEngine } from "@/lib/engine";
 
 type Params = { params: Promise<{ slug: string }> };
-
-const HISTORY_LIMIT = 20;
 
 export async function GET(request: Request, { params }: Params) {
   const { slug } = await params;
@@ -38,7 +29,6 @@ export async function GET(request: Request, { params }: Params) {
   return NextResponse.json({
     conversationId,
     messages,
-    llmConfigured: isLlmConfigured(),
   });
 }
 
@@ -80,114 +70,37 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ conversationId, messages: inserted });
   }
 
-  // Motor real (apps/api): pipeline multi-tenant config-driven. Persiste el
-  // par user+assistant por su cuenta — acá NO se hace appendMessages. Si el
-  // engine no está disponible, se cae al camino legacy de una sola llamada.
+  // Motor real (apps/api): el mismo que responde por WhatsApp (triage sensible, rutas de
+  // ayuda deterministas, material del programa). Persiste el par user+assistant por su
+  // cuenta — acá NO se hace appendMessages. Si no responde, NO hay respaldo: otra respuesta
+  // (sin triage ni rutas) engañaría la prueba y podría contestar un riesgo sin rutas.
   const engine = await askEngine({
     workspaceId: workspace.id,
     conversationId,
     userNumber: WEB_PREVIEW_NUMBER,
     question: parsed.data.message,
   });
-  if (engine) {
-    const encoder = new TextEncoder();
-    const body = new ReadableStream({
-      start(controller) {
-        controller.enqueue(encoder.encode(engine.answer));
-        controller.close();
-      },
-    });
-    return new Response(body, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
-        "X-Conversation-Id": conversationId,
-        "X-Intent": engine.intent,
-      },
-    });
-  }
-
-  const [userMessage] = await appendMessages(workspace.id, conversationId, [
-    { role: "user", text: parsed.data.message },
-  ]);
-
-  if (!isLlmConfigured()) {
-    console.warn(
-      "[chat] OPENROUTER_API_KEY no configurada (apps/web/.env.local): el chat de prueba no tiene LLM."
-    );
-    const [reply] = await appendMessages(workspace.id, conversationId, [
-      {
-        role: "assistant",
-        text: "El asistente todavía no está activado. Escríbenos a hola@estudio-plural.co.",
-      },
-    ]);
-    return NextResponse.json({ conversationId, messages: [userMessage, reply] });
-  }
-
-  try {
-    const history = await getConversationMessages(workspace.id, conversationId);
-    const llmMessages: LlmMessage[] = [
-      { role: "system", content: await buildSystemPrompt(workspace) },
-      ...history.slice(-HISTORY_LIMIT).map(
-        (msg): LlmMessage => ({
-          role: msg.sender === "user" ? "user" : "assistant",
-          content: msg.text,
-        })
-      ),
-    ];
-
-    const model = await getChatModel(workspace.id);
-    const tokens = streamChatCompletion(llmMessages, model);
-
-    // Esperar el primer token antes de responder: si OpenRouter falla acá,
-    // todavía podemos devolver un error JSON limpio en vez de un stream roto.
-    const first = await tokens.next();
-    if (first.done) {
-      throw new Error("OpenRouter devolvió una respuesta vacía");
-    }
-
-    const workspaceId = workspace.id;
-    const encoder = new TextEncoder();
-    const body = new ReadableStream({
-      async start(controller) {
-        let full = first.value;
-        controller.enqueue(encoder.encode(first.value));
-        try {
-          for await (const token of tokens) {
-            full += token;
-            controller.enqueue(encoder.encode(token));
-          }
-        } catch (error) {
-          // Stream cortado a mitad: persistimos lo recibido igual
-          console.error("[chat] Stream del LLM interrumpido:", error);
-        }
-        if (full.trim()) {
-          await appendMessages(workspaceId, conversationId, [
-            { role: "assistant", text: full.trim() },
-          ]);
-        }
-        controller.close();
-      },
-    });
-
-    return new Response(body, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Cache-Control": "no-store",
-        "X-Conversation-Id": conversationId,
-      },
-    });
-  } catch (error) {
-    console.error("[chat] Error llamando al LLM:", error);
+  if (!engine) {
     return NextResponse.json(
-      {
-        error: "No se pudo obtener respuesta del asistente. Revisa la clave de OpenRouter y la conexión.",
-        conversationId,
-        messages: [userMessage],
-      },
-      { status: 502 }
+      { error: "El asistente no responde ahora. Inténtalo en un minuto." },
+      { status: 503 }
     );
   }
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(engine.answer));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Conversation-Id": conversationId,
+      "X-Intent": engine.intent,
+    },
+  });
 }
 
 /**

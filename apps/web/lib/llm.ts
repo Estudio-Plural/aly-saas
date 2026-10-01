@@ -1,10 +1,6 @@
-// Cliente LLM vía OpenRouter — solo servidor.
+// Cliente LLM vía OpenRouter — solo servidor. Lo usan las tareas de fondo del panel
+// (enrichment, extracción). El chat NO: lo responde siempre el engine (lib/engine.ts).
 import { sql } from "@/lib/db";
-import { getKnowledgeText } from "@/lib/data/documents";
-import { getCorePrompt, getStoryboard } from "@/lib/data/program";
-import { getDesign } from "@/lib/data/design";
-import { compileHelpRoutesBlock } from "@/lib/design";
-import { compileIdentityBlock, type Workspace } from "@/lib/workspaces";
 
 export type LlmMessage = {
   role: "system" | "user" | "assistant";
@@ -15,48 +11,6 @@ const DEFAULT_MODEL = process.env.OPENROUTER_MODEL ?? "openai/gpt-4o-mini";
 
 export function isLlmConfigured(): boolean {
   return Boolean(process.env.OPENROUTER_API_KEY);
-}
-
-/**
- * System prompt del asistente: identidad compilada (prompt núcleo + storyboard)
- * + knowledge base en texto plano (hasta tener RAG con pgvector).
- */
-export async function buildSystemPrompt(workspace: Workspace): Promise<string> {
-  const [corePrompt, storyboard, knowledge, design] = await Promise.all([
-    getCorePrompt(workspace.id),
-    getStoryboard(workspace.id),
-    getKnowledgeText(workspace.id),
-    getDesign(workspace.id),
-  ]);
-
-  const parts = [
-    compileIdentityBlock(
-      workspace.assistant_name,
-      workspace.name,
-      corePrompt,
-      storyboard,
-      design.boundaries
-    ),
-    // Sin triage sensible en este camino: las rutas van siempre.
-    compileHelpRoutesBlock(design.help_routes),
-  ];
-
-  if (knowledge.length) {
-    // Sin nombres de archivo: el asistente nunca los cita.
-    parts.push(
-      `Material del programa (tu única fuente para lo que presentes como del programa):\n\n` +
-        knowledge.map((doc, i) => `### Material ${i + 1}\n${doc.text}`).join("\n\n")
-    );
-    parts.push(
-      `Si la respuesta no está en el material, dilo con naturalidad y ofrece lo más cercano que sí tengas.`
-    );
-  } else {
-    parts.push(
-      `Todavía no hay material del programa. Responde lo mejor posible y aclara cuando no tengas información específica del programa.`
-    );
-  }
-
-  return parts.join("\n\n");
 }
 
 export async function getChatModel(workspaceId: string): Promise<string> {
@@ -101,41 +55,4 @@ export async function chatCompletion(
     throw new Error("OpenRouter devolvió una respuesta vacía");
   }
   return content.trim();
-}
-
-/** Tokens de la respuesta a medida que llegan (SSE de OpenRouter). */
-export async function* streamChatCompletion(
-  messages: LlmMessage[],
-  model: string
-): AsyncGenerator<string> {
-  const res = await openRouterFetch({ model, messages, max_tokens: 600, stream: true });
-  if (!res.body) {
-    throw new Error("OpenRouter no devolvió stream");
-  }
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // OpenRouter intercala comentarios (": OPENROUTER PROCESSING") — ignorarlos
-      if (!trimmed.startsWith("data:")) continue;
-      const payload = trimmed.slice(5).trim();
-      if (payload === "[DONE]") return;
-      try {
-        const delta = JSON.parse(payload).choices?.[0]?.delta?.content;
-        if (typeof delta === "string" && delta) yield delta;
-      } catch {
-        // línea parcial o keep-alive: se completa con el próximo chunk
-      }
-    }
-  }
 }

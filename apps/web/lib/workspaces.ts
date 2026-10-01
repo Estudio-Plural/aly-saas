@@ -1,6 +1,5 @@
 // Tipos compartidos entre páginas + helpers client-safe.
 // Las queries reales viven en lib/data/* (solo servidor).
-import { compileBoundariesBlock, type Boundaries } from "@/lib/design";
 
 export type SubscriptionStatus = "trial" | "active" | "canceled" | "past_due";
 
@@ -192,80 +191,6 @@ export const DEFAULT_STORYBOARD: Storyboard = {
   closing:
     "Cierre: reconocer el avance y dejar claro que puede volver a escribir cuando lo necesite.",
 };
-
-function pick(value: string | undefined, fallback: string): string {
-  return value?.trim() ? value.trim() : fallback;
-}
-
-/**
- * Compila el prompt núcleo + storyboard + «qué no hace» en el bloque de
- * identidad que se inyecta en los prompts (web fallback). Mismo texto que
- * compileIdentity() en apps/api/src/config/identity.ts.
- */
-export function compileIdentityBlock(
-  assistantName: string,
-  workspaceName: string,
-  core: Partial<CorePrompt> | null,
-  storyboard: Partial<Storyboard> | null,
-  boundaries?: Boundaries | null
-): string {
-  const c = core ?? {};
-  const sb = storyboard ?? {};
-  const d = DEFAULT_CORE_PROMPT;
-  const ds = DEFAULT_STORYBOARD;
-  let block =
-    `Eres ${assistantName}, el asistente conversacional de "${workspaceName}". ` +
-    `Hablas en español, tuteas a la persona y respondes con mensajes breves, como en un chat de WhatsApp.\n\n` +
-    `Tu misión: ${pick(c.mission, d.mission)}\n\n` +
-    `A quién acompañas: ${pick(c.audience, d.audience)}\n\n` +
-    `Una conversación va bien cuando: ${pick(c.success_criteria, d.success_criteria)}`;
-  if (c.key_actions?.trim()) {
-    block += `\n\nBuscas que la persona realice estas acciones clave: ${c.key_actions.trim()}`;
-  }
-  if (c.scope?.trim()) {
-    block += `\n\nTu alcance: ${c.scope.trim()}`;
-  }
-  block +=
-    `\n\nTu voz:\n` +
-    `- Tono: ${pick(c.voice_tone, d.voice_tone)}\n` +
-    `- Palabras y giros que usas: ${pick(c.voice_use, d.voice_use)}\n` +
-    `- Evitas: ${pick(c.voice_avoid, d.voice_avoid)}`;
-  block +=
-    `\n\nLa conversación sigue este arco (adáptalo al momento de cada persona):\n` +
-    `1) Arranque: ${pick(sb.opening, ds.opening)}\n` +
-    `2) Desarrollo: ${pick(sb.development, ds.development)}\n` +
-    `3) Lo que debe pasar después: ${pick(sb.next_steps, ds.next_steps)}\n` +
-    `4) Cierre: ${pick(sb.closing, ds.closing)}`;
-  return (
-    block +
-    compileMaterialsBlock({ ...ds, ...sb }) +
-    `\n\n` +
-    compileBoundariesBlock(boundaries)
-  );
-}
-
-/**
- * Sección de materiales del bloque de identidad: lista los adjuntos del
- * storyboard con su marcador [[adjunto:id]]. El chat convierte el marcador
- * en el archivo real al renderizar (y WhatsApp lo hará al enviar).
- */
-function compileMaterialsBlock(storyboard: Storyboard): string {
-  const materials = listStoryboardAttachments(storyboard);
-  if (!materials.length) return "";
-  const lines = materials.map(
-    ({ moment, attachment }) =>
-      `- [[adjunto:${attachment.id}]] → "${attachment.name}" (${attachmentKind(attachment.type)}) — momento: ${STORYBOARD_MOMENT_LABELS[moment]}`
-  );
-  return (
-    `\n\nMateriales del programa (archivos que puedes enviar en el chat):\n` +
-    lines.join("\n") +
-    `\nCuando el arco lo pida, envía el material incluyendo su marcador exacto ` +
-    `(ej: [[adjunto:abc123]]) en una línea propia de tu respuesta; el sistema lo ` +
-    `reemplaza por el archivo real. Preséntalo con una frase breve antes del ` +
-    `marcador. No inventes marcadores que no estén en esta lista ni describas ` +
-    `el marcador en palabras.`
-  );
-}
 
 export type ChatMessage = {
   id: string;
