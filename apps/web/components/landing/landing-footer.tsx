@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LANDING_COPY } from "@/lib/landing-copy";
+import { CONTACT_EMAIL, LANDING_COPY } from "@/lib/landing-copy";
 
 export function LandingFooter() {
   return (
@@ -14,6 +14,15 @@ export function LandingFooter() {
               {LANDING_COPY.productName}
             </span>
           </Link>
+          <p className="text-center text-sm text-neutral-600">
+            {LANDING_COPY.footer.contact}{" "}
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="text-sm text-neutral-600 underline underline-offset-4 hover:text-neutral-900"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </p>
           <p className="text-sm text-neutral-500">{LANDING_COPY.footer.copyright}</p>
         </div>
       </div>

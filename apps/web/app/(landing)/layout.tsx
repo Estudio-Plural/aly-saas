@@ -4,9 +4,12 @@ import { LandingFooter } from "@/components/landing/landing-footer";
 import { LandingNavbar } from "@/components/landing/landing-navbar";
 
 export const metadata: Metadata = {
-  title: "Plural — Programas conversacionales con IA para WhatsApp",
+  // absolute: evita que el template del layout raíz duplique el nombre del producto.
+  title: {
+    absolute: "Plural IA Conversational — Conversaciones para programas de cambio de comportamiento",
+  },
   description:
-    "Convertí tu conocimiento en un programa conversacional que acompaña a cada persona. Sin código, con RAG real y multi-tenant desde día uno.",
+    "Diseña las conversaciones de tu programa: qué dice tu asistente, qué no hace y a dónde deriva a quien está en riesgo. Pruébalo contra situaciones difíciles y Plural lo conecta a WhatsApp.",
 };
 
 export default function LandingLayout({ children }: { children: ReactNode }) {

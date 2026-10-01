@@ -8,9 +8,8 @@ import { LANDING_COPY } from "@/lib/landing-copy";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { href: "#features", label: LANDING_COPY.nav.features },
   { href: "#how-it-works", label: LANDING_COPY.nav.howItWorks },
-  { href: "#pricing", label: LANDING_COPY.nav.pricing },
+  { href: "#features", label: LANDING_COPY.nav.features },
 ];
 
 export function LandingNavbar() {
@@ -41,14 +40,8 @@ export function LandingNavbar() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/dashboard"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-          >
-            {LANDING_COPY.nav.dashboard}
-          </Link>
           <Link href="/dashboard" className={cn(buttonVariants({ size: "sm" }))}>
-            {LANDING_COPY.nav.createAssistant}
+            {LANDING_COPY.nav.dashboard}
           </Link>
         </div>
 
@@ -79,17 +72,10 @@ export function LandingNavbar() {
             <div className="mt-2 flex flex-col gap-2">
               <Link
                 href="/dashboard"
-                className={cn(buttonVariants({ variant: "outline" }), "w-full")}
-                onClick={() => setMobileOpen(false)}
-              >
-                {LANDING_COPY.nav.dashboard}
-              </Link>
-              <Link
-                href="/dashboard"
                 className={cn(buttonVariants(), "w-full")}
                 onClick={() => setMobileOpen(false)}
               >
-                {LANDING_COPY.nav.createAssistant}
+                {LANDING_COPY.nav.dashboard}
               </Link>
             </div>
           </nav>

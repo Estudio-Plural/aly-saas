@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s · Plural IA Conversational",
   },
   description:
-    "Crea asistentes de WhatsApp que acompañan a las personas de tu programa. Sin código.",
+    "Diseña las conversaciones de tu programa de cambio de comportamiento, pruébalas con situaciones difíciles y llévalas a WhatsApp con Plural.",
 };
 
 export default function RootLayout({

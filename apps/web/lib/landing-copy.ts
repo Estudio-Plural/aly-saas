@@ -1,107 +1,86 @@
+export const CONTACT_EMAIL = "hola@estudio-plural.co";
+
 export const LANDING_COPY = {
   productName: "Plural IA Conversational",
   nav: {
-    features: "Funciones",
     howItWorks: "Cómo funciona",
-    pricing: "Precios",
+    features: "Qué incluye",
     dashboard: "Entrar",
-    createAssistant: "Crear mi asistente",
   },
   hero: {
-    eyebrow: "Asistentes de IA para WhatsApp",
+    eyebrow: "Conversaciones para programas de cambio de comportamiento",
     headline: {
-      before: "Convierte tu conocimiento en un ",
-      highlight: "programa conversacional",
-      after: " que acompaña a cada persona",
+      before: "Diseña las conversaciones de tu ",
+      highlight: "programa",
+      after: " y llévalas a WhatsApp",
     },
     subheadline:
-      "Diseña flujos de aprendizaje y cambio de comportamiento por WhatsApp sin código. Cada participante interactúa con un asistente que entiende tu protocolo y responde con tus propias fuentes.",
-    ctaPrimary: "Crear mi asistente",
+      "Decides qué dice tu asistente, qué no hace y a dónde deriva a quien está en riesgo. Lo pruebas contra situaciones difíciles antes de abrirlo, y Plural lo conecta a WhatsApp.",
+    ctaPrimary: "Entrar a Plural IA",
     ctaSecondary: "Ver cómo funciona",
   },
   steps: {
-    title: "De tu conocimiento a una conversación en minutos",
-    subtitle: "Así se ve el camino completo, sin tocar una línea de código.",
+    title: "Cómo funciona",
+    subtitle: "Tres pasos, y te acompañamos en cada uno.",
     items: [
       {
-        title: "Sube tu conocimiento",
-        description: "Documentos, guías o protocolos. El asistente los indexa y los usa como fuente al responder.",
-      },
-      {
         title: "Diseña tu asistente",
-        description: "Define qué hace, qué no hace y a dónde deriva en una situación de riesgo. Lo pruebas antes de abrirlo.",
+        description:
+          "Sube tus guías y define qué dice, qué no hace y a dónde deriva a quien está en riesgo.",
       },
       {
-        title: "Conecta WhatsApp",
-        description: "Cada asistente tiene su número. Las personas hablan desde la app que ya usan.",
+        title: "Pruébalo con situaciones difíciles",
+        description:
+          "Ves cómo responde a los casos que más te preocupan y ajustas antes de abrirlo.",
+      },
+      {
+        title: "Plural lo conecta a WhatsApp",
+        description:
+          "Nosotros conectamos el número. Las personas de tu programa hablan desde la app que ya usan.",
       },
     ],
   },
   features: {
-    title: "Todo lo que necesitas para acompañar a escala",
-    subtitle: "Una plataforma pensada para programas conversacionales serios.",
+    title: "Lo que necesitas para que tu asistente acompañe bien",
+    subtitle: "Pensado para programas sociales donde una mala respuesta importa.",
     items: [
       {
-        title: "RAG real",
-        description: "Responde basándose en tus propios documentos, no en conocimiento genérico.",
+        title: "Responde con tus materiales",
+        description: "Usa tus guías y protocolos, no información genérica de internet.",
       },
       {
-        title: "Programa no-code",
-        description: "Storyboard del programa y guion de arranque, con preview en vivo.",
+        title: "Límites claros",
+        description:
+          "Defines de qué no habla y qué no promete. El asistente lo respeta en cada conversación.",
       },
       {
-        title: "Alertas en lenguaje natural",
-        description: "Dile en tus palabras qué conversaciones quieres que te marque como prioritarias.",
+        title: "Rutas para personas en riesgo",
+        description:
+          "Cuando alguien está en riesgo, el asistente deriva a la línea o al equipo que tú definas.",
       },
       {
-        title: "Multi-tenant",
-        description: "Una cuenta, múltiples programas o clientes aislados. White-label desde día uno.",
+        title: "Prueba con situaciones difíciles",
+        description: "Antes de abrirlo, ves cómo responde a los casos que más te preocupan.",
       },
       {
-        title: "Chat con memoria",
-        description: "Cada conversación conserva historial, variables y estado entre interacciones.",
+        title: "Recuerda cada conversación",
+        description: "Cada persona retoma donde quedó, sin repetir su historia.",
       },
       {
-        title: "WhatsApp Business",
-        description: "Integración lista para números de empresa. Tus usuarios no instalan nada.",
-      },
-    ],
-  },
-  pricing: {
-    title: "Precios simples",
-    subtitle: "Empieza gratis. Crece cuando tu programa crezca.",
-    plans: [
-      {
-        name: "Prueba",
-        price: "Gratis",
-        period: "14 días",
-        description: "Para probar tu primer asistente sin compromiso.",
-        features: ["1 asistente", "Base de conocimiento", "Chat de preview", "Storyboard del programa"],
-        cta: "Empezar gratis",
-        highlighted: false,
-      },
-      {
-        name: "Pro",
-        price: "$49",
-        period: "/mes",
-        description: "Para equipos que gestionan múltiples programas o clientes.",
-        features: [
-          "Asistentes ilimitados",
-          "Alertas avanzadas",
-          "Integración WhatsApp",
-          "Soporte prioritario",
-        ],
-        cta: "Elegir Pro",
-        highlighted: true,
+        title: "En el WhatsApp que ya usan",
+        description: "Plural conecta el número. Las personas no instalan nada.",
       },
     ],
   },
   cta: {
-    title: "Empieza gratis hoy",
-    subtitle: "En minutos tienes tu primer asistente conversacional. Sin tarjeta, sin configuración técnica.",
-    cta: "Crear mi asistente",
+    title: "Diseña la primera conversación de tu programa",
+    subtitle:
+      "Entra con tu cuenta de Plural IA. Te guiamos paso a paso: qué dice tu asistente, qué no hace y a dónde deriva a quien está en riesgo.",
+    cta: "Entrar a Plural IA",
+    contact: "¿Quieres hablar de tu programa? Escríbenos a",
   },
   footer: {
-    copyright: `© ${new Date().getFullYear()} Plural. Todos los derechos reservados.`,
+    contact: "¿Tienes un programa en mente? Escríbenos a",
+    copyright: `© ${new Date().getFullYear()} Estudio Plural.`,
   },
 };
